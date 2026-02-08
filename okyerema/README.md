@@ -14,7 +14,7 @@ When installed, Okyerema gives GitHub Copilot the ability to:
 
 ## Role in the Anokye System
 
-Okyerema is the **Deacon** — the automation specialist invoked by the **Okyeame** (spokesperson/coordinator) when workflow configuration is needed. It can also operate independently as a modular agent for security-sensitive workflow operations.
+Okyerema is the automation specialist invoked by the **Okyeame** (spokesperson/coordinator) when workflow configuration is needed. It can also operate independently as a modular agent for security-sensitive workflow operations.
 
 See **[Okyeame](../okyeame/)** for the top-level coordination agent.
 

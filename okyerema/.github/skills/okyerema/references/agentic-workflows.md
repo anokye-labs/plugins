@@ -226,19 +226,19 @@ Group by type (Feature, Bug, Task). Generate markdown release notes.
 ## Design Patterns: The Anokye System
 
 The Anokye System is our multi-agent orchestration architecture for
-software development, inspired by GasTown's patterns but built natively
-on GitHub's platform using Akan naming conventions.
+software development, built natively on GitHub's platform using Akan
+naming conventions.
 
 ### Architecture: Roles and Their Akan Names
 
-| Anokye Role | Akan Meaning | GasTown Equivalent | Mechanism |
-|-------------|-------------|-------------------|-----------|
-| **Okyeame** | Spokesperson | Mayor | Interactive coordinator — creates issues, builds hierarchies, reports status. The face you talk to. |
-| **Okyerema** | Master drummer | Deacon | Automation specialist — configures gh-aw workflows, CI/CD, patrols. Invoked by Okyeame. |
-| **Ananse** | Spider (folklore) | Runtime | The agentic runtime — `@copilot` coding agent and gh-aw workflows |
-| **Asafo** | Warrior company | Polecats + Crew | Implementation agents — pick up Tasks, create branches, write code, open PRs |
-| **Adwoma** | Work | Beads | GitHub Issues as external memory — every task, decision, and status recorded |
-| **Sankofa** | Return and get it | Deacon patrols | Scheduled health checks — stale patrol, orphan detection, progress tracking |
+| Anokye Role | Akan Meaning | Mechanism |
+|-------------|-------------|-----------|
+| **Okyeame** | Spokesperson | Interactive coordinator — creates issues, builds hierarchies, reports status. The face you talk to. |
+| **Okyerema** | Master drummer | Automation specialist — configures gh-aw workflows, CI/CD, patrols. Invoked by Okyeame. |
+| **Ananse** | Spider (folklore) | The agentic runtime — `@copilot` coding agent and gh-aw workflows |
+| **Asafo** | Warrior company | Implementation agents — pick up Tasks, create branches, write code, open PRs |
+| **Adwoma** | Work | GitHub Issues as external memory — every task, decision, and status recorded |
+| **Sankofa** | Return and get it | Scheduled health checks — stale patrol, orphan detection, progress tracking |
 
 ### Core Principles
 
@@ -253,9 +253,8 @@ on GitHub's platform using Akan naming conventions.
 
 3. **Adwoma is the single source of truth.** GitHub Issues are the external
    memory. Not markdown plans, not session state, not local files. If it's
-   not in an issue, it doesn't exist for coordination purposes. This is the
-   Anokye System's answer to GasTown's "beads" — we use GitHub's native
-   issue graph instead of a custom tracker.
+   not in an issue, it doesn't exist for coordination purposes. We use
+   GitHub's native issue graph as the single source of truth.
 
 4. **Zero-Footprint Computing.** Agents derive state by querying the API,
    not from local memory. This eliminates stale state and makes agents
@@ -358,6 +357,3 @@ should check for this file and propose creating one if missing.
 - [Agentic Workflows Markdown Reference](https://github.github.io/gh-aw/reference/markdown/)
 - [Safe Outputs Reference](https://github.github.io/gh-aw/reference/safe-outputs/)
 - [Copilot Coding Agent Best Practices](https://docs.github.com/copilot/how-tos/agents/copilot-coding-agent/best-practices-for-using-copilot-to-work-on-tasks)
-- [GasTown Source](https://github.com/steveyegge/gastown)
-- [GasTown Decoded](https://www.alilleybrinker.com/mini/gas-town-decoded/)
-- [Beads Issue Tracking](https://deepwiki.com/steveyegge/gastown/2.2-beads-issue-tracking)

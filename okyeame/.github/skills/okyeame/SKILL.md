@@ -67,8 +67,8 @@ development. Each role has an Akan name reflecting its function.
 
 | Akan Term | Meaning | Role in the Anokye System |
 |-----------|---------|--------------------------|
-| **Okyeame** | Spokesperson | The coordinator — the face you interact with. Creates issues, builds hierarchies, reports status, coordinates agents. The Mayor. |
-| **Okyerema** | Master drummer | The automation specialist — configures agentic workflows, sets up patrols, scaffolds CI/CD. The Deacon. Invoked by Okyeame. |
+| **Okyeame** | Spokesperson | The coordinator — the face you interact with. Creates issues, builds hierarchies, reports status, coordinates agents. |
+| **Okyerema** | Master drummer | The automation specialist — configures agentic workflows, sets up patrols, scaffolds CI/CD. Invoked by Okyeame. |
 | **Asafo** | Warrior company | Implementation agents — `@copilot` and other agents that pick up Tasks, write code, open PRs |
 | **Adwoma** | Work | GitHub Issues as external memory — every task, decision, status change. The single source of truth. |
 | **Ananse** | Spider (folklore) | The agentic runtime — `@copilot` coding agent, `gh-aw` workflows, GitHub Actions |

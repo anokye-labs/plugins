@@ -6,8 +6,8 @@ Installable GitHub Copilot skills and agent plugins for the Anokye Labs ecosyste
 
 | Plugin | Role | Description | Status |
 |--------|------|-------------|--------|
-| [okyeame](okyeame/) | Spokesperson (Mayor) | Project coordination agent — issues, hierarchy, status, agent coordination | ✅ Ready |
-| [okyerema](okyerema/) | Master Drummer (Deacon) | Workflow automation skill — agentic workflows, CI/CD, patrols, scripts | ✅ Ready |
+| [okyeame](okyeame/) | Spokesperson | Project coordination agent — issues, hierarchy, status, agent coordination | ✅ Ready |
+| [okyerema](okyerema/) | Master Drummer | Workflow automation skill — agentic workflows, CI/CD, patrols, scripts | ✅ Ready |
 
 ## The Anokye System
 
