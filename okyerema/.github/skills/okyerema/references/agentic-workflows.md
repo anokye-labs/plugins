@@ -223,49 +223,93 @@ Collect all issues closed and PRs merged since the last release.
 Group by type (Feature, Bug, Task). Generate markdown release notes.
 ```
 
-## Design Patterns from GasTown
+## Design Patterns: The Anokye System
 
-Steve Yegge's GasTown system provides architectural inspiration for
-multi-agent orchestration. Key patterns applicable to Okyerema:
+The Anokye System is our multi-agent orchestration architecture for
+software development, inspired by GasTown's patterns but built natively
+on GitHub's platform using Akan naming conventions.
 
-### 1. Hierarchical Agent Roles
-GasTown uses a two-tier hierarchy:
-- **Mayor** (global coordinator) → maps to **Okyerema**
-- **Witness** (per-project monitor) → maps to **per-repo health checks**
-- **Deacon** (health patrol) → maps to **scheduled workflow patrols**
-- **Polecats** (worker agents) → maps to **@copilot coding agent**
+### Architecture: Roles and Their Akan Names
 
-Okyerema IS the Mayor. It never does Polecat work (implementation).
+| Anokye Role | Akan Meaning | GasTown Equivalent | Mechanism |
+|-------------|-------------|-------------------|-----------|
+| **Okyerema** | Master drummer | Mayor | Interactive coordinator — creates issues, builds hierarchies, reports status |
+| **Ananse** | Spider (folklore) | Runtime | The agentic runtime — `@copilot` coding agent and gh-aw workflows |
+| **Asafo** | Warrior company | Polecats + Crew | Implementation agents — pick up Tasks, create branches, write code, open PRs |
+| **Okyeame** | Spokesperson | — | Client applications — surfaces for humans to interact with the system |
+| **Adwoma** | Work | Beads | GitHub Issues as external memory — every task, decision, and status recorded |
+| **Sankofa** | Return and get it | Deacon patrols | Scheduled health checks — stale patrol, orphan detection, progress tracking |
 
-### 2. External Memory via Issue State
-GasTown's "beads" system uses Git-backed issue tracking as agent memory.
-Okyerema's equivalent: **GitHub Issues ARE the external memory.** Every
-decision, assignment, and status change is recorded in issues. Agents
-don't need to maintain separate state — they query the issue graph.
+### Core Principles
 
-Key principle: **Issues are the single source of truth.** Not markdown
-plans, not session state, not local files. If it's not in an issue, it
-doesn't exist for coordination purposes.
+1. **Okyerema coordinates, Asafo implements.** The drummer sets the rhythm;
+   the warriors execute. Okyerema never writes code — it creates the issues
+   that Asafo agents (including `@copilot`) pick up and deliver.
 
-### 3. Zero-Footprint Computing (ZFC)
-Agents derive state from authoritative sources (issue graph, project
-boards, PR status) rather than maintaining separate state files.
-Okyerema should always query the API rather than remembering — this
-eliminates stale state and memory loss across sessions.
+2. **Adwoma is the single source of truth.** GitHub Issues are the external
+   memory. Not markdown plans, not session state, not local files. If it's
+   not in an issue, it doesn't exist for coordination purposes. This is the
+   Anokye System's answer to GasTown's "beads" — we use GitHub's native
+   issue graph instead of a custom tracker.
 
-### 4. The Propulsion Principle
-In GasTown, agents immediately execute work found on their "hook."
-For Okyerema: when a workflow detects work is ready (all dependencies
-met, all blockers resolved), it should automatically propose the next
-action — assign to @copilot, notify the human, or trigger a follow-up
-workflow.
+3. **Zero-Footprint Computing.** Agents derive state by querying the API,
+   not from local memory. This eliminates stale state and makes agents
+   resilient to restarts, context loss, and session boundaries.
 
-### 5. Patrol Loops
-GasTown's Deacon runs continuous health patrols. Okyerema's equivalent:
-scheduled agentic workflows that run daily to check for stale issues,
-orphaned work, unresolved PR threads, and untyped issues. The `/health`
-command is the interactive version; the patrol workflow is the automated
-version.
+4. **Sankofa patrols keep the system healthy.** Scheduled agentic workflows
+   (the Anokye System's equivalent of GasTown's Deacon) run continuously
+   to detect stale issues, orphaned work, unresolved PR threads, and
+   lifecycle violations. The `/health` command is the interactive version;
+   Sankofa workflows are the automated version.
+
+5. **Automate the predictable, ask about the ambiguous.** If a governance
+   pattern repeats, it should become an agentic workflow. Okyerema's
+   interactive involvement should shrink over time as more patterns get
+   automated. Human attention is reserved for decisions that require
+   judgment, creativity, or domain knowledge.
+
+### How Work Flows Through the Anokye System
+
+```
+Human Request
+    │
+    ▼
+┌─────────────┐
+│  Okyerema   │ ← Coordinator: breaks down, creates issues, builds hierarchy
+│  (Drummer)  │
+└──────┬──────┘
+       │ Creates well-specified Tasks
+       ▼
+┌─────────────┐     ┌──────────────┐
+│   Ananse    │────▶│    Asafo     │ ← Worker agents pick up Tasks
+│  (Runtime)  │     │  (Warriors)  │   @copilot creates branch + PR
+└──────┬──────┘     └──────┬───────┘
+       │                    │ Opens draft PR
+       ▼                    ▼
+┌─────────────┐     ┌──────────────┐
+│  Sankofa    │     │   Okyeame    │ ← Human reviews via PR UI
+│  (Patrols)  │     │ (Spokesman)  │
+└─────────────┘     └──────────────┘
+  Automated           Human-facing
+  governance          interfaces
+```
+
+### Lifecycle: How Issues Move Through Stages
+
+```
+Created → Triaged → Assigned → In Progress → In Review → Done
+   │         │         │           │              │
+   │    [auto-label]  [assign    [branch      [PR opened,
+   │    [ask for      @copilot]  created,     CI checks,
+   │    clarity]                 commits]     review]
+   │
+   └─ Sankofa patrol catches if stuck at any stage
+```
+
+Each transition can be:
+- **Automated** via agentic workflow (preferred)
+- **Interactive** via Okyerema in a session (fallback)
+- **Manual** via human directly (escape hatch)
 
 ## Okyerema's Decision Tree
 

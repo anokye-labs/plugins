@@ -167,13 +167,25 @@ Labels are for **filtering and categorization only**:
 
 If you're tempted to create a label for structure, you're using the wrong tool. Use issue types, tasklists, or project fields instead.
 
-## Glossary
+## Glossary: The Anokye System
 
-| Akan Term | Meaning | In Our System |
-|-----------|---------|---------------|
-| **Okyerema** | Talking drummer | This skill — the orchestrator |
-| **Asafo** | Warrior company | The team of agents and humans |
-| **Adwoma** | Work | Issues, tasks, deliverables |
-| **Akwaaba** | Welcome | This reference repo |
-| **Okyeame** | Spokesperson | Client applications |
-| **Ananse** | Spider (folklore) | The agentic runtime |
+The Anokye System is our multi-agent orchestration architecture for software
+development. Each role has an Akan name reflecting its function.
+
+| Akan Term | Meaning | Role in the Anokye System |
+|-----------|---------|--------------------------|
+| **Okyerema** | Master drummer | The coordinator — creates issues, builds hierarchies, reports status. Never implements. |
+| **Asafo** | Warrior company | Implementation agents — `@copilot` and other agents that pick up Tasks, write code, open PRs |
+| **Adwoma** | Work | GitHub Issues as external memory — every task, decision, status change. The single source of truth. |
+| **Ananse** | Spider (folklore) | The agentic runtime — `@copilot` coding agent, `gh-aw` workflows, GitHub Actions |
+| **Sankofa** | Return and get it | Automated health patrols — scheduled workflows that detect stale, orphaned, or stuck work |
+| **Okyeame** | Spokesperson | Client applications — human-facing surfaces (PR UI, project boards, dashboards) |
+| **Akwaaba** | Welcome | The reference repository — conventions, onboarding, team knowledge |
+
+### Principle Summary
+
+1. **Okyerema coordinates, Asafo implements** — the drummer sets rhythm, warriors execute
+2. **Adwoma is the single source of truth** — if it's not in an issue, it doesn't exist
+3. **Zero-footprint computing** — agents query the API, never rely on local memory
+4. **Sankofa keeps the system healthy** — automated patrols catch what humans miss
+5. **Automate the predictable, ask about the ambiguous** — human attention for judgment only
