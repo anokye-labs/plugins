@@ -1,8 +1,8 @@
-# Okyeame — The Spokesperson
+# Okyeame — The Linguist
 
-The Okyeame (spokesperson) is the top-level coordination agent in the Anokye
-System. It is the face humans interact with — creating issues, building
-hierarchies, reporting status, and coordinating implementation agents.
+The Okyeame (linguist) is the voice of the Anokye
+System. It gives status updates, reports on blocked issues, asks for
+clarity when needed, and invokes the Okyerema when the asafo need their rhythm set.
 
 ## What It Does
 

@@ -18,7 +18,7 @@ Okyerema operates across three automation layers, each with increasing autonomy:
 The goal: in interactive mode, Okyerema mostly creates issues and reports
 status. Everything else is automated.
 
-## Layer 1: Interactive Coordination
+## Layer 1: Interactive Communication
 
 Okyerema's core role. It creates well-specified issues, builds hierarchies,
 and monitors progress. Human intervention only for:
@@ -233,8 +233,8 @@ naming conventions.
 
 | Anokye Role | Akan Meaning | Mechanism |
 |-------------|-------------|-----------|
-| **Okyeame** | Spokesperson | Interactive coordinator — creates issues, builds hierarchies, reports status. The face you talk to. |
-| **Okyerema** | Master drummer | Automation specialist — configures gh-aw workflows, CI/CD, patrols. Invoked by Okyeame. |
+| **Okyeame** | Linguist | The voice — gives status updates, reports on blocked issues, asks for clarity when needed. |
+| **Okyerema** | Master drummer | The master drummer of the asafo — keeps the warriors in rhythm through workflow automation, patrols, and CI/CD. Invoked by Okyeame. |
 | **Ananse** | Spider (folklore) | The agentic runtime — `@copilot` coding agent and gh-aw workflows |
 | **Asafo** | Warrior company | Implementation agents — pick up Tasks, create branches, write code, open PRs |
 | **Adwoma** | Work | GitHub Issues as external memory — every task, decision, and status recorded |
@@ -242,12 +242,12 @@ naming conventions.
 
 ### Core Principles
 
-1. **Okyeame coordinates, Asafo implements.** The spokesperson sets direction;
+1. **Okyeame speaks, Asafo implements.** The linguist gives voice;
    the warriors execute. Okyeame never writes code — it creates the issues
    that Asafo agents (including `@copilot`) pick up and deliver.
 
-2. **Okyerema automates the rhythm.** The master drummer configures the
-   workflows and automation systems that keep everything in sync. When Okyeame
+2. **Okyerema keeps the rhythm.** The master drummer of the asafo keeps
+   the warriors in cadence. When Okyeame
    identifies a pattern that should be automated, it invokes Okyerema to
    configure the appropriate workflow (gh-aw, GitHub Actions, Temporal, etc.).
 
@@ -278,8 +278,8 @@ Human Request
     │
     ▼
 ┌─────────────┐
-│   Okyeame   │ ← Coordinator: breaks down, creates issues, builds hierarchy
-│(Spokesperson)│
+│   Okyeame   │ ← Linguist: status updates, blockers, asks for clarity
+│ (Linguist)  │
 └──────┬──────┘
        │ Creates well-specified Tasks
        │ Invokes Okyerema for automation config
@@ -324,7 +324,7 @@ When asked to move work forward, Okyerema follows this priority order:
 1. Does an agentic workflow exist for this? → Let it handle it
 2. Can this be assigned to @copilot? → Create issue, assign, monitor
 3. Does this need human decision? → Ask the specific question
-4. Is this a coordination task? → Do it directly (create issues, update hierarchy)
+4. Is this a communication task? → Do it directly (status, blockers, clarity)
 5. None of the above? → Create an issue proposing a new workflow
 ```
 

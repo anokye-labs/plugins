@@ -6,15 +6,15 @@ Installable GitHub Copilot skills and agent plugins for the Anokye Labs ecosyste
 
 | Plugin | Role | Description | Status |
 |--------|------|-------------|--------|
-| [okyeame](okyeame/) | Spokesperson | Project coordination agent — issues, hierarchy, status, agent coordination | ✅ Ready |
-| [okyerema](okyerema/) | Master Drummer | Workflow automation skill — agentic workflows, CI/CD, patrols, scripts | ✅ Ready |
+| [okyeame](okyeame/) | Linguist | The voice of the system — status updates, blocker reports, clarity requests | ✅ Ready |
+| [okyerema](okyerema/) | Master Drummer | Master drummer of the asafo — keeps the warriors in rhythm through automation | ✅ Ready |
 
 ## The Anokye System
 
 A multi-agent orchestration architecture for software development using Akan naming:
 
-- **Okyeame** — The spokesperson. The face you interact with. Coordinates all work.
-- **Okyerema** — The master drummer. Configures automation. Invoked by Okyeame.
+- **Okyeame** — The linguist. The voice you interact with. Status updates, blockers, clarity.
+- **Okyerema** — The master drummer. Keeps the asafo in rhythm through automation.
 - **Asafo** — Warriors. Implementation agents (@copilot) that execute Tasks.
 - **Adwoma** — Work. GitHub Issues as the single source of truth.
 - **Sankofa** — Return and get it. Automated health patrols.
@@ -60,6 +60,6 @@ Each plugin follows a standard layout:
 ## Naming
 
 Plugins use Akan naming conventions from the Anokye System:
-- **Okyeame** (ɔkyeame) — The spokesperson who coordinates the ensemble
-- **Okyerema** (ɔkyerɛma) — The master drummer who sets the rhythm
+- **Okyeame** (ɔkyeame) — The linguist who gives voice to the system
+- **Okyerema** (ɔkyerɛma) — The master drummer who keeps the asafo in rhythm
 - See each plugin's glossary for full terminology

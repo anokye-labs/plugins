@@ -1,20 +1,19 @@
 ---
 name: okyeame
 description: >
-  Project coordination for Anokye Labs. The Okyeame (spokesperson) coordinates
-  adwoma (work) — creating issues with proper types and hierarchy, monitoring PR
-  health, reporting status via /sitrep /prcheck /health /whatsleft, and tracking
-  progress across GitHub Projects. Invoke for issue management, project boards,
-  status reporting, and coordination of Asafo implementation agents.
+  The Okyeame (linguist) is the voice of the Anokye System — giving status
+  updates, reporting on blocked issues, asking for clarity when needed, and
+  tracking progress across GitHub Projects. Invoke for status reporting, issue
+  management, blocker surfacing, and invoking the Okyerema to set the rhythm.
 tools:
   - powershell
   - github-cli
 ---
 
-# Okyeame — Project Coordination Skill
+# Okyeame — The Linguist
 
-The Okyeame (spokesperson) is the top-level coordinator in the Anokye System.
-This skill provides project coordination capabilities for Anokye Labs.
+The Okyeame (linguist) is the voice of the Anokye System. It gives status
+updates, reports on blocked issues, and asks for clarity when needed.
 
 ## Quick Start
 
@@ -43,22 +42,23 @@ See `references/status-commands.md` for full command documentation.
 - Update status fields via GraphQL
 - Generate board snapshots
 
-### Status Reporting
+### Status & Communication
 - Structured dashboards (/sitrep, /board)
 - Narrative summaries (/recap)
 - Health checks (/health)
 - PR monitoring (/prcheck)
+- Blocker reporting and clarity requests
 
-### Agent Coordination
+### Asafo Dispatch
 - Create fully-specified issues for @copilot assignment
 - Monitor implementation agent progress
-- Invoke Okyerema skill for workflow automation needs
+- Invoke Okyerema skill to set the rhythm when needed
 
 ## Related Skills
 
 | Skill | When to Invoke |
 |-------|---------------|
-| **Okyerema** | Workflow automation config, gh-aw templates, repo automation scaffolding, patrol setup |
+| **Okyerema** | Workflow automation, gh-aw templates, repo automation, patrol setup — keeping the asafo in rhythm |
 
 ## Glossary: The Anokye System
 
@@ -67,8 +67,8 @@ development. Each role has an Akan name reflecting its function.
 
 | Akan Term | Meaning | Role in the Anokye System |
 |-----------|---------|--------------------------|
-| **Okyeame** | Spokesperson | The coordinator — the face you interact with. Creates issues, builds hierarchies, reports status, coordinates agents. |
-| **Okyerema** | Master drummer | The automation specialist — configures agentic workflows, sets up patrols, scaffolds CI/CD. Invoked by Okyeame. |
+| **Okyeame** | Linguist | The voice — gives status updates, reports on blocked issues, asks for clarity when needed. |
+| **Okyerema** | Master drummer | The master drummer of the asafo — keeps the warriors in rhythm through workflow automation, patrols, and CI/CD. |
 | **Asafo** | Warrior company | Implementation agents — `@copilot` and other agents that pick up Tasks, write code, open PRs |
 | **Adwoma** | Work | GitHub Issues as external memory — every task, decision, status change. The single source of truth. |
 | **Ananse** | Spider (folklore) | The agentic runtime — `@copilot` coding agent, `gh-aw` workflows, GitHub Actions |
@@ -77,8 +77,8 @@ development. Each role has an Akan name reflecting its function.
 
 ### Principle Summary
 
-1. **Okyeame coordinates, Asafo implements** — the spokesperson sets direction, warriors execute
-2. **Okyerema automates the rhythm** — the master drummer configures the workflows that keep the beat
+1. **Okyeame speaks, Asafo implements** — the linguist gives voice, the warriors execute
+2. **Okyerema keeps the rhythm** — the master drummer of the asafo keeps the warriors in cadence
 3. **Adwoma is the single source of truth** — if it's not in an issue, it doesn't exist
 4. **Zero-footprint computing** — agents query the API, never rely on local memory
 5. **Sankofa keeps the system healthy** — automated patrols catch what humans miss

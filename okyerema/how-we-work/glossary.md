@@ -35,9 +35,9 @@ At Anokye Labs, we draw from Akan culture to name our systems and describe how w
 ---
 
 ### Okyeame (oh-CHEH-ah-meh)
-**Meaning:** Spokesperson, the chief's linguist — the person who speaks on behalf of the chief and interprets messages
+**Meaning:** The chief's linguist — the person who gives voice to the chief's intent, reports on the state of affairs, and asks for clarity when needed
 
-**In our system:** The client applications that connect users to the Ananse runtime. The Okyeame translates between human intent and machine action, using voice-first input and adaptive card output.
+**In our system:** The voice you interact with. Okyeame gives status updates, reports on blocked issues, asks for human decisions when ambiguity needs resolving, creates issues, and invokes the Okyerema to set the rhythm for the asafo.
 
 **Repository:** [anokye-labs/okyeame](https://github.com/anokye-labs/okyeame)
 
@@ -96,7 +96,7 @@ Anokye Labs draws from Akan cultural concepts because they map beautifully to ho
 - The **talking drummer** doesn't do the work — it coordinates and communicates
 - The **asafo** is stronger as a unit than any individual warrior
 - The **spider's web** connects everything intelligently
-- The **spokesperson** translates between different worlds
+- The **linguist** gives voice to intent and asks for clarity
 
 These aren't just names — they're design principles.
 

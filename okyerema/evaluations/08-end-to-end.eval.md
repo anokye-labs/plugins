@@ -131,7 +131,7 @@ A team wants to plan a new feature "User Notifications" with:
 
 **Expected:**
 - [ ] Copilot references the glossary
-- [ ] Correctly explains: Okyerema = drummer/coordinator, Asafo = team/company, Adwoma = work
+- [ ] Correctly explains: Okyerema = master drummer of the asafo, Asafo = warriors, Adwoma = work
 - [ ] May reference the how-we-work documentation
 
 ## Cleanup

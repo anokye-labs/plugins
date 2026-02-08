@@ -174,8 +174,8 @@ development. Each role has an Akan name reflecting its function.
 
 | Akan Term | Meaning | Role in the Anokye System |
 |-----------|---------|--------------------------|
-| **Okyeame** | Spokesperson | The coordinator — the face you interact with. Creates issues, builds hierarchies, reports status, coordinates agents. |
-| **Okyerema** | Master drummer | The automation specialist — configures agentic workflows, sets up patrols, scaffolds CI/CD. Invoked by Okyeame. |
+| **Okyeame** | Linguist | The voice — gives status updates, reports on blocked issues, asks for clarity when needed. |
+| **Okyerema** | Master drummer | The master drummer of the asafo — keeps the warriors in rhythm through workflow automation, patrols, and CI/CD. |
 | **Asafo** | Warrior company | Implementation agents — `@copilot` and other agents that pick up Tasks, write code, open PRs |
 | **Adwoma** | Work | GitHub Issues as external memory — every task, decision, status change. The single source of truth. |
 | **Ananse** | Spider (folklore) | The agentic runtime — `@copilot` coding agent, `gh-aw` workflows, GitHub Actions |
@@ -184,8 +184,8 @@ development. Each role has an Akan name reflecting its function.
 
 ### Principle Summary
 
-1. **Okyeame coordinates, Asafo implements** — the spokesperson sets direction, warriors execute
-2. **Okyerema automates the rhythm** — the master drummer configures the workflows that keep the beat
+1. **Okyeame speaks, Asafo implements** — the linguist gives voice, the warriors execute
+2. **Okyerema keeps the rhythm** — the master drummer of the asafo keeps the warriors in cadence
 3. **Adwoma is the single source of truth** — if it's not in an issue, it doesn't exist
 4. **Zero-footprint computing** — agents query the API, never rely on local memory
 5. **Sankofa keeps the system healthy** — automated patrols catch what humans miss
