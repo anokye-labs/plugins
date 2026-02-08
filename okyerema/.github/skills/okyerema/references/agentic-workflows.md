@@ -233,38 +233,42 @@ on GitHub's platform using Akan naming conventions.
 
 | Anokye Role | Akan Meaning | GasTown Equivalent | Mechanism |
 |-------------|-------------|-------------------|-----------|
-| **Okyerema** | Master drummer | Mayor | Interactive coordinator — creates issues, builds hierarchies, reports status |
+| **Okyeame** | Spokesperson | Mayor | Interactive coordinator — creates issues, builds hierarchies, reports status. The face you talk to. |
+| **Okyerema** | Master drummer | Deacon | Automation specialist — configures gh-aw workflows, CI/CD, patrols. Invoked by Okyeame. |
 | **Ananse** | Spider (folklore) | Runtime | The agentic runtime — `@copilot` coding agent and gh-aw workflows |
 | **Asafo** | Warrior company | Polecats + Crew | Implementation agents — pick up Tasks, create branches, write code, open PRs |
-| **Okyeame** | Spokesperson | — | Client applications — surfaces for humans to interact with the system |
 | **Adwoma** | Work | Beads | GitHub Issues as external memory — every task, decision, and status recorded |
 | **Sankofa** | Return and get it | Deacon patrols | Scheduled health checks — stale patrol, orphan detection, progress tracking |
 
 ### Core Principles
 
-1. **Okyerema coordinates, Asafo implements.** The drummer sets the rhythm;
-   the warriors execute. Okyerema never writes code — it creates the issues
+1. **Okyeame coordinates, Asafo implements.** The spokesperson sets direction;
+   the warriors execute. Okyeame never writes code — it creates the issues
    that Asafo agents (including `@copilot`) pick up and deliver.
 
-2. **Adwoma is the single source of truth.** GitHub Issues are the external
+2. **Okyerema automates the rhythm.** The master drummer configures the
+   workflows and automation systems that keep everything in sync. When Okyeame
+   identifies a pattern that should be automated, it invokes Okyerema to
+   configure the appropriate workflow (gh-aw, GitHub Actions, Temporal, etc.).
+
+3. **Adwoma is the single source of truth.** GitHub Issues are the external
    memory. Not markdown plans, not session state, not local files. If it's
    not in an issue, it doesn't exist for coordination purposes. This is the
    Anokye System's answer to GasTown's "beads" — we use GitHub's native
    issue graph instead of a custom tracker.
 
-3. **Zero-Footprint Computing.** Agents derive state by querying the API,
+4. **Zero-Footprint Computing.** Agents derive state by querying the API,
    not from local memory. This eliminates stale state and makes agents
    resilient to restarts, context loss, and session boundaries.
 
-4. **Sankofa patrols keep the system healthy.** Scheduled agentic workflows
-   (the Anokye System's equivalent of GasTown's Deacon) run continuously
-   to detect stale issues, orphaned work, unresolved PR threads, and
-   lifecycle violations. The `/health` command is the interactive version;
-   Sankofa workflows are the automated version.
+5. **Sankofa patrols keep the system healthy.** Scheduled agentic workflows
+   (configured by Okyerema) run continuously to detect stale issues, orphaned
+   work, unresolved PR threads, and lifecycle violations. The `/health` command
+   is the interactive version; Sankofa workflows are the automated version.
 
-5. **Automate the predictable, ask about the ambiguous.** If a governance
-   pattern repeats, it should become an agentic workflow. Okyerema's
-   interactive involvement should shrink over time as more patterns get
+6. **Automate the predictable, ask about the ambiguous.** If a governance
+   pattern repeats, Okyeame invokes Okyerema to make it an agentic workflow.
+   Interactive involvement should shrink over time as more patterns get
    automated. Human attention is reserved for decisions that require
    judgment, creativity, or domain knowledge.
 
@@ -275,23 +279,25 @@ Human Request
     │
     ▼
 ┌─────────────┐
-│  Okyerema   │ ← Coordinator: breaks down, creates issues, builds hierarchy
-│  (Drummer)  │
+│   Okyeame   │ ← Coordinator: breaks down, creates issues, builds hierarchy
+│(Spokesperson)│
 └──────┬──────┘
        │ Creates well-specified Tasks
+       │ Invokes Okyerema for automation config
        ▼
 ┌─────────────┐     ┌──────────────┐
-│   Ananse    │────▶│    Asafo     │ ← Worker agents pick up Tasks
-│  (Runtime)  │     │  (Warriors)  │   @copilot creates branch + PR
+│  Okyerema   │     │    Asafo     │ ← Worker agents pick up Tasks
+│  (Drummer)  │     │  (Warriors)  │   @copilot creates branch + PR
 └──────┬──────┘     └──────┬───────┘
-       │                    │ Opens draft PR
-       ▼                    ▼
-┌─────────────┐     ┌──────────────┐
-│  Sankofa    │     │   Okyeame    │ ← Human reviews via PR UI
-│  (Patrols)  │     │ (Spokesman)  │
-└─────────────┘     └──────────────┘
-  Automated           Human-facing
-  governance          interfaces
+       │ Configures         │ Opens draft PR
+       │ workflows          ▼
+       ▼              ┌──────────────┐
+┌─────────────┐       │    Human     │ ← Reviews via PR UI
+│  Sankofa    │       │   Review     │
+│  (Patrols)  │       └──────────────┘
+└─────────────┘
+  Automated
+  governance
 ```
 
 ### Lifecycle: How Issues Move Through Stages

@@ -1,19 +1,30 @@
 # Anokye Labs Plugins
 
-Installable GitHub Copilot skills and agent plugins for the Anokye Labs ecosystem.
+Installable GitHub Copilot skills and agent plugins for the Anokye Labs ecosystem — the **Anokye System**.
 
 ## Available Plugins
 
-| Plugin | Description | Status |
-|--------|-------------|--------|
-| [okyerema](okyerema/) | Project orchestration — issue types, hierarchy, PR reviews | ✅ Ready |
+| Plugin | Role | Description | Status |
+|--------|------|-------------|--------|
+| [okyeame](okyeame/) | Spokesperson (Mayor) | Project coordination agent — issues, hierarchy, status, agent coordination | ✅ Ready |
+| [okyerema](okyerema/) | Master Drummer (Deacon) | Workflow automation skill — agentic workflows, CI/CD, patrols, scripts | ✅ Ready |
+
+## The Anokye System
+
+A multi-agent orchestration architecture for software development using Akan naming:
+
+- **Okyeame** — The spokesperson. The face you interact with. Coordinates all work.
+- **Okyerema** — The master drummer. Configures automation. Invoked by Okyeame.
+- **Asafo** — Warriors. Implementation agents (@copilot) that execute Tasks.
+- **Adwoma** — Work. GitHub Issues as the single source of truth.
+- **Sankofa** — Return and get it. Automated health patrols.
 
 ## Installation
 
 Each plugin includes an `Install-Plugin.ps1` script that copies the skill files into your repository:
 
 ```powershell
-# From your target repo root
+# Install both plugins
 & S:\anokye-labs\plugins\okyerema\scripts\Install-Plugin.ps1 -TargetRepo .
 ```
 
@@ -28,13 +39,12 @@ Each plugin follows a standard layout:
 ├── README.md                          # Plugin docs and usage
 ├── manifest.json                      # Plugin metadata and version
 ├── .github/skills/<name>/             # The skill (copied to target repos)
+│   ├── <name>.agent.md                # Agent persona (optional)
 │   ├── SKILL.md                       # Main skill file (<500 lines)
 │   ├── references/                    # On-demand reference guides
 │   └── scripts/                       # PowerShell helper scripts
 ├── how-we-work/                       # Human-facing documentation (optional)
 ├── evaluations/                       # Test scenarios for validation
-│   ├── README.md                      # Evaluation guide
-│   └── *.eval.md                      # Individual test scenarios
 └── scripts/
     └── Install-Plugin.ps1             # Installation script
 ```
@@ -45,10 +55,11 @@ Each plugin follows a standard layout:
 - **GraphQL-first** — All structured GitHub operations use GraphQL, not REST
 - **PowerShell** — All scripts are PowerShell 7+ compatible
 - **Organization issue types** — Never labels for structure (Epic/Feature/Task/Bug)
-- **Tasklists for hierarchy** — Parent-child relationships via markdown tasklists
+- **Sub-issues for hierarchy** — Parent-child relationships via sub-issues API
 
 ## Naming
 
-Plugins use Akan naming conventions:
-- **Okyerema** (ɔkyerɛma) — The master drummer who coordinates the ensemble
+Plugins use Akan naming conventions from the Anokye System:
+- **Okyeame** (ɔkyeame) — The spokesperson who coordinates the ensemble
+- **Okyerema** (ɔkyerɛma) — The master drummer who sets the rhythm
 - See each plugin's glossary for full terminology

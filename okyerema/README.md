@@ -1,16 +1,22 @@
 # Okyerema Plugin
 
-**Project orchestration skill for GitHub Copilot** — coordinates issues, hierarchies, projects, and PR reviews using organization issue types and GraphQL.
+**Workflow automation skill for GitHub Copilot** — configures agentic workflows, CI/CD pipelines, patrol schedules, and automation scaffolding. The master drummer sets the rhythm.
 
 ## What It Does
 
 When installed, Okyerema gives GitHub Copilot the ability to:
 
-- **Create typed issues** — Epic, Feature, Task, Bug with proper organization issue types
-- **Build hierarchies** — 3-level (Epic → Feature → Task) or 2-level structures via tasklists
-- **Manage projects** — Add items to GitHub Projects V2, update custom fields
-- **Handle PR reviews** — Find unresolved threads, reply, bulk resolve/unresolve
-- **Apply labels** — Sparingly and correctly, following org conventions
+- **Configure agentic workflows** — create gh-aw definitions, GitHub Actions, Temporal workflows
+- **Scaffold automation** — audit repos for missing infrastructure, propose and create it
+- **Set up patrols** — Sankofa health checks for stale issues, orphans, stuck work
+- **Manage issues** — Create typed issues, build hierarchies, handle PR reviews
+- **Run helper scripts** — PowerShell tools for issue types, hierarchy, PR threads
+
+## Role in the Anokye System
+
+Okyerema is the **Deacon** — the automation specialist invoked by the **Okyeame** (spokesperson/coordinator) when workflow configuration is needed. It can also operate independently as a modular agent for security-sensitive workflow operations.
+
+See **[Okyeame](../okyeame/)** for the top-level coordination agent.
 
 ## Installation
 

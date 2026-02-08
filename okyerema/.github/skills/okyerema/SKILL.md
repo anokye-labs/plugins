@@ -174,18 +174,19 @@ development. Each role has an Akan name reflecting its function.
 
 | Akan Term | Meaning | Role in the Anokye System |
 |-----------|---------|--------------------------|
-| **Okyerema** | Master drummer | The coordinator — creates issues, builds hierarchies, reports status. Never implements. |
+| **Okyeame** | Spokesperson | The coordinator — the face you interact with. Creates issues, builds hierarchies, reports status, coordinates agents. The Mayor. |
+| **Okyerema** | Master drummer | The automation specialist — configures agentic workflows, sets up patrols, scaffolds CI/CD. The Deacon. Invoked by Okyeame. |
 | **Asafo** | Warrior company | Implementation agents — `@copilot` and other agents that pick up Tasks, write code, open PRs |
 | **Adwoma** | Work | GitHub Issues as external memory — every task, decision, status change. The single source of truth. |
 | **Ananse** | Spider (folklore) | The agentic runtime — `@copilot` coding agent, `gh-aw` workflows, GitHub Actions |
 | **Sankofa** | Return and get it | Automated health patrols — scheduled workflows that detect stale, orphaned, or stuck work |
-| **Okyeame** | Spokesperson | Client applications — human-facing surfaces (PR UI, project boards, dashboards) |
 | **Akwaaba** | Welcome | The reference repository — conventions, onboarding, team knowledge |
 
 ### Principle Summary
 
-1. **Okyerema coordinates, Asafo implements** — the drummer sets rhythm, warriors execute
-2. **Adwoma is the single source of truth** — if it's not in an issue, it doesn't exist
-3. **Zero-footprint computing** — agents query the API, never rely on local memory
-4. **Sankofa keeps the system healthy** — automated patrols catch what humans miss
-5. **Automate the predictable, ask about the ambiguous** — human attention for judgment only
+1. **Okyeame coordinates, Asafo implements** — the spokesperson sets direction, warriors execute
+2. **Okyerema automates the rhythm** — the master drummer configures the workflows that keep the beat
+3. **Adwoma is the single source of truth** — if it's not in an issue, it doesn't exist
+4. **Zero-footprint computing** — agents query the API, never rely on local memory
+5. **Sankofa keeps the system healthy** — automated patrols catch what humans miss
+6. **Automate the predictable, ask about the ambiguous** — human attention for judgment only
