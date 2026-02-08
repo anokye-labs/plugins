@@ -32,7 +32,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$pluginRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+$pluginRoot = Split-Path -Parent $PSScriptRoot
 
 # Resolve to absolute path
 $TargetRepo = Resolve-Path $TargetRepo
