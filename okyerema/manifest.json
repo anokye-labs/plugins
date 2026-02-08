@@ -9,8 +9,8 @@
     "name": "okyerema",
     "path": ".github/skills/okyerema",
     "entryPoint": "SKILL.md",
-    "references": 6,
-    "scripts": 7
+    "references": 7,
+    "scripts": 10
   },
   "documentation": {
     "howWeWork": "how-we-work.md",

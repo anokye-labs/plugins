@@ -132,6 +132,7 @@ For detailed GraphQL examples and workflows, reference these guides:
 - **[Projects](references/projects.md)** — GitHub Projects V2 GraphQL API
 - **[PR Reviews](references/pr-reviews.md)** — Reply to, resolve, and find unresolved review threads
 - **[Labels](references/labels.md)** — When and how to use labels properly
+- **[Status Commands](references/status-commands.md)** — Slash command reference (/sitrep, /prcheck, /health, etc.)
 - **[Errors & Fixes](references/errors.md)** — Common mistakes and solutions
 
 ## Helper Scripts
@@ -142,6 +143,9 @@ Invoke these scripts for common operations:
 - **[scripts/New-IssueWithType.ps1](scripts/New-IssueWithType.ps1)** — Create issue with proper type
 - **[scripts/Update-IssueHierarchy.ps1](scripts/Update-IssueHierarchy.ps1)** — Build tasklist relationships
 - **[scripts/Test-Hierarchy.ps1](scripts/Test-Hierarchy.ps1)** — Verify relationships via GraphQL
+- **[scripts/Get-Sitrep.ps1](scripts/Get-Sitrep.ps1)** — Tactical status report (/sitrep)
+- **[scripts/Get-PRHealth.ps1](scripts/Get-PRHealth.ps1)** — Deep PR health check (/prcheck)
+- **[scripts/Get-HierarchyHealth.ps1](scripts/Get-HierarchyHealth.ps1)** — Structural validation (/health)
 
 ## Labels: Use Sparingly
 
