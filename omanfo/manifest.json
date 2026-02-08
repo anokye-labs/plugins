@@ -1,7 +1,7 @@
 {
-  "name": "okyerema",
+  "name": "omanfo",
   "version": "1.0.0",
-  "description": "Project orchestration skill for GitHub Copilot — issue types, hierarchy, PR reviews",
+  "description": "The community toolkit for GitHub Copilot — orchestration, documents, product management, automation",
   "author": "anokye-labs",
   "license": "MIT",
   "repository": "https://github.com/anokye-labs/plugins",

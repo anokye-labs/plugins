@@ -1,10 +1,10 @@
-# Okyerema Plugin
+# Omanfo Plugin
 
-**Workflow automation skill for GitHub Copilot** — configures agentic workflows, CI/CD pipelines, patrol schedules, and automation scaffolding. The master drummer sets the rhythm.
+**The community toolkit for GitHub Copilot** — project orchestration, document processing, product management, and workflow automation. All the skills the asafo needs.
 
 ## What It Does
 
-When installed, Okyerema gives GitHub Copilot the ability to:
+When installed, Omanfo gives GitHub Copilot the ability to:
 
 - **Configure agentic workflows** — create gh-aw definitions, GitHub Actions, Temporal workflows
 - **Scaffold automation** — audit repos for missing infrastructure, propose and create it
@@ -14,7 +14,7 @@ When installed, Okyerema gives GitHub Copilot the ability to:
 
 ## Role in the Anokye System
 
-Okyerema is the master drummer of the asafo — invoked by the **Okyeame** (linguist) when the warriors need their rhythm set. It can also operate independently as a modular agent for security-sensitive workflow operations.
+Omanfo ("the people") is the shared toolkit of the asafo. It bundles the **Okyerema** (master drummer) agent alongside shared skills for documents, product management, and productivity — everything the warriors need to do their work.
 
 See **[Okyeame](../okyeame/)** for the linguist agent.
 
@@ -24,7 +24,7 @@ See **[Okyeame](../okyeame/)** for the linguist agent.
 
 ```powershell
 # From your target repo root
-& S:\anokye-labs\plugins\okyerema\scripts\Install-Plugin.ps1 -TargetRepo .
+& S:\anokye-labs\plugins\omanfo\scripts\Install-Plugin.ps1 -TargetRepo .
 ```
 
 ### Manual Install

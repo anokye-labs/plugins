@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Verifies the Okyerema plugin installation in a target repository.
+    Verifies the Omanfo plugin installation in a target repository.
 
 .DESCRIPTION
     Checks that all required files are present, scripts are executable,
@@ -63,7 +63,7 @@ function Test-Warning {
     }
 }
 
-Write-Host "`n🔍 Verifying Okyerema Plugin Installation" -ForegroundColor Cyan
+Write-Host "`n🔍 Verifying Omanfo Plugin Installation" -ForegroundColor Cyan
 Write-Host "   Target: $TargetRepo`n" -ForegroundColor Gray
 
 # Skill structure

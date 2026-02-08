@@ -1,6 +1,6 @@
 # Plugin Evaluations
 
-Test scenarios to validate the Okyerema plugin after installation. Each evaluation is a self-contained test that can be run independently.
+Test scenarios to validate the Omanfo plugin after installation. Each evaluation is a self-contained test that can be run independently.
 
 ## Running Evaluations
 

@@ -7,7 +7,7 @@ Installable GitHub Copilot skills and agent plugins for the Anokye Labs ecosyste
 | Plugin | Role | Description | Status |
 |--------|------|-------------|--------|
 | [okyeame](okyeame/) | Linguist | The voice of the system — status updates, blocker reports, clarity requests | ✅ Ready |
-| [okyerema](okyerema/) | Master Drummer | Master drummer of the asafo — keeps the warriors in rhythm through automation | ✅ Ready |
+| [omanfo](omanfo/) | The People | Community toolkit — orchestration, documents, product management, automation | ✅ Ready |
 
 ## The Anokye System
 
@@ -24,8 +24,8 @@ A multi-agent orchestration architecture for software development using Akan nam
 Each plugin includes an `Install-Plugin.ps1` script that copies the skill files into your repository:
 
 ```powershell
-# Install both plugins
-& S:\anokye-labs\plugins\okyerema\scripts\Install-Plugin.ps1 -TargetRepo .
+# Install the plugin
+& S:\anokye-labs\plugins\omanfo\scripts\Install-Plugin.ps1 -TargetRepo .
 ```
 
 Or manually copy the `.github/skills/<plugin-name>/` directory into your repository.

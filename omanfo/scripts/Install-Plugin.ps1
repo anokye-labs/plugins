@@ -1,9 +1,9 @@
 <#
 .SYNOPSIS
-    Installs the Okyerema plugin into a target repository.
+    Installs the Omanfo plugin into a target repository.
 
 .DESCRIPTION
-    Copies the Okyerema skill files, documentation, and agent entry point
+    Copies the Okyerema skill files, shared asafo skills, documentation, and agent entry point
     into the target repository. Optionally skips documentation or agent files.
 
 .PARAMETER TargetRepo
@@ -65,7 +65,7 @@ function Copy-PluginFiles {
     Write-Host "  ✅ $Label" -ForegroundColor Green
 }
 
-Write-Host "`n🥁 Installing Okyerema Plugin" -ForegroundColor Cyan
+Write-Host "`n🥁 Installing Omanfo Plugin" -ForegroundColor Cyan
 Write-Host "   Target: $TargetRepo`n" -ForegroundColor Gray
 
 # 1. Install skill files (always)
@@ -112,7 +112,7 @@ if (-not $SkipAgents) {
 
 # Summary
 $fileCount = (Get-ChildItem $skillDst -Recurse -File).Count
-Write-Host "`n✅ Okyerema plugin installed successfully!" -ForegroundColor Green
+Write-Host "`n✅ Omanfo plugin installed successfully!" -ForegroundColor Green
 Write-Host "   Skill files: $fileCount" -ForegroundColor Gray
 Write-Host "   Location: $skillDst" -ForegroundColor Gray
 

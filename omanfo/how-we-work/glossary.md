@@ -52,6 +52,15 @@ At Anokye Labs, we draw from Akan culture to name our systems and describe how w
 
 ---
 
+### Omanfo (oh-MAHN-fo)
+**Meaning:** The people, the community
+
+**In our system:** The shared plugin that bundles the Okyerema agent and all asafo skills into one installable package. Named "the people" because it contains everything the community needs.
+
+**Plugin:** [anokye-labs/plugins/omanfo](https://github.com/anokye-labs/plugins/tree/main/omanfo)
+
+---
+
 ## How They Fit Together
 
 ```

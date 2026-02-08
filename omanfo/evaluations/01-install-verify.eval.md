@@ -13,7 +13,7 @@ Verify the plugin installs correctly and all files are present in the target rep
 Create or use an existing test repository:
 
 ```powershell
-$testRepo = "S:\anokye-labs\test-okyerema-eval"
+$testRepo = "S:\anokye-labs\test-omanfo-eval"
 mkdir $testRepo -Force
 cd $testRepo
 git init
@@ -26,7 +26,7 @@ git init
 **Action:** Run the installation script.
 
 ```powershell
-& S:\anokye-labs\plugins\okyerema\scripts\Install-Plugin.ps1 -TargetRepo $testRepo -Force
+& S:\anokye-labs\plugins\omanfo\scripts\Install-Plugin.ps1 -TargetRepo $testRepo -Force
 ```
 
 **Expected:**
@@ -78,7 +78,7 @@ Test-Path "$testRepo\agents.md"
 ```powershell
 Remove-Item "$testRepo\how-we-work.md" -Force
 Remove-Item "$testRepo\agents.md" -Force
-& S:\anokye-labs\plugins\okyerema\scripts\Install-Plugin.ps1 -TargetRepo $testRepo -SkipDocs -SkipAgents -Force
+& S:\anokye-labs\plugins\omanfo\scripts\Install-Plugin.ps1 -TargetRepo $testRepo -SkipDocs -SkipAgents -Force
 ```
 
 **Expected:**
@@ -91,7 +91,7 @@ Remove-Item "$testRepo\agents.md" -Force
 **Action:** Run the verification script.
 
 ```powershell
-& S:\anokye-labs\plugins\okyerema\scripts\Verify-Installation.ps1 -TargetRepo $testRepo -Owner anokye-labs
+& S:\anokye-labs\plugins\omanfo\scripts\Verify-Installation.ps1 -TargetRepo $testRepo -Owner anokye-labs
 ```
 
 **Expected:**
