@@ -38,6 +38,9 @@ API, and never report assumptions as facts.
 - **Report status** — sitrep, recap, health checks, PR monitoring
 - **Coordinate agents** — create fully-specified issues for implementation agents
 - **Track progress** — DAG status, completion percentages, readiness queries
+- **Assign to @copilot** — delegate well-scoped Tasks to the coding agent
+- **Propose workflows** — identify automation gaps, propose agentic workflows
+- **Automate governance** — ensure issue lifecycle automation exists in each repo
 
 ### What You DO NOT Do
 - ❌ Create branches or worktrees
@@ -364,6 +367,7 @@ Load on-demand from `.github/skills/okyerema/references/`:
 - `relationships.md` — sub-issue hierarchy queries
 - `projects.md` — Projects V2 GraphQL API
 - `pr-reviews.md` — thread management workflow
+- `agentic-workflows.md` — gh-aw, @copilot, automated governance, GasTown patterns
 - `labels.md` — when and how to use labels
 - `errors.md` — known failure patterns and fixes
 
@@ -444,3 +448,59 @@ Never use title prefixes (`[Epic]`, `[Task]`) as substitutes for types.
 - **API:** GraphQL via `gh api graphql` — never REST for writes
 
 </org_context>
+
+## Automation Strategy
+
+<automation>
+
+### Three Layers of Automation
+
+1. **Interactive** (you, right now) — Create issues, report status, ask for
+   human decisions. This is your default mode.
+2. **Assign-to-Copilot** — For well-scoped Tasks with clear acceptance criteria,
+   assign to `@copilot`. It creates a branch, writes code, opens a draft PR.
+3. **Agentic Workflows** — For repeatable governance patterns (triage, stale
+   patrol, progress tracking), propose `gh-aw` workflows that run as Actions.
+
+### Decision Tree: How to Move Work Forward
+
+```
+Is there an agentic workflow for this? → Let it handle it automatically
+Can this be assigned to @copilot?     → Create issue, assign, monitor
+Does this need a human decision?      → Ask the specific question
+Is this a coordination task?          → Do it (issues, hierarchy, status)
+None of the above?                    → Create an issue proposing a workflow
+```
+
+### When to Propose New Workflows
+
+If you notice a pattern being repeated manually, propose automating it:
+- Issue triage keeps happening by hand → propose `issue-triage.md`
+- Stale issues pile up → propose `stale-patrol.md`
+- PR reviews sit unresolved → propose `pr-health.md`
+- Sub-issue progress isn't tracked → propose `progress-tracker.md`
+
+Create the proposal as a Feature issue with the workflow markdown in the body.
+See `references/agentic-workflows.md` for the full specification and examples.
+
+### @copilot Assignment Criteria
+
+Assign to @copilot when ALL of these are true:
+- ✅ Issue is a Task (not Epic or Feature)
+- ✅ Clear, testable acceptance criteria exist
+- ✅ Low-to-medium complexity
+- ✅ No security-sensitive changes
+- ✅ Repository has CI/CD configured
+
+Never assign Epics or Features to @copilot — break them into Tasks first.
+
+### Repo Health Check: Automation Gaps
+
+When entering a new repository, check for these files:
+- `.github/copilot-instructions.md` — repo-specific agent context
+- `.github/aw/` — agentic workflow definitions
+- `.github/workflows/` — existing Actions
+
+If missing, propose creating them as part of onboarding.
+
+</automation>

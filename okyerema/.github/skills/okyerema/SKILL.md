@@ -17,9 +17,9 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 
 1. **Use GitHub organization issue types** (Epic, Feature, Task, Bug) — never labels or title prefixes
 2. **Use GraphQL API for all write operations** — gh CLI is insufficient
-3. **Use Tasklists for parent-child relationships** — markdown checkboxes in issue body
+3. **Use sub-issues API for parent-child relationships** — `addSubIssue`/`removeSubIssue` mutations
 4. **Use labels only for categorization** — never for structure
-5. **Wait 2-5 minutes** after tasklist updates for GitHub to parse relationships
+5. **Automate issue governance** — propose agentic workflows for repos that lack them
 6. **Hierarchy: Epic → Feature → Task** — 3 levels when grouping exists, 2 levels when tasks are standalone
 
 ## When to Use This Skill
@@ -28,7 +28,8 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 - Setting up issue hierarchies
 - Querying or manipulating GitHub Projects
 - Checking issue relationships
-- Responding to and resolving PR review threads
+- Automating issue governance with agentic workflows
+- Assigning work to @copilot coding agent
 - Understanding how work is structured
 
 ## Quick Operations
@@ -62,16 +63,19 @@ mutation {
 
 ### Create Parent-Child Relationship
 
-Update the **parent** issue body with a tasklist:
+Use the sub-issues API (tasklists are retired as of April 2025):
 
-```markdown
-## 📋 Tracked Features
-
-- [ ] #106 - Feature Name
-- [ ] #107 - Another Feature
+```graphql
+mutation {
+  addSubIssue(input: {
+    issueId: "I_parent_node_id"
+    subIssueId: "I_child_node_id"
+  }) {
+    issue { id }
+    subIssue { id }
+  }
+}
 ```
-
-GitHub parses this into `trackedIssues` / `trackedInIssues` relationships automatically.
 
 ### Verify Relationships
 
@@ -80,12 +84,18 @@ query {
   repository(owner: "anokye-labs", name: "repo") {
     issue(number: 14) {
       issueType { name }
-      trackedIssues(first: 50) {
-        nodes { number title issueType { name } }
+      subIssues(first: 50) {
+        nodes { number title state issueType { name } }
       }
+      parentIssue { number title }
     }
   }
 }
+```
+
+Note: Sub-issues queries require the `GraphQL-Features: sub_issues` header:
+```powershell
+gh api graphql -H "GraphQL-Features: sub_issues" -f query='...'
 ```
 
 ## Hierarchy Patterns
@@ -119,7 +129,7 @@ Epic #1: Phase 0 Setup
 
 ❌ `gh issue create --label "epic"` — Labels are not types
 ❌ `gh issue create --title "[Epic] Phase 2"` — Prefixes are not types
-❌ Expect instant relationship updates — GitHub needs 2-5 minutes
+❌ Use tasklists for hierarchy — Tasklists are retired; use sub-issues API
 ❌ Use gh CLI for project field manipulation — Use GraphQL
 ❌ Use labels for structure — Labels are for categorization only
 
@@ -133,6 +143,7 @@ For detailed GraphQL examples and workflows, reference these guides:
 - **[PR Reviews](references/pr-reviews.md)** — Reply to, resolve, and find unresolved review threads
 - **[Labels](references/labels.md)** — When and how to use labels properly
 - **[Status Commands](references/status-commands.md)** — Slash command reference (/sitrep, /prcheck, /health, etc.)
+- **[Agentic Workflows](references/agentic-workflows.md)** — gh-aw, @copilot assignment, automated governance, GasTown patterns
 - **[Errors & Fixes](references/errors.md)** — Common mistakes and solutions
 
 ## Helper Scripts
