@@ -1,0 +1,28 @@
+{
+  "name": "okyerema",
+  "version": "1.0.0",
+  "description": "Project orchestration skill for GitHub Copilot — issue types, hierarchy, PR reviews",
+  "author": "anokye-labs",
+  "license": "MIT",
+  "repository": "https://github.com/anokye-labs/plugins",
+  "skill": {
+    "name": "okyerema",
+    "path": ".github/skills/okyerema",
+    "entryPoint": "SKILL.md",
+    "references": 6,
+    "scripts": 7
+  },
+  "documentation": {
+    "howWeWork": "how-we-work.md",
+    "agents": "agents.md"
+  },
+  "requirements": {
+    "powershell": "7.0+",
+    "githubCli": "2.0+",
+    "orgIssueTypes": ["Epic", "Feature", "Task", "Bug"]
+  },
+  "evaluations": {
+    "count": 8,
+    "path": "evaluations/"
+  }
+}
