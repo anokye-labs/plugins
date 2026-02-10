@@ -139,6 +139,10 @@ Epic #1: Phase 0 Setup
 
 **The Exception:** While the core principle states "Use GraphQL API for all write operations," **Copilot bot assignment is a documented exception** that requires the REST API.
 
+**Prerequisites:**
+- Copilot coding agent must be enabled at the organization level before assignment will work
+- Standard `/assignees` and `/collaborators` API endpoints do NOT list Copilot (org-level enablement is verified separately)
+
 **Why REST is Required:**
 - Copilot's node ID (e.g., `BOT_kgDOC9w8XQ`) is a BOT type, not a User type
 - The GraphQL `addAssigneesToAssignable` mutation returns `NOT_FOUND` error for BOT-type node IDs
@@ -155,7 +159,8 @@ gh api repos/{owner}/{repo}/issues/{number}/assignees \
 **Alternative (gh CLI):**
 ```bash
 # Using gh issue edit command (wraps REST API)
-gh issue edit {number} --add-assignee Copilot
+# NOTE: @ prefix is REQUIRED for CLI (casing doesn't matter: @copilot or @Copilot)
+gh issue edit {number} --add-assignee "@copilot"
 ```
 
 **What Does NOT Work:**

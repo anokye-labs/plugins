@@ -74,19 +74,18 @@ gh api repos/{owner}/{repo}/issues/{num}/assignees \
   -f 'assignees[]=Copilot'
 
 # Or using gh CLI wrapper (also uses REST internally)
-gh issue edit {num} --add-assignee Copilot
+# NOTE: @ prefix is REQUIRED for CLI (casing doesn't matter: @copilot or @Copilot)
+gh issue edit {num} --add-assignee "@copilot"
 ```
+
+**Prerequisites:**
+- Copilot coding agent must be enabled at the organization level before assignment will work
+- Copilot does NOT appear in standard `/assignees` or `/collaborators` API endpoints (org-level enablement is required)
 
 **Why REST is Required:**
 - Copilot's node ID (e.g., `BOT_kgDOC9w8XQ`) is a BOT type, not a User type
 - GraphQL `addAssigneesToAssignable` mutation returns `NOT_FOUND` for BOT IDs
 - REST API `/repos/{owner}/{repo}/issues/{number}/assignees` properly handles bot assignees
-
-**Discovering Copilot in the Repository:**
-```bash
-# Check if Copilot is available as an assignee
-gh api repos/{owner}/{repo}/assignees --jq '.[] | select(.login=="Copilot")'
-```
 
 ## Layer 3: Agentic Workflows (gh-aw)
 
