@@ -121,7 +121,9 @@ foreach ($issue in $allIssues) {
     # Parse updatedAt timestamp
     $updatedAt = [DateTime]::Parse($issue.updatedAt)
     
-    # Determine last activity date (updatedAt vs last comment)
+    # Determine last activity date
+    # Note: issue.updatedAt reflects all activity including comment edits, label changes, etc.
+    # The last comment createdAt is checked separately to ensure we catch comment activity
     $lastActivityDate = $updatedAt
     if ($issue.comments -and $issue.comments.nodes -and $issue.comments.nodes.Count -gt 0) {
         $lastCommentDate = [DateTime]::Parse($issue.comments.nodes[0].createdAt)

@@ -260,10 +260,14 @@ foreach ($issue in $allIssues) {
 
 $score = 100
 
-# Deduct for cycles (critical - up to 40 points, 20 per cycle)
-$score -= [math]::Min(40, $uniqueCycles.Count * 20)
+# Deduct for cycles (critical - up to 40 points total)
+# Use logarithmic scaling to penalize additional cycles while respecting the cap
+if ($uniqueCycles.Count -gt 0) {
+    $cycleDeduction = [math]::Min(40, 15 + [math]::Floor(15 * [math]::Log($uniqueCycles.Count + 1, 2)))
+    $score -= $cycleDeduction
+}
 
-# Deduct for orphans (20 points penalty, scaled by ratio)
+# Deduct for orphans (up to 30 points penalty, scaled by ratio)
 if ($totalIssues -gt 0) {
     $orphanRatio = $orphans.Count / $totalIssues
     $score -= [math]::Min(30, [math]::Floor($orphanRatio * 100))
