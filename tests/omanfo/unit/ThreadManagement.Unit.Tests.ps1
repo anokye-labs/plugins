@@ -138,7 +138,7 @@ Describe "Resolve-ReviewThreads" {
             return $mockResponse 
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
         
-        { & $scriptPath -Owner "test-org" -Repo "test-repo" -ThreadIds @("PRRT_123") *>&1 } | Should -Not -Throw
+        { & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 -ThreadIds @("PRRT_123") *>&1 } | Should -Not -Throw
     }
 
     It "Should resolve multiple threads" {
@@ -147,6 +147,6 @@ Describe "Resolve-ReviewThreads" {
             return $mockResponse 
         } -ParameterFilter { $args[0] -eq 'api' }
         
-        { & $scriptPath -Owner "test-org" -Repo "test-repo" -ThreadIds @("PRRT_123", "PRRT_456", "PRRT_789") *>&1 } | Should -Not -Throw
+        { & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 -ThreadIds @("PRRT_123", "PRRT_456", "PRRT_789") *>&1 } | Should -Not -Throw
     }
 }
