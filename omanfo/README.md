@@ -49,7 +49,7 @@ your-repo/
 │   ├── SKILL.md                    # Main skill (~165 lines)
 │   ├── references/
 │   │   ├── issue-types.md          # Issue type GraphQL operations
-│   │   ├── relationships.md        # Hierarchy via tasklists
+│   │   ├── relationships.md        # Hierarchy via sub-issues API
 │   │   ├── projects.md             # Projects V2 API
 │   │   ├── pr-reviews.md           # PR review thread management
 │   │   ├── labels.md               # Label best practices
@@ -57,7 +57,7 @@ your-repo/
 │   └── scripts/
 │       ├── Get-IssueTypeIds.ps1    # Get org type IDs
 │       ├── New-IssueWithType.ps1   # Create typed issues
-│       ├── Update-IssueHierarchy.ps1  # Build tasklist relationships
+│       ├── Update-IssueHierarchy.ps1  # Build parent-child relationships
 │       ├── Test-Hierarchy.ps1      # Verify hierarchy trees
 │       ├── Get-UnresolvedThreads.ps1  # List PR review threads
 │       ├── Reply-ReviewThread.ps1  # Reply to review threads

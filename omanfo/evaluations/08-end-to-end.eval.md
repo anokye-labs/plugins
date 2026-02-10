@@ -49,8 +49,8 @@ A team wants to plan a new feature "User Notifications" with:
 
 **Expected:**
 - [ ] Both features created with Feature type
-- [ ] Epic body updated with tasklist containing both features
-- [ ] Hierarchy is established (may need to wait for GitHub parsing)
+- [ ] Features linked to Epic via sub-issues API
+- [ ] Hierarchy is established immediately
 
 ### 8.4 Create Tasks Under Features
 
@@ -60,8 +60,8 @@ A team wants to plan a new feature "User Notifications" with:
 
 **Expected:**
 - [ ] 3 tasks created with Task type
-- [ ] Feature body updated with tasklist
-- [ ] Tasks are linked to the feature
+- [ ] Tasks linked to feature via sub-issues API
+- [ ] Tasks are sub-issues of the feature
 
 ### 8.5 Verify Full Hierarchy
 

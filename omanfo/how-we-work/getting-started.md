@@ -52,7 +52,7 @@ Epic: Phase 2 - Integration
    └─ Task: Write examples
 ```
 
-These relationships are created using **Tasklists** — a GitHub feature that turns markdown checkboxes into tracked relationships.
+These relationships are created using GitHub's **sub-issues API** — a GraphQL API that creates parent-child relationships between issues.
 
 ## GitHub Projects
 
