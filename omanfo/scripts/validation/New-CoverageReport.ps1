@@ -24,6 +24,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Import shared helpers
+Import-Module (Join-Path $PSScriptRoot "ValidationHelpers.psm1") -Force
+
 # Get paths
 $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))
 $omanfoRoot = Join-Path $repoRoot "omanfo"
@@ -47,48 +50,8 @@ $scripts = Get-ChildItem $skillScriptsPath -Filter "*.ps1" -File
 # Get all evaluations
 $evals = Get-ChildItem $evalsPath -Filter "*.eval.md" -File
 
-# Build feature map
-$features = @{}
-
-# Map scripts to features
-foreach ($script in $scripts) {
-    $scriptName = $script.BaseName
-    $featureName = switch -Regex ($scriptName) {
-        'IssueType' { 'issue-types'; break }
-        'Hierarchy|SubIssue|Parent' { 'hierarchy'; break }
-        'Project' { 'projects'; break }
-        'PR|Review|Thread' { 'pr-reviews'; break }
-        'Label' { 'labels'; break }
-        'Sitrep|Health' { 'end-to-end'; break }
-        'New-IssueWithType' { 'create-issues'; break }
-        default { $scriptName.ToLower(); break }
-    }
-    
-    if (-not $features.ContainsKey($featureName)) {
-        $features[$featureName] = @{
-            Scripts = [System.Collections.ArrayList]::new()
-            Evaluations = [System.Collections.ArrayList]::new()
-        }
-    }
-    
-    [void]$features[$featureName].Scripts.Add($script.Name)
-}
-
-# Map evaluations to features
-foreach ($eval in $evals) {
-    if ($eval.Name -match '^\d+-(.+)\.eval\.md$') {
-        $featureName = $matches[1]
-        
-        if (-not $features.ContainsKey($featureName)) {
-            $features[$featureName] = @{
-                Scripts = [System.Collections.ArrayList]::new()
-                Evaluations = [System.Collections.ArrayList]::new()
-            }
-        }
-        
-        [void]$features[$featureName].Evaluations.Add($eval.Name)
-    }
-}
+# Build feature map using shared helper
+$features = Build-FeatureMap -ScriptPath $skillScriptsPath -EvalPath $evalsPath
 
 # Calculate statistics
 $totalFeatures = $features.Count
@@ -103,7 +66,7 @@ $coveragePercent = if ($totalFeatures -gt 0) {
 $report = @"
 # Omanfo Plugin Coverage Report
 
-**Generated:** $(Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC")  
+**Generated:** $((Get-Date).ToUniversalTime().ToString("yyyy-MM-dd HH:mm:ss")) UTC  
 **Repository:** anokye-labs/plugins  
 **Plugin:** Omanfo v$($manifest.version)
 

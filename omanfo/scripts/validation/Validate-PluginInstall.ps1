@@ -59,7 +59,7 @@ try {
     # Run installation
     Write-Host "`nRunning installation..." -ForegroundColor White
     $installOutput = & $installScript -TargetRepo $testRepoPath -Force 2>&1
-    $installSuccess = $LASTEXITCODE -eq 0 -or $null -eq $LASTEXITCODE
+    $installSuccess = $null -eq $LASTEXITCODE -or $LASTEXITCODE -eq 0
     
     Write-ValidationResult "Installation completed successfully" $installSuccess
     

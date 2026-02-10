@@ -25,6 +25,9 @@ param(
 $ErrorActionPreference = "Stop"
 $script:FailureCount = 0
 
+# Import shared helpers
+Import-Module (Join-Path $PSScriptRoot "ValidationHelpers.psm1") -Force
+
 function Write-ValidationResult {
     param(
         [string]$Message,
@@ -60,48 +63,8 @@ Write-Host "Found $($scripts.Count) skill scripts" -ForegroundColor White
 $evals = Get-ChildItem $evalsPath -Filter "*.eval.md" -File
 Write-Host "Found $($evals.Count) evaluation scenarios`n" -ForegroundColor White
 
-# Build feature map from scripts
-$features = @{}
-foreach ($script in $scripts) {
-    $scriptName = $script.BaseName
-    # Extract feature name from script (e.g., "Get-IssueTypeIds" -> "issue-types")
-    $featureName = switch -Regex ($scriptName) {
-        'IssueType' { 'issue-types'; break }
-        'Hierarchy|SubIssue|Parent' { 'hierarchy'; break }
-        'Project' { 'projects'; break }
-        'PR|Review|Thread' { 'pr-reviews'; break }
-        'Label' { 'labels'; break }
-        'Sitrep|Health' { 'end-to-end'; break }
-        'New-IssueWithType' { 'create-issues'; break }
-        default { $scriptName.ToLower(); break }
-    }
-    
-    if (-not $features.ContainsKey($featureName)) {
-        $features[$featureName] = @{
-            Scripts = [System.Collections.ArrayList]::new()
-            Evaluations = [System.Collections.ArrayList]::new()
-        }
-    }
-    
-    [void]$features[$featureName].Scripts.Add($script.Name)
-}
-
-# Map evaluations to features
-foreach ($eval in $evals) {
-    # Extract feature name from eval file (e.g., "01-install-verify.eval.md" -> "install-verify")
-    if ($eval.Name -match '^\d+-(.+)\.eval\.md$') {
-        $featureName = $matches[1]
-        
-        if (-not $features.ContainsKey($featureName)) {
-            $features[$featureName] = @{
-                Scripts = [System.Collections.ArrayList]::new()
-                Evaluations = [System.Collections.ArrayList]::new()
-            }
-        }
-        
-        [void]$features[$featureName].Evaluations.Add($eval.Name)
-    }
-}
+# Build feature map using shared helper
+$features = Build-FeatureMap -ScriptPath $skillScriptsPath -EvalPath $evalsPath
 
 # Analyze coverage
 Write-Host "Coverage Analysis:" -ForegroundColor White
