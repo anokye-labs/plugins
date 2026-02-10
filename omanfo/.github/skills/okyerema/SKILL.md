@@ -32,6 +32,17 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 - Assigning work to @copilot coding agent
 - Understanding how work is structured
 
+## Deployment
+
+When the Anokye System is deployed to a target repository (via `scripts/Install-Anokye.ps1`), it creates:
+
+- **`.github/skills/okyerema/`** — The Okyerema skill files, scripts, and references
+- **`.github/copilot-instructions.md`** — Repository-level rules that all Copilot sessions automatically pick up
+- **`how-we-work/`** — Team documentation and conventions (optional)
+- **`agents.md`** — Agent entry point (optional)
+
+The `.github/copilot-instructions.md` file establishes the standard rules for how agents operate in an Anokye-managed repository. Without it, agents won't know the conventions. This is how Okyerema "sets the rhythm" — by configuring the rules that all agents follow.
+
 ## Quick Operations
 
 ### Get Organization Issue Type IDs

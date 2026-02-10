@@ -91,6 +91,10 @@ Test-Warning "how-we-work/our-way.md" { Test-Path (Join-Path $TargetRepo "how-we
 Test-Warning "how-we-work/glossary.md" { Test-Path (Join-Path $TargetRepo "how-we-work\glossary.md") }
 Test-Warning "agents.md" { Test-Path (Join-Path $TargetRepo "agents.md") }
 
+# Repository Rules
+Write-Host "`nRepository Rules:" -ForegroundColor White
+Test-Check "copilot-instructions.md" { Test-Path (Join-Path $TargetRepo ".github\copilot-instructions.md") }
+
 # Prerequisites
 Write-Host "`nPrerequisites:" -ForegroundColor White
 Test-Check "Git repository" { Test-Path (Join-Path $TargetRepo ".git") }
