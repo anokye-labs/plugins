@@ -151,6 +151,9 @@ function Find-Cycles {
         foreach ($child in $parentToChildren[$Node]) {
             $cycle = Find-Cycles -Node $child -Path $Path
             if ($cycle) {
+                # Clean up before returning cycle
+                $Path.RemoveAt($Path.Count - 1)
+                $colors[$Node] = 2  # Black - completed
                 return $cycle
             }
         }

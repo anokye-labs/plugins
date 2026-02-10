@@ -134,7 +134,7 @@ foreach ($issue in $allIssues) {
 
     # Check if stalled
     if ($lastActivityDate -lt $thresholdDate) {
-        $daysSinceUpdate = [math]::Floor((Get-Date) - $lastActivityDate).TotalDays
+        $daysSinceUpdate = [math]::Floor(((Get-Date) - $lastActivityDate).TotalDays)
         
         # Get assignee logins
         $assigneeLogins = @()
@@ -276,7 +276,7 @@ if ($Brief) {
             # Show top 3 stalled issues for this assignee
             foreach ($issue in $assigneeIssues | Sort-Object DaysSinceUpdate -Descending | Select-Object -First 3) {
                 $blockedTag = if ($issue.IsBlocked) { " 🚫" } else { "" }
-                Write-Host "      #$($issue.Number) $($issue.Type): $($issue.Title) (${($issue.DaysSinceUpdate)}d)$blockedTag" -ForegroundColor DarkGray
+                Write-Host "      #$($issue.Number) $($issue.Type): $($issue.Title) ($($issue.DaysSinceUpdate)d)$blockedTag" -ForegroundColor DarkGray
             }
             
             if ($assigneeCount -gt 3) {
