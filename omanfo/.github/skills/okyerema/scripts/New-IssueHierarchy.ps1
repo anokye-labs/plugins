@@ -110,7 +110,12 @@ mutation {
             $addResult = $rawAddResult | ConvertFrom-Json
             if (-not $addResult.errors) {
                 Write-Host "${Indent}  → Linked #$childNum as sub-issue" -ForegroundColor Gray
+            } else {
+                $errorJson = $addResult.errors | ConvertTo-Json -Compress
+                Write-Host "${Indent}  ⚠ Failed to link #$childNum`: $errorJson" -ForegroundColor Yellow
             }
+        } else {
+            Write-Host "${Indent}  ⚠ Failed to link #$childNum`: $rawAddResult" -ForegroundColor Yellow
         }
     }
 }
@@ -239,5 +244,6 @@ elseif ($isSimple) {
     }
 }
 else {
-    Write-Error "Invalid hierarchy structure. Must have Epic with Features, Feature with Tasks, or Tasks array."
+    $providedType = if ($root.Type) { "'$($root.Type)'" } else { "none" }
+    Write-Error "Invalid hierarchy structure (Type: $providedType). Must have Epic with Features, Feature with Tasks, or Tasks array."
 }

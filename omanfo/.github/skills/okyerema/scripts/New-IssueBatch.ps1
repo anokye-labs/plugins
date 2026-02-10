@@ -116,7 +116,10 @@ mutation {
         $successCount++
     }
     catch {
-        Write-Host "  ✗ Failed to create issue '$title': $_" -ForegroundColor Red
+        Write-Host "  ✗ Failed to create issue '$title' [$typeName]: $_" -ForegroundColor Red
+        if ($_.Exception.Message -match "GraphQL") {
+            Write-Host "    Hint: This may be a GraphQL API error. Check issue type name and permissions." -ForegroundColor Yellow
+        }
         $failedCount++
     }
 }
