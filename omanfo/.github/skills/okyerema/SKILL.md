@@ -26,6 +26,7 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 
 - Creating Epics, Features, or Tasks
 - Setting up issue hierarchies
+- **Converting markdown plans into issue DAGs** — Use Invoke-PlanMaterialization.ps1 to materialize roadmaps
 - Querying or manipulating GitHub Projects
 - Checking issue relationships and dependencies
 - Finding ready or blocked work items for agent self-selection
@@ -198,6 +199,7 @@ For detailed GraphQL examples and workflows, reference these guides:
 
 - **[Issue Types](references/issue-types.md)** — Creating, updating, verifying types
 - **[Relationships](references/relationships.md)** — Parent-child, hierarchy queries, orphan detection
+- **[Plan Materialization](references/plan-materialization.md)** — Convert markdown plans into issue DAGs
 - **[Projects](references/projects.md)** — GitHub Projects V2 GraphQL API
 - **[PR Reviews](references/pr-reviews.md)** — PR intelligence suite: status, timeline, comment analysis, review submission, thread management
 - **[Labels](references/labels.md)** — When and how to use labels properly
@@ -216,8 +218,11 @@ Invoke these scripts for common operations:
 - **[scripts/Set-IssueDependency.ps1](scripts/Set-IssueDependency.ps1)** — Establish blocks/blocked-by dependency relationships
 - **[scripts/Test-Hierarchy.ps1](scripts/Test-Hierarchy.ps1)** — Verify relationships via GraphQL
 
-### Status & Health Reporting
-- **[scripts/Get-Sitrep.ps1](scripts/Get-Sitrep.ps1)** — Tactical status report (/sitrep)
+### Plan Materialization
+- **[scripts/Invoke-PlanMaterialization.ps1](scripts/Invoke-PlanMaterialization.ps1)** — Convert markdown plans into issue DAGs
+- **[scripts/Sync-PlanToIssues.ps1](scripts/Sync-PlanToIssues.ps1)** — Sync plan updates with existing issues
+
+### Status & Health Reporting- **[scripts/Get-Sitrep.ps1](scripts/Get-Sitrep.ps1)** — Tactical status report (/sitrep)
 - **[scripts/Get-PRHealth.ps1](scripts/Get-PRHealth.ps1)** — Deep PR health check (/prcheck)
 - **[scripts/Get-HierarchyHealth.ps1](scripts/Get-HierarchyHealth.ps1)** — Structural validation (/health)
 
