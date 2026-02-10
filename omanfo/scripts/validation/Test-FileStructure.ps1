@@ -55,50 +55,69 @@ if (-not (Test-Path $manifestPath)) {
 }
 
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-$skillPath = Join-Path $pluginDir $manifest.skill.path
 
-# Check SKILL.md
-$skillMd = Join-Path $skillPath "SKILL.md"
-if (Test-Path $skillMd) {
-    Write-ValidationSuccess "SKILL.md exists"
+# Support both old format (skill) and new format (skills array)
+$skillsToValidate = @()
+if ($manifest.PSObject.Properties['skills']) {
+    # New format: array of skills
+    $skillsToValidate = $manifest.skills
+} elseif ($manifest.PSObject.Properties['skill']) {
+    # Old format: single skill object
+    $skillsToValidate = @($manifest.skill)
 } else {
-    Write-ValidationError "SKILL.md not found at: $skillMd"
+    Write-ValidationError "No 'skill' or 'skills' property found in manifest"
+    exit 1
 }
 
-# Check references directory
-$referencesDir = Join-Path $skillPath "references"
-$expectedRefs = $manifest.skill.references
-if ($expectedRefs -gt 0) {
-    if (Test-Path $referencesDir) {
-        $refFiles = @(Get-ChildItem -Path $referencesDir -Filter "*.md" -File)
-        if ($refFiles.Count -gt 0) {
-            Write-ValidationSuccess "references/ directory exists with $($refFiles.Count) markdown files"
+# Validate each skill
+foreach ($skill in $skillsToValidate) {
+    Write-Host "`nValidating skill: $($skill.name)" -ForegroundColor Cyan
+    
+    $skillPath = Join-Path $pluginDir $skill.path
+    
+    # Check SKILL.md
+    $skillMd = Join-Path $skillPath "SKILL.md"
+    if (Test-Path $skillMd) {
+        Write-ValidationSuccess "[$($skill.name)] SKILL.md exists"
+    } else {
+        Write-ValidationError "[$($skill.name)] SKILL.md not found at: $skillMd"
+    }
+    
+    # Check references directory
+    $referencesDir = Join-Path $skillPath "references"
+    $expectedRefs = $skill.references
+    if ($expectedRefs -gt 0) {
+        if (Test-Path $referencesDir) {
+            $refFiles = @(Get-ChildItem -Path $referencesDir -Filter "*.md" -File)
+            if ($refFiles.Count -gt 0) {
+                Write-ValidationSuccess "[$($skill.name)] references/ directory exists with $($refFiles.Count) markdown files"
+            } else {
+                Write-ValidationError "[$($skill.name)] references/ directory exists but has no markdown files"
+            }
         } else {
-            Write-ValidationError "references/ directory exists but has no markdown files"
+            Write-ValidationError "[$($skill.name)] references/ directory not found at: $referencesDir"
         }
     } else {
-        Write-ValidationError "references/ directory not found at: $referencesDir"
+        Write-ValidationSuccess "[$($skill.name)] No references expected (manifest count: 0)"
     }
-} else {
-    Write-ValidationSuccess "No references expected (manifest count: 0)"
-}
-
-# Check scripts directory
-$scriptsDir = Join-Path $skillPath "scripts"
-$expectedScripts = $manifest.skill.scripts
-if ($expectedScripts -gt 0) {
-    if (Test-Path $scriptsDir) {
-        $scriptFiles = @(Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File)
-        if ($scriptFiles.Count -gt 0) {
-            Write-ValidationSuccess "scripts/ directory exists with $($scriptFiles.Count) PowerShell scripts"
+    
+    # Check scripts directory
+    $scriptsDir = Join-Path $skillPath "scripts"
+    $expectedScripts = $skill.scripts
+    if ($expectedScripts -gt 0) {
+        if (Test-Path $scriptsDir) {
+            $scriptFiles = @(Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File)
+            if ($scriptFiles.Count -gt 0) {
+                Write-ValidationSuccess "[$($skill.name)] scripts/ directory exists with $($scriptFiles.Count) PowerShell scripts"
+            } else {
+                Write-ValidationError "[$($skill.name)] scripts/ directory exists but has no PowerShell scripts"
+            }
         } else {
-            Write-ValidationError "scripts/ directory exists but has no PowerShell scripts"
+            Write-ValidationError "[$($skill.name)] scripts/ directory not found at: $scriptsDir"
         }
     } else {
-        Write-ValidationError "scripts/ directory not found at: $scriptsDir"
+        Write-ValidationSuccess "[$($skill.name)] No scripts expected (manifest count: 0)"
     }
-} else {
-    Write-ValidationSuccess "No scripts expected (manifest count: 0)"
 }
 
 Write-Host "`n" -NoNewline
