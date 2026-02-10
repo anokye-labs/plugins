@@ -33,6 +33,15 @@ gh api graphql -H "GraphQL-Features: sub_issues" -f query='...'
 - Children get `parent: parentIssue`
 - Relationships are immediate (no async parsing delay)
 
+### API Limits
+
+GitHub's sub-issues API has the following limits:
+- **Maximum sub-issues per parent:** 100
+- **Maximum nesting depth:** 8 levels
+- Exceeding these limits will result in silent failures or API errors
+
+For hierarchies with more than 100 direct children, consider splitting into multiple Features. For deeply nested structures beyond 8 levels, flatten the hierarchy or use alternative organization methods.
+
 ---
 
 ## Creating Relationships
