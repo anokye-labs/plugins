@@ -6,7 +6,7 @@
 
 ## Objective
 
-Verify the slash command scripts return correct structured data and that the okyerema agent correctly dispatches commands. Tests the 9 commands defined in status-commands.md.
+Verify the slash command scripts return correct structured data and that the okyerema agent correctly dispatches commands. Tests all slash commands defined in status-commands.md, including the 3 P0 script-backed commands and 6 agent-driven commands.
 
 ## Setup
 
@@ -347,7 +347,7 @@ The following commands are agent-driven and don't have dedicated scripts. They s
 
 **Action:** Request diff since a commit.
 
-> "/diff-since abc1234"
+> "/diff-since <commit-sha>"
 
 **Expected:**
 - [ ] Agent queries git log since checkpoint
