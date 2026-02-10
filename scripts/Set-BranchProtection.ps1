@@ -157,7 +157,8 @@ function Set-BranchProtectionRule {
 
     if ($RuleId) {
         # Update existing rule
-        $mutation = @"
+        # Note: gh CLI accepts '-f query=' for both queries and mutations
+        $graphqlMutation = @"
 mutation {
   updateBranchProtectionRule(input: {
     branchProtectionRuleId: "$RuleId"
@@ -178,7 +179,8 @@ mutation {
     }
     else {
         # Create new rule
-        $mutation = @"
+        # Note: gh CLI accepts '-f query=' for both queries and mutations
+        $graphqlMutation = @"
 mutation {
   createBranchProtectionRule(input: {
     repositoryId: "$RepoId"
@@ -200,7 +202,7 @@ mutation {
     }
 
     try {
-        $response = & gh api graphql -f query="$mutation" | ConvertFrom-Json
+        $response = & gh api graphql -f query="$graphqlMutation" | ConvertFrom-Json
         return $response.data
     }
     catch {
@@ -266,9 +268,9 @@ else {
 }
 
 # Define required status checks
-# The job name in the workflow is "validate" with display name "Static Validation"
+# The job ID in the workflow is "validate" (display name is "Static Validation")
 # GitHub status checks use the job ID, not the display name
-$requiredChecks = @("Static Validation")
+$requiredChecks = @("validate")
 
 Write-Host ""
 Write-ColorOutput "▶ Required status checks to configure:" -Color Blue

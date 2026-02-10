@@ -72,7 +72,7 @@ The script will:
   ℹ No branch protection rule exists
 
 ▶ Required status checks to configure:
-    - Static Validation
+    - validate
 
 ▶ Configuring branch protection...
 
@@ -81,7 +81,7 @@ The script will:
   Repository: anokye-labs/plugins
   Branch: main
   Required status checks:
-    ✓ Static Validation
+    ✓ validate
 
 PRs targeting main now require the validation workflow to pass before merging.
 
@@ -95,7 +95,7 @@ If you prefer to configure branch protection manually via the GitHub UI:
 1. Go to **Settings** → **Branches** in the repository
 2. Add or edit the branch protection rule for `main`
 3. Enable **Require status checks to pass before merging**
-4. Search for and select: **Static Validation**
+4. Search for and select: **validate** (it will display as "Static Validation")
 5. Save the rule
 
 ## Validation Workflow
@@ -140,7 +140,7 @@ Check that:
 After configuration, verify the setup:
 
 1. Create a test PR with an intentional validation error
-2. Confirm the "Static Validation" check runs and fails
+2. Confirm the "validate" check runs and fails (displays as "Static Validation")
 3. Verify the PR shows "Merging is blocked" with the failed check listed
 4. Fix the error and confirm the check passes
 5. Verify the PR becomes mergeable
