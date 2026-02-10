@@ -187,7 +187,7 @@ query {
                 
                 Start-Sleep -Seconds 2
                 
-                Write-Host "✅ Dependency established: #$task2 blocks #$task1" -ForegroundColor Green
+                Write-Host "✅ Dependency established: #$task1 blocks #$task2" -ForegroundColor Green
             }
         }
         
