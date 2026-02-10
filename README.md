@@ -2,12 +2,15 @@
 
 **Deploy the Anokye System to any GitHub repository** — turning your repo into an AI-orchestrated project management environment with multi-agent automation.
 
-## Available Plugins
+## The Plugin
 
-| Plugin | Role | Description | Status |
-|--------|------|-------------|--------|
-| [okyeame](okyeame/) | Linguist | The voice of the system — status updates, blocker reports, clarity requests | ✅ Ready |
-| [omanfo](omanfo/) | The People | Community toolkit — orchestration, documents, product management, automation | ✅ Ready |
+| Plugin | Description | Skills | Status |
+|--------|-------------|--------|--------|
+| [omanfo](omanfo/) | The Omanfo plugin containing Okyeame (agent) and Okyerema (orchestration skill) for the Anokye System | Okyeame, Okyerema | ✅ Ready |
+
+**Omanfo** ("The People") is the single plugin that contains:
+- **Okyeame** — The agent persona (linguist) for project management, status reporting, and coordination
+- **Okyerema** — The orchestration skill (master drummer) with scripts, references, and workflow automation
 
 ## The Anokye System: Three Layers Working in Harmony
 
@@ -77,14 +80,14 @@ The Anokye System can be deployed in two ways:
 
 ### Quick Start: Manual Deployment
 
-Each plugin includes an `Install-Anokye.ps1` script that deploys the full system into your repository:
+The Omanfo plugin includes an `Install-Anokye.ps1` script that deploys the full system into your repository:
 
 ```powershell
 # Deploy the Anokye System to your repository
 & S:\anokye-labs\plugins\omanfo\scripts\Install-Anokye.ps1 -TargetRepo .
 ```
 
-Or manually copy the `.github/skills/<plugin-name>/` directory into your repository.
+Or manually copy the `.github/skills/` directory from the plugin into your repository.
 
 ### What Gets Deployed
 
@@ -99,21 +102,25 @@ Your repository becomes Anokye-System-enabled, ready for orchestrated developmen
 
 ## Plugin Structure
 
-Each plugin follows a standard layout:
+The Omanfo plugin contains multiple skills and follows this structure:
 
 ```
-<plugin-name>/
+omanfo/
 ├── README.md                          # Plugin docs and usage
-├── manifest.json                      # Plugin metadata and version
-├── .github/skills/<name>/             # The skill (deployed to target repos)
-│   ├── <name>.agent.md                # Agent persona (optional)
-│   ├── SKILL.md                       # Main skill file (<500 lines)
-│   ├── references/                    # On-demand reference guides
-│   └── scripts/                       # PowerShell helper scripts
-├── how-we-work/                       # Human-facing documentation (optional)
+├── manifest.json                      # Plugin metadata with skills array
+├── okyeame.agent.md                   # Okyeame agent persona file
+├── .github/skills/
+│   ├── okyeame/                       # Okyeame skill
+│   │   └── SKILL.md                   # Main skill file (<500 lines)
+│   └── okyerema/                      # Okyerema skill  
+│       ├── SKILL.md                   # Main skill file (<500 lines)
+│       ├── references/                # On-demand reference guides
+│       └── scripts/                   # PowerShell helper scripts
+├── how-we-work/                       # Human-facing documentation
 ├── evaluations/                       # Test scenarios for validation
 └── scripts/
-    └── Install-Anokye.ps1             # Deployment script
+    ├── Install-Anokye.ps1             # Deployment script
+    └── Verify-Installation.ps1        # Verification script
 ```
 
 ## Design Principles
@@ -126,7 +133,8 @@ Each plugin follows a standard layout:
 
 ## Naming
 
-Plugins use Akan naming conventions from the Anokye System:
-- **Okyeame** (ɔkyeame) — The linguist who gives voice to the system
-- **Okyerema** (ɔkyerɛma) — The master drummer who keeps the asafo in rhythm
-- See each plugin's glossary for full terminology
+The Anokye System uses Akan naming conventions:
+- **Omanfo** (ɔmanfoɔ) — "The people" - the unified plugin containing all components
+- **Okyeame** (ɔkyeame) — The linguist who gives voice to the system (agent persona)
+- **Okyerema** (ɔkyerɛma) — The master drummer who keeps the asafo in rhythm (orchestration skill)
+- See the plugin's glossary for full terminology
