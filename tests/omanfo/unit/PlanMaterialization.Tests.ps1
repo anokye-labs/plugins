@@ -2,7 +2,7 @@
 # Pester tests for plan materialization scripts
 
 BeforeAll {
-    $scriptsPath = Join-Path $PSScriptRoot "../../.github/skills/okyerema/scripts"
+    $scriptsPath = Join-Path $PSScriptRoot "../../../omanfo/.github/skills/okyerema/scripts"
     $fixturesPath = Join-Path $PSScriptRoot "../fixtures"
 }
 

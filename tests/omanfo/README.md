@@ -2,6 +2,8 @@
 
 This directory contains the Pester 5 unit test suite for the Omanfo plugin's Okyerema scripts.
 
+**Note**: Tests are located at the repository root (`tests/omanfo/`) rather than inside the plugin directory (`omanfo/`). This keeps tests available for development and CI while excluding them from the plugin distribution package.
+
 ## Overview
 
 - **Total Tests**: 116 tests
@@ -55,7 +57,7 @@ Tests for plan-to-issue materialization:
 
 ## Test Fixtures
 
-Located in `tests/fixtures/`:
+Located in `tests/omanfo/fixtures/`:
 - **issue-types.json** - Mock organization issue type data
 - **pr-status.json** - Mock PR status and CI check data
 - **pr-review-threads.json** - Mock PR review thread data
@@ -67,24 +69,25 @@ Located in `tests/fixtures/`:
 
 ### Run All Tests
 ```powershell
-cd omanfo/tests/unit
+cd tests/omanfo/unit
 Invoke-Pester
 ```
 
 ### Run Specific Test File
 ```powershell
-Invoke-Pester -Path omanfo/tests/unit/IssueManagement.Tests.ps1
+Invoke-Pester -Path tests/omanfo/unit/IssueManagement.Tests.ps1
 ```
 
 ### Run with Detailed Output
 ```powershell
+cd tests/omanfo/unit
 Invoke-Pester -Output Detailed
 ```
 
 ### Run with Minimal Output
 ```powershell
 $config = New-PesterConfiguration
-$config.Run.Path = './omanfo/tests/unit'
+$config.Run.Path = './tests/omanfo/unit'
 $config.Output.Verbosity = 'Minimal'
 Invoke-Pester -Configuration $config
 ```
