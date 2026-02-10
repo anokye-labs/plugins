@@ -71,15 +71,36 @@ catch {
 }
 
 # Extract declared counts from manifest
-$declaredScripts = $manifest.skill.scripts
-$declaredEvaluations = $manifest.evaluations.count
-
-# Scan for actual scripts
-$scriptsPath = Join-Path $PluginPath $manifest.skill.path "scripts"
+# Support both old format (skill) and new format (skills array)
+$declaredScripts = 0
 $actualScripts = @()
-if (Test-Path $scriptsPath) {
-    $actualScripts = @(Get-ChildItem -Path $scriptsPath -Filter "*.ps1" -File | Select-Object -ExpandProperty Name)
+
+if ($manifest.PSObject.Properties['skills']) {
+    # New format: array of skills - aggregate scripts across all skills
+    foreach ($skill in $manifest.skills) {
+        $declaredScripts += $skill.scripts
+        
+        # Scan for actual scripts for each skill
+        $scriptsPath = Join-Path $PluginPath $skill.path "scripts"
+        if (Test-Path $scriptsPath) {
+            $actualScripts += @(Get-ChildItem -Path $scriptsPath -Filter "*.ps1" -File | Select-Object -ExpandProperty Name)
+        }
+    }
+} elseif ($manifest.PSObject.Properties['skill']) {
+    # Old format: single skill object
+    $declaredScripts = $manifest.skill.scripts
+    
+    # Scan for actual scripts
+    $scriptsPath = Join-Path $PluginPath $manifest.skill.path "scripts"
+    if (Test-Path $scriptsPath) {
+        $actualScripts = @(Get-ChildItem -Path $scriptsPath -Filter "*.ps1" -File | Select-Object -ExpandProperty Name)
+    }
+} else {
+    Write-Error "No 'skill' or 'skills' property found in manifest"
+    exit 1
 }
+
+$declaredEvaluations = $manifest.evaluations.count
 
 # Scan for actual evaluation files
 $evaluationsPath = Join-Path $PluginPath $manifest.evaluations.path
