@@ -18,7 +18,7 @@
     The repository owner (organization or user).
 
 .PARAMETER Repo
-    The repository name.
+    The repository name..
 
 .PARAMETER PRNumber
     The pull request number to validate.
