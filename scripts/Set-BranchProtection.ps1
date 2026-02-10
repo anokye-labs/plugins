@@ -108,10 +108,11 @@ function Get-BranchProtectionId {
         [string]$Branch
     )
 
-    # Escape double quotes to prevent GraphQL injection
-    $escapedOwner = $Owner.Replace('"', '\"')
-    $escapedRepo = $Repo.Replace('"', '\"')
-    $escapedBranch = $Branch.Replace('"', '\"')
+    # Escape backslashes and double quotes to prevent GraphQL injection
+    # Backslashes must be escaped first to avoid double-escaping
+    $escapedOwner = $Owner.Replace('\', '\\').Replace('"', '\"')
+    $escapedRepo = $Repo.Replace('\', '\\').Replace('"', '\"')
+    $escapedBranch = $Branch.Replace('\', '\\').Replace('"', '\"')
 
     $query = @"
 query {
@@ -134,7 +135,7 @@ query {
         
         $repoId = $response.data.repository.id
         $existingRule = $response.data.repository.branchProtectionRules.nodes | 
-            Where-Object { $_.pattern -eq $escapedBranch }
+            Where-Object { $_.pattern -eq $Branch }
         
         return @{
             RepoId = $repoId
@@ -158,10 +159,11 @@ function Set-BranchProtectionRule {
         [string[]]$RequiredStatusChecks
     )
 
-    # Escape double quotes to prevent GraphQL injection
-    $escapedRepoId = $RepoId.Replace('"', '\"')
-    $escapedRuleId = $RuleId.Replace('"', '\"')
-    $escapedBranch = $Branch.Replace('"', '\"')
+    # Escape backslashes and double quotes to prevent GraphQL injection
+    # Backslashes must be escaped first to avoid double-escaping
+    $escapedRepoId = $RepoId.Replace('\', '\\').Replace('"', '\"')
+    $escapedRuleId = $RuleId.Replace('\', '\\').Replace('"', '\"')
+    $escapedBranch = $Branch.Replace('\', '\\').Replace('"', '\"')
 
     if ($RuleId) {
         # Update existing rule
