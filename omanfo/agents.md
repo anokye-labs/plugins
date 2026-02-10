@@ -1,6 +1,23 @@
 # Agents
 
-AI agents working in Anokye Labs repositories should use the **Okyerema** skill for all project management operations.
+AI agents working in Anokye Labs repositories should follow the **agent behavior conventions** and use the **Okyerema** skill for all project management operations.
+
+## Agent Behavior Conventions
+
+**Location:** [how-we-work/agent-conventions.md](how-we-work/agent-conventions.md)
+
+All agents must follow these core principles:
+- **Action-first** — Do the work, don't suggest it
+- **Branch-awareness** — Verify correct branch before making changes
+- **Read-docs-before-debug** — Consult documentation before trial-and-error
+- **OODA loop** — Observe → Orient → Decide → Act
+- **Issue references** — Every commit must reference the issue being worked on
+- **Structured logging** — Use consistent, parseable log formats
+- **GitHub Issues as coordination** — Issues are external memory and contracts
+- **Sub-issues for hierarchy** — Use the sub-issues API (tasklists deprecated April 2025)
+- **Agent assignment** — Assign work via `gh issue edit N --add-assignee "@copilot"`
+
+See the full [agent conventions document](how-we-work/agent-conventions.md) for details and anti-patterns.
 
 ## The Okyerema Skill
 
