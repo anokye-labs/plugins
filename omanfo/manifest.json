@@ -32,7 +32,7 @@
     "orgIssueTypes": ["Epic", "Feature", "Task", "Bug"]
   },
   "evaluations": {
-    "count": 9,
+    "count": 10,
     "path": "evaluations/"
   }
 }
