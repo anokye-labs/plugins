@@ -62,7 +62,22 @@ Monitor these issue events:
 
 ### 2. Type Detection Logic
 
-**Note:** This agent applies **labels** for type classification, not organization-level issue types. If your repository uses GitHub's organization issue types (Epic, Feature, Task, Bug), those are set at issue creation time via GraphQL. This agent adds labels as supplementary categorization.
+**Note:** This agent applies **labels** for type classification, not organization-level issue types.
+
+**Understanding the Difference:**
+- **Organization Issue Types** (Epic, Feature, Task, Bug) — Set at issue creation via GraphQL, part of issue structure, used by Okyerema for hierarchy
+- **Labels** (epic, feature, task, bug, enhancement, etc.) — Applied after creation, flexible categorization, used for filtering and automation
+
+**When to use which:**
+- If your org has issue types configured → Use Okyerema to create issues with proper types, this agent adds supplementary labels
+- If your org doesn't have issue types → This agent provides the primary classification via labels
+
+**Example:**
+```
+Issue #42 created by Okyerema:
+  issueType: Feature          ← Set at creation (structural)
+  labels: [feature, backend, P1]  ← Applied by this agent (metadata)
+```
 
 Detect issue type from content patterns:
 
