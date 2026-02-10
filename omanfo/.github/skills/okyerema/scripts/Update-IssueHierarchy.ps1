@@ -67,13 +67,19 @@ mutation {
 }
 "@
     
-    $addResult = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$addMutation" 2>&1
+    $rawAddResult = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$addMutation" 2>&1
     if ($LASTEXITCODE -eq 0) {
-        Write-Host "  ✓ Added #$($child.Number) - $($child.Title)" -ForegroundColor Gray
-        $successCount++
-        $successfulNumbers += $child.Number
+        $addResult = $rawAddResult | ConvertFrom-Json
+        if ($addResult.errors) {
+            Write-Host "  ⚠ Failed to add #$($child.Number): $($addResult.errors | ConvertTo-Json -Compress)" -ForegroundColor Yellow
+            $failedCount++
+        } else {
+            Write-Host "  ✓ Added #$($child.Number) - $($child.Title)" -ForegroundColor Gray
+            $successCount++
+            $successfulNumbers += $child.Number
+        }
     } else {
-        Write-Host "  ⚠ Failed to add #$($child.Number): $addResult" -ForegroundColor Yellow
+        Write-Host "  ⚠ Failed to add #$($child.Number): $rawAddResult" -ForegroundColor Yellow
         $failedCount++
     }
 }

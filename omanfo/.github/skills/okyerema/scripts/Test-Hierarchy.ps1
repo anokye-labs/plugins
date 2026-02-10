@@ -32,7 +32,7 @@ query {
           issueType { name }
         }
       }
-      parent {
+      parentIssue {
         number
         issueType { name }
       }
@@ -67,8 +67,8 @@ query {
     
     Write-Host "${indent}${stateIcon} #$($issue.number) [$($issue.issueType.name)] $($issue.title)" -ForegroundColor $typeColor
     
-    if ($issue.parent -and $Level -eq 0) {
-        Write-Host "${indent}  ↑ Parent: #$($issue.parent.number) [$($issue.parent.issueType.name)]" -ForegroundColor Gray
+    if ($issue.parentIssue -and $Level -eq 0) {
+        Write-Host "${indent}  ↑ Parent: #$($issue.parentIssue.number) [$($issue.parentIssue.issueType.name)]" -ForegroundColor Gray
     }
     
     if ($issue.subIssues.totalCount -gt 0) {

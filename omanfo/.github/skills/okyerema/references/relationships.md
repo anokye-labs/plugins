@@ -30,7 +30,7 @@ gh api graphql -H "GraphQL-Features: sub_issues" -f query='...'
 ### What GitHub Creates
 
 - Parent gets `subIssues: [child1, child2]`
-- Children get `parent: parentIssue`
+- Children get `parentIssue: parentIssue`
 - Relationships are immediate (no async parsing delay)
 
 ### API Limits
@@ -87,7 +87,7 @@ query {
           title
         }
       }
-      parent {
+      parentIssue {
         number
         title
       }
@@ -114,7 +114,7 @@ query {
         totalCount
         nodes { number title issueType { name } state }
       }
-      parent {
+      parentIssue {
         number
         title
         issueType { name }
@@ -161,7 +161,7 @@ query {
         number
         title
         issueType { name }
-        parent {
+        parentIssue {
           number
         }
       }
@@ -170,7 +170,7 @@ query {
 }
 ```
 
-Filter in PowerShell: `Where-Object { -not $_.parent }`
+Filter in PowerShell: `Where-Object { -not $_.parentIssue }`
 
 ### Completion Status
 
