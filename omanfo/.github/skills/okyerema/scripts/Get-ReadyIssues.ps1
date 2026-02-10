@@ -176,10 +176,9 @@ function Test-IssueReady {
         if ($blocker -and $blocker.state -eq "OPEN") {
             return $false
         }
-        if (-not $IncludeClosed -and (-not $blocker -or $blocker.state -ne "CLOSED")) {
-            # If we're not including closed, and blocker is not found or not closed, treat as blocking
-            if (-not $blocker) {
-                # Blocker might be in a different repo - assume it's open
+        if (-not $blocker) {
+            # Blocker might be in a different repo - assume it's open unless we're explicitly including closed
+            if (-not $IncludeClosed) {
                 return $false
             }
         }
@@ -244,7 +243,7 @@ Write-Host ""
 $output = [PSCustomObject]@{
     Owner = $Owner
     Repo = $Repo
-    ReadyIssues = $readyIssues | Select-Object number, title, @{Name="type"; Expression={if ($_.issueType) {$_.issueType.name} else {"Unknown"}}}
+    ReadyIssues = $readyIssues | Select-Object number, title, @{Name="Type"; Expression={if ($_.issueType) {$_.issueType.name} else {"Unknown"}}}
     TotalReady = $readyIssues.Count
 }
 

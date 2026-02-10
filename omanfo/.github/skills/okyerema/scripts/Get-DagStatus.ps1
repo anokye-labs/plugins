@@ -161,7 +161,7 @@ function Show-IssueTree {
     $typeName = if ($Issue.issueType) { $Issue.issueType.name } else { "Issue" }
     $readiness = Get-IssueReadiness -Issue $Issue
     
-    # Status icons
+    # Status icons (Note: For accessibility, legend and text labels are also provided)
     $stateIcon = switch ($Issue.state) {
         "OPEN" { "⬜" }
         "CLOSED" { "✅" }
