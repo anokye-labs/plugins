@@ -63,21 +63,29 @@ Issues assigned to @copilot should be written as AI-readable prompts:
 - [What NOT to change]
 ```
 
-### Discovering the Copilot Bot Node ID
-Standard CLI can't assign to the bot. Use GraphQL:
-```powershell
-# Find bot ID from an issue where Copilot is already assigned
-gh api repos/{owner}/{repo}/issues/{num} --jq '.assignees[] | select(.login=="Copilot") | .node_id'
-# Returns: BOT_kgDO...
+### Assigning Issues to Copilot Bot
 
-# Assign via GraphQL
-gh api graphql -f query='mutation {
-  updateIssue(input: {
-    id: "{ISSUE_NODE_ID}"
-    assigneeIds: ["{BOT_NODE_ID}"]
-  }) { issue { number } }
-}'
+**Important:** Copilot bot assignment is an exception to the "GraphQL for all writes" rule. Use REST API for reliable bot assignment.
+
+```bash
+# Assign Copilot to an issue using REST API (RECOMMENDED)
+gh api repos/{owner}/{repo}/issues/{num}/assignees \
+  --method POST \
+  -f 'assignees[]=Copilot'
+
+# Or using gh CLI wrapper (also uses REST internally)
+# NOTE: @ prefix is REQUIRED for CLI (casing doesn't matter: @copilot or @Copilot)
+gh issue edit {num} --add-assignee "@copilot"
 ```
+
+**Prerequisites:**
+- Copilot coding agent must be enabled at the organization level before assignment will work
+- Copilot does NOT appear in standard `/assignees` or `/collaborators` API endpoints (org-level enablement is required)
+
+**Why REST is Required:**
+- Copilot's node ID (e.g., `BOT_kgDOC9w8XQ`) is a BOT type, not a User type
+- GraphQL `addAssigneesToAssignable` mutation returns `NOT_FOUND` for BOT IDs
+- REST API `/repos/{owner}/{repo}/issues/{number}/assignees` properly handles bot assignees
 
 ## Layer 3: Agentic Workflows (gh-aw)
 
