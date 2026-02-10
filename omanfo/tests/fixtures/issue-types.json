@@ -1,0 +1,52 @@
+{
+  "data": {
+    "organization": {
+      "issueTypes": {
+        "nodes": [
+          {
+            "id": "IT_kwDOCfc9t84Ab123",
+            "name": "Epic"
+          },
+          {
+            "id": "IT_kwDOCfc9t84Ab124",
+            "name": "Feature"
+          },
+          {
+            "id": "IT_kwDOCfc9t84Ab125",
+            "name": "Task"
+          },
+          {
+            "id": "IT_kwDOCfc9t84Ab126",
+            "name": "Bug"
+          }
+        ]
+      }
+    },
+    "repository": {
+      "id": "R_kgDOCfc9tw",
+      "owner": {
+        "__typename": "Organization",
+        "issueTypes": {
+          "nodes": [
+            {
+              "id": "IT_kwDOCfc9t84Ab123",
+              "name": "Epic"
+            },
+            {
+              "id": "IT_kwDOCfc9t84Ab124",
+              "name": "Feature"
+            },
+            {
+              "id": "IT_kwDOCfc9t84Ab125",
+              "name": "Task"
+            },
+            {
+              "id": "IT_kwDOCfc9t84Ab126",
+              "name": "Bug"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
