@@ -28,7 +28,18 @@ query {
 }
 "@
 
-$result = gh api graphql -f query="$query" | ConvertFrom-Json
+$rawResult = gh api graphql -f query="$query" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "GraphQL query failed: $rawResult"
+    exit 1
+}
+
+$result = $rawResult | ConvertFrom-Json
+if ($result.errors) {
+    Write-Error "GraphQL errors: $($result.errors | ConvertTo-Json -Compress)"
+    exit 1
+}
+
 $repoId = $result.data.repository.id
 $issueTypes = $result.data.repository.owner.issueTypes.nodes
 $availableLabels = $result.data.repository.labels.nodes
@@ -80,7 +91,20 @@ mutation {
 "@
     
     try {
-        $createResult = gh api graphql -f query="$mutation" | ConvertFrom-Json
+        $rawCreateResult = gh api graphql -f query="$mutation" 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            Write-Host "  ✗ Failed to create issue '$title' [$typeName]: $rawCreateResult" -ForegroundColor Red
+            $failedCount++
+            continue
+        }
+        
+        $createResult = $rawCreateResult | ConvertFrom-Json
+        if ($createResult.errors) {
+            Write-Host "  ✗ Failed to create issue '$title' [$typeName]: $($createResult.errors | ConvertTo-Json -Compress)" -ForegroundColor Red
+            $failedCount++
+            continue
+        }
+        
         $issue = $createResult.data.createIssue.issue
         
         Write-Host "  ✓ Created #$($issue.number) [$($issue.issueType.name)] $($issue.title)" -ForegroundColor Green
@@ -119,7 +143,7 @@ mutation {
         Write-Host "  ✗ Failed to create issue '$title' [$typeName]: $_" -ForegroundColor Red
         if ($_.Exception.Message -match "rate limit") {
             Write-Host "    Hint: Rate limit exceeded. Wait before retrying." -ForegroundColor Yellow
-        } elseif ($_.Exception.Message -match "permission\|unauthorized\|forbidden") {
+        } elseif ($_.Exception.Message -match "permission|unauthorized|forbidden") {
             Write-Host "    Hint: Check repository permissions and authentication." -ForegroundColor Yellow
         }
         $failedCount++

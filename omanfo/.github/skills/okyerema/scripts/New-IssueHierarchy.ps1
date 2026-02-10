@@ -44,6 +44,9 @@ function New-SingleIssue {
         return $null
     }
     
+    # Ensure Body is not null
+    if (-not $Body) { $Body = "" }
+    
     $escapedTitle = $Title.Replace('\', '\\').Replace('"', '\"')
     $escapedBody = $Body.Replace('\', '\\').Replace('"', '\"').Replace("`n", '\n')
     
