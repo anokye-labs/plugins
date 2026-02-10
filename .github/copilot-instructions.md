@@ -1,4 +1,4 @@
-# Copilot Instructions for anokye-labs/plugins
+# Copilot Instructions
 
 This document defines how GitHub Copilot agents work within this repository. These rules ensure consistent behavior across all agent sessions.
 
