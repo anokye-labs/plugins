@@ -10,6 +10,7 @@ When installed, Omanfo gives GitHub Copilot the ability to:
 - **Scaffold automation** — audit repos for missing infrastructure, propose and create it
 - **Set up patrols** — Sankofa health checks for stale issues, orphans, stuck work
 - **Manage issues** — Create typed issues, build hierarchies, handle PR reviews
+- **Document decisions** — ADR templates and guidance for architectural decisions
 - **Run helper scripts** — PowerShell tools for issue types, hierarchy, PR threads
 
 ## Role in the Anokye System
@@ -65,6 +66,8 @@ your-repo/
 ├── how-we-work/
 │   ├── getting-started.md          # Newcomer guide
 │   ├── our-way.md                  # Opinionated workflow
+│   ├── adr-process.md              # ADR process guidance
+│   ├── adr-template.md             # Architecture Decision Record template
 │   └── glossary.md                 # Akan terminology
 └── agents.md                       # Agent entry point
 ```
