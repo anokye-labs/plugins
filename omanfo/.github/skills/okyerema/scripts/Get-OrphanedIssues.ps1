@@ -134,6 +134,16 @@ if ($SuggestParents -and $orphans.Count -gt 0) {
         $type -in @("Epic", "Feature")
     }
     
+    # Pre-process parent title keywords once for performance (O(n) instead of O(n*m))
+    $parentKeywords = @{}
+    foreach ($parent in $potentialParents) {
+        # Normalize: lowercase, remove punctuation, filter by length
+        $keywords = ($parent.title -replace '[^\w\s]', '' -split '\s+' | 
+                     Where-Object { $_.Length -gt $MinWordLength } | 
+                     ForEach-Object { $_.ToLower() })
+        $parentKeywords[$parent.number] = $keywords
+    }
+    
     foreach ($orphan in $orphans) {
         $suggestions = @()
         
@@ -165,10 +175,15 @@ if ($SuggestParents -and $orphans.Count -gt 0) {
             }
         }
         
-        # Try to match by title keywords
-        $orphanWords = ($orphan.Title -split '\s+' | Where-Object { $_.Length -gt $MinWordLength }) | Select-Object -First $MaxKeywords
+        # Try to match by title keywords (using pre-processed keywords)
+        # Normalize orphan title the same way
+        $orphanWords = ($orphan.Title -replace '[^\w\s]', '' -split '\s+' | 
+                        Where-Object { $_.Length -gt $MinWordLength } | 
+                        ForEach-Object { $_.ToLower() }) | 
+                       Select-Object -First $MaxKeywords
+        
         foreach ($parent in $potentialParents) {
-            $parentWords = ($parent.title -split '\s+' | Where-Object { $_.Length -gt $MinWordLength })
+            $parentWords = $parentKeywords[$parent.number]
             $wordMatches = 0
             foreach ($word in $orphanWords) {
                 if ($word -in $parentWords) {
