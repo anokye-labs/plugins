@@ -1,0 +1,77 @@
+name: Validate Plugin
+
+on:
+  pull_request:
+    paths:
+      - 'omanfo/**'
+      - 'okyeame/**'
+      - '.github/workflows/validate-plugin.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'omanfo/**'
+      - 'okyeame/**'
+      - '.github/workflows/validate-plugin.yml'
+
+jobs:
+  validate-omanfo:
+    name: Validate Omanfo Plugin
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: pwsh
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup PowerShell
+        run: |
+          pwsh -Command '$PSVersionTable'
+
+      - name: Install GitHub CLI
+        run: |
+          type -p curl >/dev/null || (sudo apt update && sudo apt install curl -y)
+          curl -fsSL https://cli.github.com/packages/githubcli-archive-keyring.gpg | sudo dd of=/usr/share/keyrings/githubcli-archive-keyring.gpg
+          sudo chmod go+r /usr/share/keyrings/githubcli-archive-keyring.gpg
+          echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/githubcli-archive-keyring.gpg] https://cli.github.com/packages stable main" | sudo tee /etc/apt/sources.list.d/github-cli.list > /dev/null
+          sudo apt update
+          sudo apt install gh -y
+          gh --version
+
+      - name: Validate Manifest Consistency
+        run: |
+          Write-Host "🔍 Validating manifest.json consistency..." -ForegroundColor Cyan
+          & ./omanfo/scripts/validation/Test-ManifestConsistency.ps1
+
+      - name: Test Plugin Installation
+        run: |
+          Write-Host "📦 Testing plugin installation..." -ForegroundColor Cyan
+          & ./omanfo/scripts/validation/Validate-PluginInstall.ps1
+
+      - name: Validate Plugin Coverage
+        run: |
+          Write-Host "📊 Validating plugin coverage..." -ForegroundColor Cyan
+          & ./omanfo/scripts/validation/Test-PluginCoverage.ps1
+
+      - name: Run Evaluation Scenarios
+        run: |
+          Write-Host "🧪 Running evaluation scenarios..." -ForegroundColor Cyan
+          & ./omanfo/scripts/validation/Invoke-EvalScenarios.ps1
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Generate Coverage Report
+        if: always()
+        run: |
+          Write-Host "📈 Generating coverage report..." -ForegroundColor Cyan
+          & ./omanfo/scripts/validation/New-CoverageReport.ps1
+        
+      - name: Upload Coverage Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: coverage-report.md
+          retention-days: 30
