@@ -64,7 +64,7 @@ if (-not $copilotCmd) {
     Write-Host "   Install from: https://github.com/github/copilot-cli" -ForegroundColor Yellow
     exit 1
 }
-Write-Host "✅ Copilot CLI: $($copilotCmd.Version)" -ForegroundColor Green
+Write-Host "✅ Copilot CLI found" -ForegroundColor Green
 
 $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
 if (-not $ghCmd) {

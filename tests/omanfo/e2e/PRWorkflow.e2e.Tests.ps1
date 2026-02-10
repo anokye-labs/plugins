@@ -184,7 +184,7 @@ Describe "PR Workflow E2E Tests" {
             # Get two PRs if available
             $prs = gh pr list --repo $script:TestRepo --limit 2 --json number 2>&1
             if ($LASTEXITCODE -eq 0) {
-                $prList = $prs | ConvertFrom-Json
+                $prList = @($prs | ConvertFrom-Json)
                 if ($prList.Count -ge 2) {
                     $pr1 = $prList[0].number
                     $pr2 = $prList[1].number
