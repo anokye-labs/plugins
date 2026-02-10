@@ -170,6 +170,114 @@ mutation {
 }
 ```
 
+### Date Field
+
+```graphql
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: "PVT_xxx"
+    itemId: "PVTI_xxx"
+    fieldId: "PVTF_xxx"
+    value: { date: "2026-03-15" }
+  }) {
+    projectV2Item { id }
+  }
+}
+```
+
+---
+
+## Bulk Operations with Field Values
+
+### Using Add-IssuesToProject.ps1
+
+The `Add-IssuesToProject.ps1` script automates bulk adding issues to projects with custom field values:
+
+```powershell
+# Add multiple issues to a project
+./Add-IssuesToProject.ps1 `
+    -Owner "anokye-labs" `
+    -Repo "plugins" `
+    -ProjectNumber 3 `
+    -IssueNumbers @(106, 107, 108)
+
+# Add issues with custom field values
+./Add-IssuesToProject.ps1 `
+    -Owner "anokye-labs" `
+    -Repo "plugins" `
+    -ProjectNumber 3 `
+    -IssueNumbers @(106, 107, 108) `
+    -FieldValues @{
+        "Status" = "In Progress"
+        "Priority" = "High"
+        "Sprint" = "Sprint 1"
+    }
+
+# With custom retry behavior
+./Add-IssuesToProject.ps1 `
+    -Owner "anokye-labs" `
+    -Repo "plugins" `
+    -ProjectNumber 3 `
+    -IssueNumbers @(106, 107, 108) `
+    -FieldValues @{ "Status" = "Todo" } `
+    -RetryAttempts 5 `
+    -RetryDelayMs 2000
+```
+
+**Features:**
+- ✅ Bulk add multiple issues in one operation
+- ✅ Set custom field values (Status, Priority, Sprint, etc.)
+- ✅ Automatic retry with exponential backoff
+- ✅ Error handling with detailed logging
+- ✅ Support for TEXT, NUMBER, DATE, and SINGLE_SELECT fields
+- ✅ Rate limiting to avoid API throttling
+
+### Error Handling Pattern
+
+```powershell
+# Invoke-GraphQLWithRetry function pattern
+function Invoke-GraphQLWithRetry {
+    param(
+        [string]$Query,
+        [hashtable]$Headers = @{},
+        [int]$MaxAttempts = 3,
+        [int]$DelayMs = 1000
+    )
+    
+    $attempt = 0
+    while ($attempt -lt $MaxAttempts) {
+        $attempt++
+        try {
+            $result = gh api graphql -f query="$Query"
+            if ($LASTEXITCODE -ne 0) {
+                throw "GraphQL command failed"
+            }
+            $parsed = $result | ConvertFrom-Json
+            if ($parsed.errors) {
+                throw "GraphQL errors: $($parsed.errors)"
+            }
+            return $parsed
+        }
+        catch {
+            if ($attempt -ge $MaxAttempts) { throw }
+            Write-Warning "Retry $attempt/$MaxAttempts..."
+            Start-Sleep -Milliseconds $DelayMs
+        }
+    }
+}
+```
+
+### Field Type Reference
+
+| Field Type | Value Syntax | Example |
+|------------|-------------|---------|
+| TEXT | `{ text: "value" }` | `{ text: "High Priority" }` |
+| NUMBER | `{ number: N }` | `{ number: 5 }` |
+| DATE | `{ date: "YYYY-MM-DD" }` | `{ date: "2026-03-15" }` |
+| SINGLE_SELECT | `{ singleSelectOptionId: "ID" }` | `{ singleSelectOptionId: "PVTSSO_xxx" }` |
+
+**Note:** For SINGLE_SELECT fields, you must first query the project to get option IDs.
+
 ---
 
 ## Important Distinctions

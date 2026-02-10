@@ -1,0 +1,319 @@
+# Add-IssuesToProject.ps1
+# Bulk add issues to GitHub Projects V2 with optional custom field values
+
+param(
+    [Parameter(Mandatory)][string]$Owner,
+    [Parameter(Mandatory)][string]$Repo,
+    [Parameter(Mandatory)][int]$ProjectNumber,
+    [Parameter(Mandatory)][int[]]$IssueNumbers,
+    [hashtable]$FieldValues = @{},  # e.g. @{ "Status" = "In Progress"; "Priority" = "High" }
+    [int]$RetryAttempts = 3,
+    [int]$RetryDelayMs = 1000
+)
+
+$ErrorActionPreference = "Stop"
+
+# Helper function for retrying GraphQL operations
+function Invoke-GraphQLWithRetry {
+    param(
+        [string]$Query,
+        [hashtable]$Headers = @{},
+        [int]$MaxAttempts = 3,
+        [int]$DelayMs = 1000
+    )
+    
+    $attempt = 0
+    while ($attempt -lt $MaxAttempts) {
+        $attempt++
+        try {
+            $headerArgs = @()
+            foreach ($key in $Headers.Keys) {
+                $headerArgs += "-H"
+                $headerArgs += "$key`: $($Headers[$key])"
+            }
+            
+            if ($headerArgs.Count -gt 0) {
+                $result = gh api graphql @headerArgs -f query="$Query" 2>&1
+            } else {
+                $result = gh api graphql -f query="$Query" 2>&1
+            }
+            
+            if ($LASTEXITCODE -ne 0) {
+                throw "GraphQL command failed with exit code $LASTEXITCODE`: $result"
+            }
+            
+            $parsed = $result | ConvertFrom-Json
+            if ($parsed.errors) {
+                $errorMsg = ($parsed.errors | ForEach-Object { $_.message }) -join '; '
+                throw "GraphQL errors: $errorMsg"
+            }
+            
+            return $parsed
+        }
+        catch {
+            if ($attempt -ge $MaxAttempts) {
+                throw
+            }
+            Write-Warning "Attempt $attempt failed: $($_.Exception.Message). Retrying in ${DelayMs}ms..."
+            Start-Sleep -Milliseconds $DelayMs
+        }
+    }
+}
+
+Write-Host "=== Adding Issues to Project ===" -ForegroundColor Cyan
+Write-Host "Organization: $Owner" -ForegroundColor Gray
+Write-Host "Repository: $Repo" -ForegroundColor Gray
+Write-Host "Project Number: $ProjectNumber" -ForegroundColor Gray
+Write-Host "Issues: #$($IssueNumbers -join ', #')" -ForegroundColor Gray
+Write-Host ""
+
+# Step 1: Get project ID and field information
+Write-Host "[1/4] Fetching project details..." -ForegroundColor Yellow
+
+$projectQuery = @"
+query {
+  organization(login: `"$Owner`") {
+    projectV2(number: $ProjectNumber) {
+      id
+      title
+      fields(first: 50) {
+        nodes {
+          ... on ProjectV2Field {
+            id
+            name
+            dataType
+          }
+          ... on ProjectV2SingleSelectField {
+            id
+            name
+            dataType
+            options {
+              id
+              name
+            }
+          }
+        }
+      }
+    }
+  }
+}
+"@
+
+$projectResult = Invoke-GraphQLWithRetry -Query $projectQuery -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs
+$project = $projectResult.data.organization.projectV2
+
+if (-not $project) {
+    Write-Error "Project #$ProjectNumber not found in organization '$Owner'"
+    exit 1
+}
+
+$projectId = $project.id
+$projectTitle = $project.title
+Write-Host "  ✓ Project: $projectTitle ($projectId)" -ForegroundColor Green
+
+# Build field mapping if field values are provided
+$fieldMap = @{}
+if ($FieldValues.Count -gt 0) {
+    Write-Host "  → Building field mapping for $($FieldValues.Count) fields..." -ForegroundColor Gray
+    
+    foreach ($fieldName in $FieldValues.Keys) {
+        $field = $project.fields.nodes | Where-Object { $_.name -eq $fieldName } | Select-Object -First 1
+        
+        if (-not $field) {
+            Write-Warning "  ⚠ Field '$fieldName' not found in project. Skipping."
+            continue
+        }
+        
+        $fieldValue = $FieldValues[$fieldName]
+        $fieldMap[$fieldName] = @{
+            Id = $field.id
+            DataType = $field.dataType
+            Value = $fieldValue
+        }
+        
+        # For single-select fields, resolve option ID
+        if ($field.dataType -eq "SINGLE_SELECT") {
+            $option = $field.options | Where-Object { $_.name -eq $fieldValue } | Select-Object -First 1
+            if ($option) {
+                $fieldMap[$fieldName].OptionId = $option.id
+                Write-Host "    • $fieldName = $fieldValue (option: $($option.id))" -ForegroundColor Gray
+            } else {
+                Write-Warning "  ⚠ Option '$fieldValue' not found for field '$fieldName'. Skipping."
+                $fieldMap.Remove($fieldName)
+            }
+        } else {
+            Write-Host "    • $fieldName = $fieldValue ($($field.dataType))" -ForegroundColor Gray
+        }
+    }
+}
+
+# Step 2: Get issue IDs
+Write-Host "`n[2/4] Fetching issue IDs..." -ForegroundColor Yellow
+
+$issueIds = @()
+foreach ($num in $IssueNumbers) {
+    $issueQuery = @"
+query {
+  repository(owner: `"$Owner`", name: `"$Repo`") {
+    issue(number: $num) {
+      id
+      title
+    }
+  }
+}
+"@
+    
+    try {
+        $issueResult = Invoke-GraphQLWithRetry -Query $issueQuery -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs
+        $issue = $issueResult.data.repository.issue
+        
+        if (-not $issue) {
+            Write-Warning "  ⚠ Issue #$num not found. Skipping."
+            continue
+        }
+        
+        $issueIds += [PSCustomObject]@{
+            Number = $num
+            Id = $issue.id
+            Title = $issue.title
+        }
+        Write-Host "  ✓ #$num - $($issue.title)" -ForegroundColor Gray
+    }
+    catch {
+        Write-Warning "  ⚠ Failed to fetch issue #${num}: $($_.Exception.Message)"
+    }
+}
+
+if ($issueIds.Count -eq 0) {
+    Write-Error "No valid issues found to add to project"
+    exit 1
+}
+
+Write-Host "  → Found $($issueIds.Count) valid issue(s)" -ForegroundColor Green
+
+# Step 3: Add issues to project
+Write-Host "`n[3/4] Adding issues to project..." -ForegroundColor Yellow
+
+$addedItems = @()
+$addFailures = @()
+
+foreach ($issue in $issueIds) {
+    $addMutation = @"
+mutation {
+  addProjectV2ItemById(input: {
+    projectId: `"$projectId`"
+    contentId: `"$($issue.Id)`"
+  }) {
+    item {
+      id
+    }
+  }
+}
+"@
+    
+    try {
+        $addResult = Invoke-GraphQLWithRetry -Query $addMutation -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs
+        $itemId = $addResult.data.addProjectV2ItemById.item.id
+        
+        $addedItems += [PSCustomObject]@{
+            Number = $issue.Number
+            Title = $issue.Title
+            ItemId = $itemId
+        }
+        
+        Write-Host "  ✓ Added #$($issue.Number) to project (item: $itemId)" -ForegroundColor Green
+        
+        # Rate limiting - pause between additions
+        Start-Sleep -Milliseconds 500
+    }
+    catch {
+        Write-Warning "  ⚠ Failed to add issue #$($issue.Number): $($_.Exception.Message)"
+        $addFailures += $issue.Number
+    }
+}
+
+Write-Host "  → Added $($addedItems.Count)/$($issueIds.Count) issue(s)" -ForegroundColor Green
+
+# Step 4: Set custom field values
+if ($fieldMap.Count -gt 0 -and $addedItems.Count -gt 0) {
+    Write-Host "`n[4/4] Setting custom field values..." -ForegroundColor Yellow
+    
+    $fieldUpdateCount = 0
+    $fieldUpdateFailures = 0
+    
+    foreach ($item in $addedItems) {
+        foreach ($fieldName in $fieldMap.Keys) {
+            $field = $fieldMap[$fieldName]
+            
+            # Build the value part of the mutation based on data type
+            $valueClause = switch ($field.DataType) {
+                "SINGLE_SELECT" { "singleSelectOptionId: `"$($field.OptionId)`"" }
+                "TEXT" { 
+                    $escapedValue = $field.Value.Replace('\', '\\').Replace('"', '\"')
+                    "text: `"$escapedValue`"" 
+                }
+                "NUMBER" { "number: $($field.Value)" }
+                "DATE" { "date: `"$($field.Value)`"" }
+                default {
+                    Write-Warning "  ⚠ Unsupported field type: $($field.DataType) for field '$fieldName'"
+                    continue
+                }
+            }
+            
+            $updateMutation = @"
+mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: `"$projectId`"
+    itemId: `"$($item.ItemId)`"
+    fieldId: `"$($field.Id)`"
+    value: { $valueClause }
+  }) {
+    projectV2Item { id }
+  }
+}
+"@
+            
+            try {
+                Invoke-GraphQLWithRetry -Query $updateMutation -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs | Out-Null
+                $fieldUpdateCount++
+                Write-Host "  ✓ Set $fieldName = $($field.Value) for #$($item.Number)" -ForegroundColor Gray
+                Start-Sleep -Milliseconds 300
+            }
+            catch {
+                Write-Warning "  ⚠ Failed to set $fieldName for #$($item.Number): $($_.Exception.Message)"
+                $fieldUpdateFailures++
+            }
+        }
+    }
+    
+    Write-Host "  → Updated $fieldUpdateCount field value(s) ($fieldUpdateFailures failure(s))" -ForegroundColor Green
+}
+
+# Summary
+Write-Host "`n=== Summary ===" -ForegroundColor Cyan
+Write-Host "Project: $projectTitle" -ForegroundColor Gray
+Write-Host "Successfully added: $($addedItems.Count) issue(s)" -ForegroundColor Green
+
+if ($addedItems.Count -gt 0) {
+    Write-Host "Issues: #$($addedItems.Number -join ', #')" -ForegroundColor Gray
+}
+
+if ($addFailures.Count -gt 0) {
+    Write-Host "Failed: $($addFailures.Count) issue(s)" -ForegroundColor Yellow
+    Write-Host "Issues: #$($addFailures -join ', #')" -ForegroundColor Gray
+}
+
+if ($fieldMap.Count -gt 0) {
+    Write-Host "Custom fields set: $($fieldMap.Count) field(s)" -ForegroundColor Gray
+}
+
+# Return results
+[PSCustomObject]@{
+    ProjectId = $projectId
+    ProjectTitle = $projectTitle
+    AddedCount = $addedItems.Count
+    FailedCount = $addFailures.Count
+    AddedIssues = $addedItems.Number
+    FailedIssues = $addFailures
+    FieldsSet = $fieldMap.Keys
+}
