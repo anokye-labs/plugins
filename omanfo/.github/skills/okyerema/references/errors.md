@@ -21,47 +21,56 @@ query {
 
 ---
 
-## Error: trackedIssues is empty after body update
+## Error: Sub-issues query returns null or fails
 
-**Cause:** GitHub hasn't parsed the tasklist yet.
+**Cause:** Missing `GraphQL-Features: sub_issues` header.
 
-**Fix:** Wait 2-5 minutes, then re-query. Check web UI first (updates faster than GraphQL).
+**Fix:** Include the header in all sub-issues queries:
+```bash
+gh api graphql -H "GraphQL-Features: sub_issues" -f query='...'
+```
 
 ---
 
 ## Error: Epic tracks both Features AND Tasks
 
-**Cause:** Added new Feature tasklist without removing old Task tasklist.
+**Cause:** Mixed hierarchy - Epic has both Features and Tasks as direct children.
 
-**Fix:** Parse body, remove ALL existing tasklist sections, add only the correct one:
+**Fix:** Choose one pattern consistently:
+- Either Epic → Features → Tasks (3-level)
+- Or Epic → Tasks (2-level)
 
-```powershell
-$lines = $body -split "`n"
-$cleanLines = @()
-$inTasklist = $false
-
-foreach ($line in $lines) {
-    if ($line -match '^## .* Tracked') {
-        $inTasklist = $true
-        continue
-    }
-    if ($inTasklist -and $line -match '^- \[') { continue }
-    if ($inTasklist -and $line -match '^$') { continue }
-    if ($inTasklist -and $line -match '^##') { $inTasklist = $false }
-    if (-not $inTasklist) { $cleanLines += $line }
+Use `removeSubIssue` mutation to unlink incorrect relationships:
+```graphql
+mutation {
+  removeSubIssue(input: {
+    issueId: "I_parent_id"
+    subIssueId: "I_child_id"
+  }) {
+    issue { id }
+    subIssue { id }
+  }
 }
-
-$cleanBody = ($cleanLines -join "`n").TrimEnd()
-$newBody = $cleanBody + "`n`n## 📋 Tracked Features`n`n- [ ] #106`n- [ ] #107"
 ```
 
 ---
 
 ## Error: GraphQL mutation `addTrackedByIssue` doesn't exist
 
-**Cause:** There is no direct GraphQL mutation for parent-child relationships.
+**Cause:** Using deprecated tasklist-based API.
 
-**Fix:** The ONLY mechanism is **Tasklists in issue body**. Update the parent issue body with markdown checkboxes.
+**Fix:** Use the sub-issues API with `addSubIssue` mutation:
+```graphql
+mutation {
+  addSubIssue(input: {
+    issueId: "I_parent_id"
+    subIssueId: "I_child_id"
+  }) {
+    issue { id }
+    subIssue { id }
+  }
+}
+```
 
 ---
 
@@ -77,21 +86,18 @@ $newBody = $cleanBody + "`n`n## 📋 Tracked Features`n`n- [ ] #106`n- [ ] #107"
 
 **Cause:** Project custom fields are for tracking/visualization only.
 
-**Fix:** Use Tasklists in issue body for actual parent-child relationships. Projects fields are separate.
+**Fix:** Use sub-issues API for actual parent-child relationships. Project fields are separate.
 
 ---
 
-## Error: Garbled emoji in issue body
+## Error: "Cannot add sub-issue"
 
-**Cause:** Encoding issues when passing emoji through PowerShell string escaping.
+**Cause:** May be attempting to create circular dependency or invalid hierarchy.
 
-**Fix:** Use simple ASCII headers or ensure UTF-8 encoding:
-```powershell
-# Use simple header if emoji causes issues
-$header = "## Tracked Features"
-# Instead of
-$header = "## 📋 Tracked Features"
-```
+**Fix:** Verify:
+- Child is not already a parent of the target parent (no cycles)
+- Both issues exist and have valid IDs
+- Issue types support the relationship (Epic→Feature, Epic→Task, Feature→Task)
 
 ---
 
@@ -104,6 +110,6 @@ Before starting any issue operations:
 - [ ] I'm using GraphQL API (not gh CLI for types/relationships)
 - [ ] I'm NOT using labels for types
 - [ ] I've planned the hierarchy (3-level or 2-level?)
-- [ ] I'll wait 2-5 minutes before verifying tasklist relationships
+- [ ] I'm including `GraphQL-Features: sub_issues` header for sub-issues queries
 
 **[← Back to SKILL.md](../SKILL.md)**

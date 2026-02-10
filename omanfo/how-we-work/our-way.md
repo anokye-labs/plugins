@@ -117,7 +117,7 @@ These rules exist because we made every mistake in the book:
 | Used title prefixes | `[Epic]` in title doesn't set type | Set type via GraphQL mutation |
 | Created flat hierarchies | Epic → 95 Tasks was unmanageable | Use Features to group tasks |
 | Used gh CLI | Couldn't set types or relationships | Use GraphQL for all structured ops |
-| Expected instant updates | Relationships didn't appear immediately | Wait 2-5 minutes after tasklist changes |
+| Used tasklists | Deprecated API, async parsing delays | Use sub-issues API for instant relationships |
 
 ---
 

@@ -2,30 +2,36 @@
 
 **[← Back to SKILL.md](../SKILL.md)**
 
-## How Tasklists Create Relationships
+## How Sub-Issues Create Relationships
 
-GitHub automatically parses markdown tasklists in issue bodies into `trackedIssues` relationships.
+GitHub's sub-issues API creates parent-child relationships between issues using GraphQL mutations.
 
-### Format
+### Creating Relationships
 
-```markdown
-## 📋 Tracked Features
+Use the `addSubIssue` mutation to link a child issue to a parent:
 
-- [ ] #106 - Core Skill Creation
-- [ ] #107 - Script Conversion
+```graphql
+mutation {
+  addSubIssue(input: {
+    issueId: "I_parent_node_id"
+    subIssueId: "I_child_node_id"
+  }) {
+    issue { id number }
+    subIssue { id number }
+  }
+}
 ```
 
-**Requirements:**
-- Must use `- [ ]` checkbox syntax
-- Must reference issue numbers with `#`
-- Must be in issue body (not comments)
-- Text after number is optional
+**Important:** Sub-issues queries require the `GraphQL-Features: sub_issues` header:
+```bash
+gh api graphql -H "GraphQL-Features: sub_issues" -f query='...'
+```
 
 ### What GitHub Creates
 
-- Parent gets `trackedIssues: [#106, #107]`
-- Children get `trackedInIssues: [parent]`
-- Checkboxes track completion
+- Parent gets `subIssues: [child1, child2]`
+- Children get `parent: parentIssue`
+- Relationships are immediate (no async parsing delay)
 
 ---
 
@@ -45,40 +51,43 @@ mutation {
 }
 ```
 
-### Step 2: Update Parent with Tasklist
+### Step 2: Link Children to Parent
 
 ```graphql
 mutation {
-  updateIssue(input: {
-    id: "I_xxx"
-    body: "Epic description\n\n## 📋 Tracked Features\n\n- [ ] #106 - Core Skill Creation\n- [ ] #107 - Script Conversion"
+  addSubIssue(input: {
+    issueId: "I_parent_id"
+    subIssueId: "I_child_id"
   }) {
-    issue { number }
+    issue { id }
+    subIssue { id }
   }
 }
 ```
 
-### Step 3: Wait 2-5 Minutes
-
-GitHub parses tasklists **asynchronously**. Do not verify immediately.
-
-### Step 4: Verify
+### Step 3: Verify
 
 ```graphql
 query {
   repository(owner: "anokye-labs", name: "repo") {
     issue(number: 14) {
-      trackedIssues(first: 50) {
+      subIssues(first: 50) {
         nodes {
           number
           issueType { name }
           title
         }
       }
+      parent {
+        number
+        title
+      }
     }
   }
 }
 ```
+
+**Note:** Remember to include the `GraphQL-Features: sub_issues` header in all sub-issues queries.
 
 ---
 
@@ -92,12 +101,14 @@ query {
     issue(number: 106) {
       title
       issueType { name }
-      trackedIssues(first: 50) {
+      subIssues(first: 50) {
         totalCount
         nodes { number title issueType { name } state }
       }
-      trackedInIssues(first: 10) {
-        nodes { number title issueType { name } }
+      parent {
+        number
+        title
+        issueType { name }
       }
     }
   }
@@ -112,12 +123,12 @@ query {
     issue(number: 14) {
       title
       issueType { name }
-      trackedIssues(first: 50) {
+      subIssues(first: 50) {
         nodes {
           number
           title
           issueType { name }
-          trackedIssues(first: 50) {
+          subIssues(first: 50) {
             nodes {
               number
               title
@@ -141,8 +152,8 @@ query {
         number
         title
         issueType { name }
-        trackedInIssues(first: 1) {
-          totalCount
+        parent {
+          number
         }
       }
     }
@@ -150,7 +161,7 @@ query {
 }
 ```
 
-Filter in PowerShell: `Where-Object { $_.trackedInIssues.totalCount -eq 0 }`
+Filter in PowerShell: `Where-Object { -not $_.parent }`
 
 ### Completion Status
 
@@ -159,7 +170,7 @@ query {
   repository(owner: "anokye-labs", name: "repo") {
     issue(number: 14) {
       title
-      trackedIssues(first: 100) {
+      subIssues(first: 100) {
         totalCount
         nodes { number state closed }
       }
@@ -172,64 +183,33 @@ Calculate: `closedCount / totalCount * 100` for percentage.
 
 ---
 
-## Updating Existing Relationships
+## Removing Relationships
 
-### Replacing a Tasklist
+### Unlink a Child from Parent
 
-When changing relationships, **remove the old section completely** before adding a new one:
-
-```powershell
-# Get current body
-$result = gh api graphql -f query="$getBodyQuery" | ConvertFrom-Json
-$body = $result.data.repository.issue.body
-
-# Remove old tasklist (everything from ## 📋 onward)
-$lines = $body -split "`n"
-$cleanLines = @()
-$inTasklist = $false
-
-foreach ($line in $lines) {
-    if ($line -match '^## .* Tracked') {
-        $inTasklist = $true
-        continue
-    }
-    if ($inTasklist -and $line -match '^- \[') { continue }
-    if ($inTasklist -and $line -match '^$') { continue }
-    if ($inTasklist -and $line -match '^##') { $inTasklist = $false }
-    if (-not $inTasklist) { $cleanLines += $line }
-}
-
-$cleanBody = ($cleanLines -join "`n").TrimEnd()
-
-# Add new tasklist
-$newBody = $cleanBody + "`n`n## 📋 Tracked Features`n`n- [ ] #106`n- [ ] #107"
-
-# Update issue
-$updateMutation = @"
+```graphql
 mutation {
-  updateIssue(input: {
-    id: `"$issueId`"
-    body: `"$($newBody.Replace('\', '\\').Replace('"', '\"').Replace("`n", '\n'))`"
+  removeSubIssue(input: {
+    issueId: "I_parent_id"
+    subIssueId: "I_child_id"
   }) {
-    issue { number }
+    issue { id }
+    subIssue { id }
   }
 }
-"@
-
-gh api graphql -f query="$updateMutation" | Out-Null
 ```
 
 ---
 
 ## Conventions
 
-| Parent Type | Section Header | Children |
-|-------------|---------------|----------|
-| Epic (with Features) | `## 📋 Tracked Features` | Feature issues |
-| Epic (direct Tasks) | `## 📋 Tracked Tasks` | Task issues |
-| Feature | `## 📋 Tracked Tasks` | Task issues |
-| Task | *(none — leaf node)* | — |
+| Parent Type | Children |
+|-------------|----------|
+| Epic (with Features) | Feature issues |
+| Epic (direct Tasks) | Task issues |
+| Feature | Task issues |
+| Task | *(none — leaf node)* |
 
-**Never mix Features and Tasks** in the same Epic's tasklist. Choose one pattern.
+**Never mix Features and Tasks** as direct children of the same Epic. Choose one pattern.
 
 **[← Back to SKILL.md](../SKILL.md)**
