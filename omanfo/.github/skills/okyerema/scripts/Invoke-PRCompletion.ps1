@@ -227,10 +227,13 @@ while ($iteration -lt $MaxIterations) {
         Write-Host ""
     } else {
         $commitMessage = "Address review comments (iteration $iteration)"
+        
+        # Build commit details with cleaner formatting
+        $threadList = $threadsToProcess | ForEach-Object { "- [$($_.Severity)] $($_.Path):$($_.Line)" }
         $commitDetails = @"
 Address $($threadsToProcess.Count) review thread(s):
 
-$($threadsToProcess | ForEach-Object { "- [$($_.Severity)] $($_.Path):$($_.Line)" } | Out-String)
+$($threadList -join "`n")
 
 Iteration $iteration of $MaxIterations
 "@
@@ -241,7 +244,8 @@ Iteration $iteration of $MaxIterations
             Write-Host ""
             Write-Host "  [DRY RUN] Would push to $Branch" -ForegroundColor Yellow
         } else {
-            git add .
+            # Stage only tracked files to avoid committing unintended changes
+            git add -u
             git commit -m $commitMessage -m $commitDetails
             $commitSha = git rev-parse --short HEAD
             Write-Host "  ✓ Committed: $commitSha" -ForegroundColor Green

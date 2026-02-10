@@ -51,6 +51,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# Constants
+$PREVIEW_MAX_LENGTH = 200
+
 # Severity keywords and patterns
 $severityPatterns = @{
     Critical = @(
@@ -68,7 +71,7 @@ $severityPatterns = @{
     High = @(
         '\b(?:bug|error|issue|problem|broken|fails?)\b',
         'incorrect\s+(?:logic|behavior|implementation)',
-        'doesn''t\s+work',
+        "doesn't\s+work",
         'breaking\s+change',
         'regression',
         'memory\s+leak',
@@ -262,7 +265,7 @@ foreach ($thread in $threads) {
         Severity = $determinedSeverity
         Confidence = $confidence
         Reason = $reason
-        FirstComment = $firstComment.Substring(0, [Math]::Min(200, $firstComment.Length))
+        FirstComment = $firstComment.Substring(0, [Math]::Min($PREVIEW_MAX_LENGTH, $firstComment.Length))
         CommentCount = $thread.comments.nodes.Count
     }
     
