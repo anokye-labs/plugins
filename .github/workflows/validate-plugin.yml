@@ -6,6 +6,13 @@ on:
       - 'omanfo/**'
       - 'okyeame/**'
       - '.github/workflows/validate-plugin.yml'
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - 'omanfo/**'
+      - 'okyeame/**'
+      - '.github/workflows/validate-plugin.yml'
 
 jobs:
   validate:
