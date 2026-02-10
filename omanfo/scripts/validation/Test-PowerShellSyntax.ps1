@@ -45,8 +45,8 @@ $pluginDir = if ([System.IO.Path]::IsPathRooted($PluginPath)) {
 
 Write-Host "`n🔍 Validating PowerShell syntax for: $pluginDir`n" -ForegroundColor Cyan
 
-# Find all .ps1 files
-$psFiles = Get-ChildItem -Path $pluginDir -Filter "*.ps1" -Recurse -File
+# Find all .ps1 files (including in hidden directories like .github)
+$psFiles = Get-ChildItem -Path $pluginDir -Filter "*.ps1" -Recurse -Force -File
 
 if ($psFiles.Count -eq 0) {
     Write-Host "⚠️  No PowerShell files found" -ForegroundColor Yellow
