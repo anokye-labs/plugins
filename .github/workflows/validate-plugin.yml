@@ -1,0 +1,152 @@
+name: Validate Plugin
+
+on:
+  pull_request:
+    paths:
+      - 'omanfo/**'
+      - 'okyeame/**'
+      - '.github/workflows/validate-plugin.yml'
+
+jobs:
+  validate:
+    name: Static Validation
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Detect changed plugins
+        id: changes
+        run: |
+          echo "Detecting which plugins have changes..."
+          
+          # Get list of changed files
+          git fetch origin ${{ github.base_ref }}
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          
+          # Check if omanfo has changes
+          if echo "$CHANGED_FILES" | grep -q "^omanfo/"; then
+            echo "omanfo_changed=true" >> $GITHUB_OUTPUT
+            echo "✓ omanfo has changes"
+          else
+            echo "omanfo_changed=false" >> $GITHUB_OUTPUT
+            echo "○ omanfo has no changes"
+          fi
+          
+          # Check if okyeame has changes
+          if echo "$CHANGED_FILES" | grep -q "^okyeame/"; then
+            echo "okyeame_changed=true" >> $GITHUB_OUTPUT
+            echo "✓ okyeame has changes"
+          else
+            echo "okyeame_changed=false" >> $GITHUB_OUTPUT
+            echo "○ okyeame has no changes"
+          fi
+      
+      - name: Validate omanfo plugin
+        if: steps.changes.outputs.omanfo_changed == 'true'
+        shell: pwsh
+        run: |
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "       VALIDATING OMANFO PLUGIN" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+          
+          $failures = 0
+          
+          # Test 1: Manifest Consistency
+          Write-Host "`n▶ Running Test-ManifestConsistency..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ManifestConsistency.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 2: File Structure
+          Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 3: PowerShell Syntax
+          Write-Host "`n▶ Running Test-PowerShellSyntax..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-PowerShellSyntax.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 4: SKILL.md Quality
+          Write-Host "`n▶ Running Test-SkillQuality..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-SkillQuality.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 5: Evaluation Coverage
+          Write-Host "`n▶ Running Test-EvalCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-EvalCoverage.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 6: Markdown Structure
+          Write-Host "`n▶ Running Test-MarkdownStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Summary
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          if ($failures -eq 0) {
+            Write-Host "   ✅ ALL OMANFO VALIDATIONS PASSED" -ForegroundColor Green
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 0
+          } else {
+            Write-Host "   ❌ $failures VALIDATION(S) FAILED" -ForegroundColor Red
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 1
+          }
+      
+      - name: Validate okyeame plugin
+        if: steps.changes.outputs.okyeame_changed == 'true'
+        shell: pwsh
+        run: |
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "       VALIDATING OKYEAME PLUGIN" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+          
+          $failures = 0
+          
+          # Test 1: Manifest Consistency
+          Write-Host "`n▶ Running Test-ManifestConsistency..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ManifestConsistency.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 2: File Structure
+          Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 3: PowerShell Syntax
+          Write-Host "`n▶ Running Test-PowerShellSyntax..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-PowerShellSyntax.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 4: SKILL.md Quality
+          Write-Host "`n▶ Running Test-SkillQuality..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-SkillQuality.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 5: Evaluation Coverage
+          Write-Host "`n▶ Running Test-EvalCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-EvalCoverage.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 6: Markdown Structure
+          Write-Host "`n▶ Running Test-MarkdownStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Summary
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          if ($failures -eq 0) {
+            Write-Host "   ✅ ALL OKYEAME VALIDATIONS PASSED" -ForegroundColor Green
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 0
+          } else {
+            Write-Host "   ❌ $failures VALIDATION(S) FAILED" -ForegroundColor Red
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 1
+          }

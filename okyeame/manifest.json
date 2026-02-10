@@ -1,0 +1,19 @@
+{
+  "name": "okyeame",
+  "version": "1.0.0",
+  "description": "The voice of the Anokye System — status reporting, issue management, and project tracking",
+  "author": "anokye-labs",
+  "license": "MIT",
+  "repository": "https://github.com/anokye-labs/plugins",
+  "skill": {
+    "name": "okyeame",
+    "path": ".github/skills/okyeame",
+    "entryPoint": "SKILL.md",
+    "references": 0,
+    "scripts": 0
+  },
+  "requirements": {
+    "powershell": "7.0+",
+    "githubCli": "2.0+"
+  }
+}
