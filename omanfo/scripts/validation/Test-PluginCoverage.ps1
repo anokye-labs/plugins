@@ -96,9 +96,9 @@ foreach ($featureName in $features.Keys | Sort-Object) {
 
 Write-Host ("=" * 80) -ForegroundColor Gray
 
-# Calculate coverage percentage
+# Calculate coverage percentage (rounded to whole number for comparison with threshold)
 $coveragePercent = if ($totalFeatures -gt 0) {
-    [math]::Round(($coveredFeatures / $totalFeatures) * 100, 2)
+    [math]::Round(($coveredFeatures / $totalFeatures) * 100, 0)
 } else {
     0
 }

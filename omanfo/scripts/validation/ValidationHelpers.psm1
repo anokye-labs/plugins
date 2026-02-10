@@ -27,13 +27,21 @@ function Get-FeatureNameFromScript {
     )
     
     $featureName = switch -Regex ($ScriptName) {
+        # Issue type operations - querying, managing organization issue types
         'IssueType' { 'issue-types'; break }
+        # Hierarchy operations - parent-child relationships, sub-issues
         'Hierarchy|SubIssue|Parent' { 'hierarchy'; break }
+        # GitHub Projects V2 integration
         'Project' { 'projects'; break }
+        # Pull request review operations - threads, comments, resolution
         'PR|Review|Thread' { 'pr-reviews'; break }
+        # Label management operations
         'Label' { 'labels'; break }
+        # Health monitoring and status reporting
         'Sitrep|Health' { 'end-to-end'; break }
+        # Issue creation with typed GraphQL mutations
         'New-IssueWithType' { 'create-issues'; break }
+        # Default: use script name as feature name
         default { $ScriptName.ToLower(); break }
     }
     

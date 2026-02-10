@@ -80,7 +80,10 @@ try {
     
     if (Test-Path $skillMd) {
         $skillContent = Get-Content $skillMd -Raw
-        $hasYamlFrontmatter = $skillContent -match '(?s)^---\s*\n.*?\n---'
+        # Check for YAML frontmatter: starts with ---, ends with ---, can span multiple lines
+        # Pattern: (?s) enables single-line mode so . matches newlines
+        $yamlFrontmatterPattern = '(?s)^---\s*\n.*?\n---'
+        $hasYamlFrontmatter = $skillContent -match $yamlFrontmatterPattern
         Write-ValidationResult "SKILL.md has valid YAML frontmatter" $hasYamlFrontmatter
     }
     
