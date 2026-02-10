@@ -163,14 +163,16 @@ $unchanged = @()
 function Compare-Items {
     param(
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [array]$CurrentItems,
         [Parameter(Mandatory)]
+        [AllowEmptyCollection()]
         [array]$MappingIssues
     )
     
     foreach ($item in $CurrentItems) {
         # Find matching issue by title
-        $matchedIssue = $mappingIssues | Where-Object { 
+        $matchedIssue = $MappingIssues | Where-Object { 
             $_.title -eq $item.Title -and $_.type -eq $item.Type 
         } | Select-Object -First 1
         
@@ -191,11 +193,27 @@ function Compare-Items {
             # Recursively compare children
             if ($item.Children.Count -gt 0) {
                 $childMappings = $MappingIssues | Where-Object { $_.parent -eq $matchedIssue.number }
+                if ($null -eq $childMappings) {
+                    $childMappings = @()
+                }
                 Compare-Items -CurrentItems $item.Children -MappingIssues $childMappings
             }
         } else {
-            # New item
+            # New item - add it and recursively add all its children
             $script:toCreate += $item
+            
+            # Recursively add all descendants
+            if ($item.Children.Count -gt 0) {
+                function Add-AllDescendants($parentItem) {
+                    foreach ($child in $parentItem.Children) {
+                        $script:toCreate += $child
+                        if ($child.Children.Count -gt 0) {
+                            Add-AllDescendants $child
+                        }
+                    }
+                }
+                Add-AllDescendants $item
+            }
         }
     }
 }
