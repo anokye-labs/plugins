@@ -157,30 +157,62 @@ Blocked by: #7, #12
 
 ### 7. Sub-Issues for Decomposition
 
-**Rule:** Use GitHub's sub-issues API for parent-child relationships. Tasklists were deprecated in April 2025.
+**Rule:** Use GitHub's sub-issues API for parent-child relationships. This replaced the deprecated tasklists approach as of April 2025.
 
 **Creating sub-issues:**
 ```graphql
+# 1. Look up the issue type ID for your repository
+query {
+  repository(owner: "owner", name: "repo-name") {
+    issueTypes(first: 10) {
+      nodes {
+        id
+        name
+      }
+    }
+  }
+}
+
+# 2. Create the child issue using the issueTypeId
 mutation {
   createIssue(input: {
-    repositoryId: "repo-id"
+    repositoryId: "R_xxx"
     title: "Child Task"
     body: "Description"
-    issueType: "TASK"
+    issueTypeId: "IT_xxx"  # Use the ID from step 1
   }) {
     issue { id number }
   }
 }
 
-# Then link to parent
+# 3. Link child to parent using addSubIssue
 mutation {
-  updateIssue(input: {
-    id: "parent-issue-id"
-    subIssueIds: ["child-issue-id-1", "child-issue-id-2"]
+  addSubIssue(input: {
+    issueId: "I_parent_xxx"
+    subIssueId: "I_child_xxx"
   }) {
     issue { id }
+    subIssue { id }
   }
 }
+```
+
+**Query sub-issues (requires GraphQL-Features header):**
+```powershell
+gh api graphql -H "GraphQL-Features: sub_issues" -f query='
+query {
+  repository(owner: "owner", name: "repo") {
+    issue(number: 42) {
+      title
+      subIssues(first: 50) {
+        nodes {
+          number
+          title
+        }
+      }
+    }
+  }
+}'
 ```
 
 **Hierarchy patterns:**
@@ -188,27 +220,49 @@ mutation {
 - **Epic → Task** (for simple work)
 - **Feature → Task** (for standalone features)
 
-**Why:** Proper hierarchy enables parallel work, clear ownership, and progress tracking.
+**Why:** Proper hierarchy enables parallel work, clear ownership, and progress tracking. The sub-issues API creates relationships immediately (synchronous), unlike tasklists which required 2-5 minute delays.
 
-**Reference:** anokye-labs/plugins#55, omanfo/how-we-work/our-way.md
+**Reference:** anokye-labs/plugins#55, omanfo/.github/skills/okyerema/SKILL.md
 
 ### 8. Agent Assignment Protocol
 
-**Rule:** Assign work to agents using GitHub CLI with the `@copilot` username.
+**Rule:** Assign work to the Copilot agent using GraphQL `updateIssue` mutation with the bot's node ID. Standard CLI assignment to bot accounts is not supported.
 
-**Command:**
-```bash
-gh issue edit <issue-number> --add-assignee "@copilot"
+**How to assign:**
+```powershell
+# 1. Get the issue node ID
+$issueId = gh api graphql `
+  -f owner='<owner>' `
+  -f name='<repo>' `
+  -F number=<issue-number> `
+  -f query='query($owner:String!, $name:String!, $number:Int!) { 
+    repository(owner: $owner, name: $name) { 
+      issue(number: $number) { id } 
+    } 
+  }' --jq '.data.repository.issue.id'
+
+# 2. Assign using the Copilot bot node ID
+gh api graphql `
+  -f issueId=$issueId `
+  -f query='mutation($issueId: ID!) { 
+    updateIssue(input: { 
+      id: $issueId, 
+      assigneeIds: ["BOT_kgDOC9w8XQ"]
+    }) { 
+      issue { number } 
+    } 
+  }'
 ```
 
 **Notes:**
-- Use `@copilot` (lowercase, with @ prefix)
+- The bot node ID (`BOT_kgDOC9w8XQ`) is specific to the organization's Copilot instance
 - Assignment signals "this agent should work on this issue"
 - Only assign when work is ready (dependencies resolved, requirements clear)
+- Standard CLI (`gh issue edit --add-assignee "@copilot"`) does NOT work for bot accounts
 
-**Why:** Explicit assignment creates accountability and prevents duplicate work.
+**Why:** Explicit assignment creates accountability and prevents duplicate work. The GraphQL flow is required because standard CLI assignment to bot accounts is not supported.
 
-**Reference:** Stored memory (Copilot CLI assignment)
+**Reference:** omanfo/.github/skills/okyerema/references/agentic-workflows.md
 
 ## Observability
 

@@ -14,8 +14,8 @@ All agents must follow these core principles:
 - **Issue references** — Every commit must reference the issue being worked on
 - **Structured logging** — Use consistent, parseable log formats
 - **GitHub Issues as coordination** — Issues are external memory and contracts
-- **Sub-issues for hierarchy** — Use the sub-issues API (tasklists deprecated April 2025)
-- **Agent assignment** — Assign work via `gh issue edit N --add-assignee "@copilot"`
+- **Sub-issues for hierarchy** — Use the sub-issues API (synchronous, replaced tasklists April 2025)
+- **Agent assignment** — Assign work via GraphQL `updateIssue` mutation with bot node ID
 
 See the full [agent conventions document](how-we-work/agent-conventions.md) for details and anti-patterns.
 
@@ -25,7 +25,7 @@ See the full [agent conventions document](how-we-work/agent-conventions.md) for 
 
 The Okyerema (talking drummer) skill teaches agents how to:
 - Create issues with proper organization types (Epic, Feature, Task, Bug)
-- Build parent-child hierarchies using GitHub Tasklists
+- Build parent-child hierarchies using the sub-issues API
 - Manipulate GitHub Projects via GraphQL
 - Use labels appropriately (sparingly, for categorization only)
 - Verify relationships and troubleshoot issues
@@ -34,9 +34,8 @@ The Okyerema (talking drummer) skill teaches agents how to:
 
 1. **Use GraphQL for all structured operations** — gh CLI is insufficient
 2. **Use organization issue types** — never labels or title prefixes
-3. **Use Tasklists for relationships** — markdown checkboxes in issue body
-4. **Wait 2-5 minutes** after tasklist updates for GitHub to parse
-5. **Use labels sparingly** — categorization only, never structure
+3. **Use sub-issues API for relationships** — `addSubIssue`/`removeSubIssue` mutations with `GraphQL-Features: sub_issues` header
+4. **Use labels sparingly** — categorization only, never structure
 
 ## Session Context
 

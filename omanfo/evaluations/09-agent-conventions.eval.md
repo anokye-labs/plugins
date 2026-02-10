@@ -25,6 +25,13 @@ git branch -M main
 # Create initial commit
 git add .
 git commit -m "Initial setup with Omanfo plugin"
+
+# Create GitHub remote repository and push initial commit
+gh repo create anokye-labs/test-agent-conventions `
+  --public `
+  --source . `
+  --remote origin `
+  --push
 ```
 
 ## Test Scenarios
@@ -39,10 +46,36 @@ git commit -m "Initial setup with Omanfo plugin"
 gh issue create --title "Add README section" --body "Add a 'Getting Started' section to README.md with basic setup instructions." --repo anokye-labs/test-agent-conventions
 ```
 
-2. Assign to agent:
+2. Assign to agent using GraphQL (required for Copilot bot assignment):
 ```powershell
-gh issue edit <issue-number> --add-assignee "@copilot"
+# Get the issue number from the previous command or list issues
+$issueNum = (gh issue list --limit 1 --json number --jq '.[0].number')
+
+# Get the issue node ID
+$issueId = gh api graphql `
+  -f owner='anokye-labs' `
+  -f name='test-agent-conventions' `
+  -F number=$issueNum `
+  -f query='query($owner:String!, $name:String!, $number:Int!) { 
+    repository(owner: $owner, name: $name) { 
+      issue(number: $number) { id } 
+    } 
+  }' --jq '.data.repository.issue.id'
+
+# Assign the Copilot bot using GraphQL (replace BOT_NODE_ID with actual ID for your org)
+gh api graphql `
+  -f issueId=$issueId `
+  -f query='mutation($issueId: ID!) { 
+    updateIssue(input: { 
+      id: $issueId, 
+      assigneeIds: ["BOT_kgDOC9w8XQ"]
+    }) { 
+      issue { number } 
+    } 
+  }'
 ```
+
+**Note:** The Copilot bot node ID (`BOT_kgDOC9w8XQ`) is specific to the anokye-labs organization. Standard CLI assignment (`gh issue edit --add-assignee "@copilot"`) does not work for bot accounts.
 
 **Agent Task:** Complete the issue (add the README section).
 
@@ -73,9 +106,11 @@ git checkout -b feature-test
 gh issue create --title "Update version in package.json" --body "Update version to 1.1.0 in package.json. This should be done on the main branch." --repo anokye-labs/test-agent-conventions
 ```
 
-3. Assign to agent (while still on feature-test):
+3. Assign to agent using GraphQL (while still on feature-test):
 ```powershell
-gh issue edit <issue-number> --add-assignee "@copilot"
+$issueNum = (gh issue list --limit 1 --json number --jq '.[0].number')
+$issueId = gh api graphql -f owner='anokye-labs' -f name='test-agent-conventions' -F number=$issueNum -f query='query($owner:String!, $name:String!, $number:Int!) { repository(owner: $owner, name: $name) { issue(number: $number) { id } } }' --jq '.data.repository.issue.id'
+gh api graphql -f issueId=$issueId -f query='mutation($issueId: ID!) { updateIssue(input: { id: $issueId, assigneeIds: ["BOT_kgDOC9w8XQ"] }) { issue { number } } }'
 ```
 
 **Agent Task:** Complete the issue.
@@ -193,7 +228,8 @@ gh issue create --title "Create logger utility" --body "Create src/logger.ts wit
 ```powershell
 gh issue create --title "Add .gitignore" --body "Add a .gitignore file with node_modules and .DS_Store" --repo anokye-labs/test-agent-conventions
 $issueNum = (gh issue list --limit 1 --json number --jq '.[0].number')
-gh issue edit $issueNum --add-assignee "@copilot"
+$issueId = gh api graphql -f owner='anokye-labs' -f name='test-agent-conventions' -F number=$issueNum -f query='query($owner:String!, $name:String!, $number:Int!) { repository(owner: $owner, name: $name) { issue(number: $number) { id } } }' --jq '.data.repository.issue.id'
+gh api graphql -f issueId=$issueId -f query='mutation($issueId: ID!) { updateIssue(input: { id: $issueId, assigneeIds: ["BOT_kgDOC9w8XQ"] }) { issue { number } } }'
 ```
 
 **Agent Task:** Complete the task.
