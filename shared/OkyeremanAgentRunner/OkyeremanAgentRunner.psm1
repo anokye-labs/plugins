@@ -27,6 +27,9 @@
 .PARAMETER AsObject
     If set, returns a PSCustomObject instead of writing to host.
 
+.PARAMETER Quiet
+    If set, suppresses console output (useful when logging internally).
+
 .EXAMPLE
     Write-AgentLog -Message "Processing issue #42" -Level Info -Agent "Asafo"
 
@@ -50,7 +53,10 @@ function Write-AgentLog {
         [string]$CorrelationId = '',
 
         [Parameter()]
-        [switch]$AsObject
+        [switch]$AsObject,
+
+        [Parameter()]
+        [switch]$Quiet
     )
 
     $timestamp = Get-Date -Format 'o'
@@ -67,24 +73,26 @@ function Write-AgentLog {
         return $logEntry
     }
 
-    # Console output with color coding
-    $color = switch ($Level) {
-        'Debug' { 'Gray' }
-        'Info'  { 'White' }
-        'Warn'  { 'Yellow' }
-        'Error' { 'Red' }
-    }
+    if (-not $Quiet) {
+        # Console output with color coding
+        $color = switch ($Level) {
+            'Debug' { 'Gray' }
+            'Info'  { 'White' }
+            'Warn'  { 'Yellow' }
+            'Error' { 'Red' }
+        }
 
-    $prefix = if ($Agent) { "[$Agent]" } else { "" }
-    $correlationSuffix = if ($CorrelationId) { " [CID:$CorrelationId]" } else { "" }
-    
-    Write-Host "$timestamp [$Level]$prefix $Message$correlationSuffix" -ForegroundColor $color
+        $prefix = if ($Agent) { "[$Agent]" } else { "" }
+        $correlationSuffix = if ($CorrelationId) { " [CID:$CorrelationId]" } else { "" }
+        
+        Write-Host "$timestamp [$Level]$prefix $Message$correlationSuffix" -ForegroundColor $color
 
-    # GitHub Actions annotations for warnings and errors
-    if ($env:GITHUB_ACTIONS -eq 'true') {
-        switch ($Level) {
-            'Warn'  { Write-Output "::warning::$Message" }
-            'Error' { Write-Output "::error::$Message" }
+        # GitHub Actions annotations for warnings and errors
+        if ($env:GITHUB_ACTIONS -eq 'true') {
+            switch ($Level) {
+                'Warn'  { Write-Output "::warning::$Message" }
+                'Error' { Write-Output "::error::$Message" }
+            }
         }
     }
 }
@@ -155,7 +163,7 @@ function Invoke-WithRetry {
             
             # Check for rate limiting
             if ($errorMessage -match 'rate limit|too many requests|429') {
-                Write-AgentLog "Rate limit detected. Waiting before retry..." -Level Warn | Out-Null
+                Write-AgentLog "Rate limit detected. Waiting before retry..." -Level Warn -Quiet
                 
                 # Try to parse retry-after header if available
                 $retryAfter = 60
@@ -165,12 +173,12 @@ function Invoke-WithRetry {
                 Start-Sleep -Seconds $retryAfter
             }
             elseif ($attempt -le $MaxRetries) {
-                Write-AgentLog "Attempt $attempt failed: $errorMessage. Retrying in $delay seconds..." -Level Warn | Out-Null
+                Write-AgentLog "Attempt $attempt failed: $errorMessage. Retrying in $delay seconds..." -Level Warn -Quiet
                 Start-Sleep -Seconds $delay
                 $delay = [Math]::Min($delay * $BackoffMultiplier, $MaxDelaySeconds)
             }
             else {
-                Write-AgentLog "All $MaxRetries retry attempts exhausted." -Level Error | Out-Null
+                Write-AgentLog "All $MaxRetries retry attempts exhausted." -Level Error -Quiet
                 throw
             }
         }
@@ -267,7 +275,7 @@ function Get-IssueContext {
     $cacheKey = "$Owner/$Repo#$IssueNumber"
     
     if ($UseCache -and $script:IssueContextCache -and $script:IssueContextCache.ContainsKey($cacheKey)) {
-        Write-AgentLog "Using cached context for $cacheKey" -Level Debug | Out-Null
+        Write-AgentLog "Using cached context for $cacheKey" -Level Debug -Quiet
         return $script:IssueContextCache[$cacheKey]
     }
 
@@ -346,7 +354,7 @@ function Clear-IssueContextCache {
     param()
 
     $script:IssueContextCache = @{}
-    Write-AgentLog "Issue context cache cleared" -Level Debug | Out-Null
+    Write-AgentLog "Issue context cache cleared" -Level Debug -Quiet
 }
 
 #endregion
@@ -676,11 +684,18 @@ mutation {
 .PARAMETER RedactionMarker
     String to use for redaction. Default is '[REDACTED]'.
 
+.PARAMETER IncludeGenericSecrets
+    If set, also redacts generic uppercase alphanumeric strings (32+ chars).
+    This may produce false positives. Default is false.
+
 .EXAMPLE
     $safe = ConvertTo-SafeOutput -Text $agentResponse
 
 .EXAMPLE
     ConvertTo-SafeOutput "My token is ghp_1234567890" -RedactionMarker "***"
+    
+.EXAMPLE
+    ConvertTo-SafeOutput $text -IncludeGenericSecrets
 #>
 function ConvertTo-SafeOutput {
     [CmdletBinding()]
@@ -689,21 +704,26 @@ function ConvertTo-SafeOutput {
         [string]$Text,
 
         [Parameter()]
-        [string]$RedactionMarker = '[REDACTED]'
+        [string]$RedactionMarker = '[REDACTED]',
+
+        [Parameter()]
+        [switch]$IncludeGenericSecrets
     )
 
     process {
         $sanitized = $Text
 
-        # GitHub tokens (various types, 36+ characters)
+        # GitHub tokens (various types, 30+ characters)
         $sanitized = $sanitized -replace 'ghp_[a-zA-Z0-9]{30,}', $RedactionMarker
         $sanitized = $sanitized -replace 'gho_[a-zA-Z0-9]{30,}', $RedactionMarker
         $sanitized = $sanitized -replace 'ghu_[a-zA-Z0-9]{30,}', $RedactionMarker
         $sanitized = $sanitized -replace 'ghs_[a-zA-Z0-9]{30,}', $RedactionMarker
         $sanitized = $sanitized -replace 'ghr_[a-zA-Z0-9]{30,}', $RedactionMarker
 
-        # API keys (generic uppercase alphanumeric pattern, 32+ characters)
-        $sanitized = $sanitized -replace '\b[A-Z0-9_]{32,}\b', $RedactionMarker
+        # Generic API keys (optional, may have false positives)
+        if ($IncludeGenericSecrets) {
+            $sanitized = $sanitized -replace '\b[A-Z0-9_]{32,}\b', $RedactionMarker
+        }
 
         # Email addresses
         $sanitized = $sanitized -replace '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', $RedactionMarker
@@ -753,7 +773,7 @@ function Limit-OutputLength {
         }
 
         $truncated = $Text.Substring(0, $MaxLength - $Ellipsis.Length) + $Ellipsis
-        Write-AgentLog "Output truncated from $($Text.Length) to $MaxLength characters" -Level Debug | Out-Null
+        Write-AgentLog "Output truncated from $($Text.Length) to $MaxLength characters" -Level Debug -Quiet
         return $truncated
     }
 }
@@ -878,9 +898,9 @@ function Set-CorrelationId {
 
     $script:CurrentCorrelationId = $CorrelationId
     if ($CorrelationId) {
-        Write-AgentLog "Correlation ID set: $CorrelationId" -Level Debug | Out-Null
+        Write-AgentLog "Correlation ID set: $CorrelationId" -Level Debug -Quiet
     } else {
-        Write-AgentLog "Correlation ID cleared" -Level Debug | Out-Null
+        Write-AgentLog "Correlation ID cleared" -Level Debug -Quiet
     }
 }
 
