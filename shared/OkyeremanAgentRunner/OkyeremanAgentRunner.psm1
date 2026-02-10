@@ -717,25 +717,28 @@ function ConvertTo-SafeOutput {
 
     process {
         $sanitized = $Text
+        
+        # Escape $ in RedactionMarker to prevent regex backreference interpretation
+        $safeMarker = $RedactionMarker.Replace('$', '$$')
 
         # GitHub tokens (various types, 30+ characters)
-        $sanitized = $sanitized -replace 'ghp_[a-zA-Z0-9]{30,}', $RedactionMarker
-        $sanitized = $sanitized -replace 'gho_[a-zA-Z0-9]{30,}', $RedactionMarker
-        $sanitized = $sanitized -replace 'ghu_[a-zA-Z0-9]{30,}', $RedactionMarker
-        $sanitized = $sanitized -replace 'ghs_[a-zA-Z0-9]{30,}', $RedactionMarker
-        $sanitized = $sanitized -replace 'ghr_[a-zA-Z0-9]{30,}', $RedactionMarker
-        $sanitized = $sanitized -replace 'github_pat_[a-zA-Z0-9_]{30,}', $RedactionMarker
+        $sanitized = $sanitized -replace 'ghp_[a-zA-Z0-9]{30,}', $safeMarker
+        $sanitized = $sanitized -replace 'gho_[a-zA-Z0-9]{30,}', $safeMarker
+        $sanitized = $sanitized -replace 'ghu_[a-zA-Z0-9]{30,}', $safeMarker
+        $sanitized = $sanitized -replace 'ghs_[a-zA-Z0-9]{30,}', $safeMarker
+        $sanitized = $sanitized -replace 'ghr_[a-zA-Z0-9]{30,}', $safeMarker
+        $sanitized = $sanitized -replace 'github_pat_[a-zA-Z0-9_]{30,}', $safeMarker
 
         # Generic API keys (optional, may have false positives)
         if ($IncludeGenericSecrets) {
-            $sanitized = $sanitized -replace '\b[A-Z0-9_]{32,}\b', $RedactionMarker
+            $sanitized = $sanitized -replace '\b[A-Z0-9_]{32,}\b', $safeMarker
         }
 
         # Email addresses
-        $sanitized = $sanitized -replace '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', $RedactionMarker
+        $sanitized = $sanitized -replace '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b', $safeMarker
 
         # Phone numbers (US format)
-        $sanitized = $sanitized -replace '\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', $RedactionMarker
+        $sanitized = $sanitized -replace '\b\d{3}[-.]?\d{3}[-.]?\d{4}\b', $safeMarker
 
         return $sanitized
     }

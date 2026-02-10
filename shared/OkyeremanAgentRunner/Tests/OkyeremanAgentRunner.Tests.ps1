@@ -255,6 +255,15 @@ Describe "Safe Output Processing Functions" {
             $output = "ghp_1234567890abcdefghijklmnopqrstuv" | ConvertTo-SafeOutput
             $output | Should -Match "\[REDACTED\]"
         }
+
+        It "Should escape regex backreferences in RedactionMarker" {
+            $input = "Token: ghp_1234567890abcdefghijklmnopqrstuv"
+            $output = ConvertTo-SafeOutput -Text $input -RedactionMarker '$0'
+            # Should NOT contain the original token (which $0 would expand to)
+            $output | Should -Not -Match "ghp_"
+            # Should contain literal $0
+            $output | Should -Match '\$0'
+        }
     }
 
     Context "Limit-OutputLength" {
