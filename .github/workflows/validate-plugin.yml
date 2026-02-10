@@ -33,8 +33,14 @@ jobs:
           echo "Detecting which plugins have changes..."
           
           # Get list of changed files
-          git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          # For pull_request events, diff against base branch
+          # For push events, diff against parent commit
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          else
+            CHANGED_FILES=$(git diff --name-only HEAD~1...HEAD)
+          fi
           
           # Check if omanfo has changes
           if echo "$CHANGED_FILES" | grep -q "^omanfo/"; then
