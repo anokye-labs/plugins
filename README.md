@@ -18,6 +18,14 @@
 |--------|---------|-------------|--------|
 | [OkyeremanAgentRunner](shared/OkyeremanAgentRunner/) | Runtime Foundation | Common functions for logging, error handling, issue context, PR management, safe output processing, correlation tracking | ✅ Ready |
 
+## Governance Workflow Templates
+
+| Template | Purpose | Description | Status |
+|----------|---------|-------------|--------|
+| [workflow-templates](workflow-templates/) | Repository Governance | Reusable GitHub Actions workflows for commit validation, agent authentication, and branch protection rulesets | ✅ Ready |
+
+**Enforce agent-only commits and issue-driven development** — Copy these templates into any repository to require that all commits reference issues and come from approved agents (like Copilot).
+
 ## The Anokye System: Three Layers Working in Harmony
 
 The Anokye System is a multi-agent orchestration architecture that transforms how software gets built. Instead of manually creating issues, tracking status, and coordinating work, you install a plugin and your repository becomes an AI-orchestrated environment.
