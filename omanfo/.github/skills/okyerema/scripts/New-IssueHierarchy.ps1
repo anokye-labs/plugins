@@ -26,7 +26,18 @@ query {
 }
 "@
 
-$result = gh api graphql -f query="$query" | ConvertFrom-Json
+$rawResult = gh api graphql -f query="$query" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "GraphQL query failed: $rawResult"
+    exit 1
+}
+
+$result = $rawResult | ConvertFrom-Json
+if ($result.errors) {
+    Write-Error "GraphQL errors: $($result.errors | ConvertTo-Json -Compress)"
+    exit 1
+}
+
 $repoId = $result.data.repository.id
 $issueTypes = $result.data.repository.owner.issueTypes.nodes
 
@@ -69,7 +80,18 @@ mutation {
 }
 "@
     
-    $createResult = gh api graphql -f query="$mutation" | ConvertFrom-Json
+    $rawCreateResult = gh api graphql -f query="$mutation" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "Failed to create issue '$Title': $rawCreateResult"
+        return $null
+    }
+    
+    $createResult = $rawCreateResult | ConvertFrom-Json
+    if ($createResult.errors) {
+        Write-Error "GraphQL errors creating issue '$Title': $($createResult.errors | ConvertTo-Json -Compress)"
+        return $null
+    }
+    
     $issue = $createResult.data.createIssue.issue
     
     Write-Host "${Indent}✓ Created #$($issue.number) [$($issue.issueType.name)] $($issue.title)" -ForegroundColor Green
