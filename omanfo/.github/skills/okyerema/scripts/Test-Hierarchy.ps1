@@ -41,7 +41,18 @@ query {
 }
 "@
     
-    $result = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$query" | ConvertFrom-Json
+    $rawResult = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$query" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "GraphQL query failed. Ensure the sub-issues API is available and the GraphQL-Features header is supported: $rawResult"
+        exit 1
+    }
+    
+    $result = $rawResult | ConvertFrom-Json
+    if ($result.errors) {
+        Write-Error "GraphQL errors: $($result.errors | ConvertTo-Json -Compress)"
+        exit 1
+    }
+    
     $issue = $result.data.repository.issue
     
     $typeColor = switch ($issue.issueType.name) {

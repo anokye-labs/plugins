@@ -129,11 +129,11 @@ $task2 = & .github\skills\okyerema\scripts\New-IssueWithType.ps1 `
 
 **Action:** In Copilot chat, ask:
 
-> "Create a Feature issue titled 'Eval 4.6 Feature' and two Task children titled 'Task C.1' and 'Task C.2' in anokye-labs/plugins. Link them as parent-child using the sub-issues API."
+> "Create a Feature issue titled 'Eval 4.6 Feature' and two Task children titled 'Task C.1' and 'Task C.2' in anokye-labs/plugins. Link them as parent-child."
 
 **Expected:**
 - [ ] Copilot creates all 3 issues with correct types
-- [ ] Builds the hierarchy via sub-issues API
+- [ ] Builds the hierarchy correctly
 - [ ] Reports the created structure
 
 ## Cleanup

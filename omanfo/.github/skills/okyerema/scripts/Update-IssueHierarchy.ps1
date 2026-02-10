@@ -52,6 +52,7 @@ query {
 
 # Add each child as a sub-issue
 $successCount = 0
+$failedCount = 0
 foreach ($child in $childIds) {
     $addMutation = @"
 mutation {
@@ -71,8 +72,15 @@ mutation {
         $successCount++
     } else {
         Write-Host "  ⚠ Failed to add #$($child.Number): $addResult" -ForegroundColor Yellow
+        $failedCount++
     }
 }
 
-Write-Host "✓ Updated #$ParentNumber with $successCount sub-issues" -ForegroundColor Green
-Write-Host "  Children: #$($ChildNumbers -join ', #')" -ForegroundColor Gray
+if ($failedCount -gt 0) {
+    Write-Host "✓ Updated #$ParentNumber with $successCount sub-issues ($failedCount failed)" -ForegroundColor Yellow
+    Write-Host "  Successful: #$($childIds | Where-Object { $_.Number -in ($ChildNumbers[0..$($successCount-1)]) } | Select-Object -ExpandProperty Number -Join ', #')" -ForegroundColor Gray
+    exit 1
+} else {
+    Write-Host "✓ Updated #$ParentNumber with $successCount sub-issues" -ForegroundColor Green
+    Write-Host "  Children: #$($ChildNumbers -join ', #')" -ForegroundColor Gray
+}
