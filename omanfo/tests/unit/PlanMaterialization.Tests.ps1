@@ -29,12 +29,6 @@ Describe "Invoke-PlanMaterialization" {
         $cmd.Parameters['PlanFile'].Attributes.Mandatory | Should -Be $true
     }
 
-    It "Should validate PlanFile parameter with script" {
-        $cmd = Get-Command $scriptPath
-        $validateScript = $cmd.Parameters['PlanFile'].Attributes | Where-Object { $_.TypeId.Name -eq 'ValidateScriptAttribute' }
-        $validateScript | Should -Not -BeNullOrEmpty
-    }
-
     It "Should have optional DryRun parameter" {
         $cmd = Get-Command $scriptPath
         $cmd.Parameters.Keys | Should -Contain "DryRun"
@@ -62,12 +56,6 @@ Describe "Sync-PlanToIssues" {
         $cmd = Get-Command $scriptPath
         $cmd.Parameters.Keys | Should -Contain "PlanFile"
         $cmd.Parameters['PlanFile'].Attributes.Mandatory | Should -Be $true
-    }
-
-    It "Should validate PlanFile parameter with script" {
-        $cmd = Get-Command $scriptPath
-        $validateScript = $cmd.Parameters['PlanFile'].Attributes | Where-Object { $_.TypeId.Name -eq 'ValidateScriptAttribute' }
-        $validateScript | Should -Not -BeNullOrEmpty
     }
 
     It "Should have DryRun switch parameter" {

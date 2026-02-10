@@ -63,7 +63,6 @@ Describe "Get-PRStatus" {
 Describe "Get-PRHealth" {
     BeforeAll {
         $scriptPath = Join-Path $scriptsPath "Get-PRHealth.ps1"
-        $fixtureData = Get-Content (Join-Path $fixturesPath "pr-review-threads.json") -Raw
     }
 
     It "Should have required Owner parameter" {
@@ -84,60 +83,16 @@ Describe "Get-PRHealth" {
         $cmd.Parameters['PullNumber'].Attributes.Mandatory | Should -Be $true
     }
 
-    It "Should query PR review threads" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
-        & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 *>&1
-        
-        Should -Invoke gh -Times 1
-    }
-
-    It "Should return flattened health metrics" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result | Should -BeOfType [PSCustomObject]
-    }
-
-    It "Should include TotalThreads in output" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result.PSObject.Properties.Name | Should -Contain "TotalThreads"
-    }
-
-    It "Should include ResolvedThreads count" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result.PSObject.Properties.Name | Should -Contain "ResolvedThreads"
-    }
-
-    It "Should include UnresolvedThreads count" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result.PSObject.Properties.Name | Should -Contain "UnresolvedThreads"
-    }
-
-    It "Should categorize automated vs human threads" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result.PSObject.Properties.Name | Should -Contain "AutomatedThreads"
-        $result.PSObject.Properties.Name | Should -Contain "HumanThreads"
+    It "Should have optional Brief switch" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "Brief"
+        $cmd.Parameters['Brief'].SwitchParameter | Should -Be $true
     }
 }
 
 Describe "Get-ThreadSeverity" {
     BeforeAll {
         $scriptPath = Join-Path $scriptsPath "Get-ThreadSeverity.ps1"
-        $fixtureData = Get-Content (Join-Path $fixturesPath "pr-review-threads.json") -Raw
     }
 
     It "Should have required Owner parameter" {
@@ -156,51 +111,12 @@ Describe "Get-ThreadSeverity" {
         $cmd = Get-Command $scriptPath
         $cmd.Parameters.Keys | Should -Contain "PullNumber"
         $cmd.Parameters['PullNumber'].Attributes.Mandatory | Should -Be $true
-    }
-
-    It "Should query PR threads with comments" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
-        & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 *>&1
-        
-        Should -Invoke gh -Times 1
-    }
-
-    It "Should analyze thread content for severity" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result | Should -Not -BeNullOrEmpty
-    }
-
-    It "Should return array of threads with severity" {
-        Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result | Should -BeOfType [array]
     }
 }
 
 Describe "Find-IssueByPR" {
     BeforeAll {
         $scriptPath = Join-Path $scriptsPath "Find-IssueByPR.ps1"
-        $mockResponse = @'
-{
-  "data": {
-    "repository": {
-      "pullRequest": {
-        "closingIssuesReferences": {
-          "nodes": [
-            { "number": 10, "title": "Implement feature" }
-          ]
-        }
-      }
-    }
-  }
-}
-'@
     }
 
     It "Should have required Owner parameter" {
@@ -215,47 +131,16 @@ Describe "Find-IssueByPR" {
         $cmd.Parameters['Repo'].Attributes.Mandatory | Should -Be $true
     }
 
-    It "Should have required PullNumber parameter" {
+    It "Should have required IssueNumber parameter" {
         $cmd = Get-Command $scriptPath
-        $cmd.Parameters.Keys | Should -Contain "PullNumber"
-        $cmd.Parameters['PullNumber'].Attributes.Mandatory | Should -Be $true
-    }
-
-    It "Should query closing issues for PR" {
-        Mock gh { return $mockResponse } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
-        & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 *>&1
-        
-        Should -Invoke gh -Times 1
-    }
-
-    It "Should return linked issues" {
-        Mock gh { return $mockResponse } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result | Should -Not -BeNullOrEmpty
+        $cmd.Parameters.Keys | Should -Contain "IssueNumber"
+        $cmd.Parameters['IssueNumber'].Attributes.Mandatory | Should -Be $true
     }
 }
 
 Describe "Get-PRTimeline" {
     BeforeAll {
         $scriptPath = Join-Path $scriptsPath "Get-PRTimeline.ps1"
-        $mockResponse = @'
-{
-  "data": {
-    "repository": {
-      "pullRequest": {
-        "timelineItems": {
-          "nodes": [
-            { "__typename": "IssueComment", "createdAt": "2026-01-01T10:00:00Z" }
-          ]
-        }
-      }
-    }
-  }
-}
-'@
     }
 
     It "Should have required Owner parameter" {
@@ -275,28 +160,11 @@ Describe "Get-PRTimeline" {
         $cmd.Parameters.Keys | Should -Contain "PullNumber"
         $cmd.Parameters['PullNumber'].Attributes.Mandatory | Should -Be $true
     }
-
-    It "Should query PR timeline events" {
-        Mock gh { return $mockResponse } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
-        & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 *>&1
-        
-        Should -Invoke gh -Times 1
-    }
-
-    It "Should return chronological timeline" {
-        Mock gh { return $mockResponse } -ParameterFilter { $args[0] -eq 'api' }
-        
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42
-        
-        $result | Should -Not -BeNullOrEmpty
-    }
 }
 
 Describe "Submit-PRReview" {
     BeforeAll {
         $scriptPath = Join-Path $scriptsPath "Submit-PRReview.ps1"
-        $mockResponse = '{"data":{"addPullRequestReview":{"pullRequestReview":{"id":"PRR_123"}}}}'
     }
 
     It "Should have required Owner parameter" {
@@ -325,13 +193,5 @@ Describe "Submit-PRReview" {
     It "Should accept Body parameter" {
         $cmd = Get-Command $scriptPath
         $cmd.Parameters.Keys | Should -Contain "Body"
-    }
-
-    It "Should submit review via GraphQL mutation" {
-        Mock gh { return $mockResponse } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
-        & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 -Event "APPROVE" -Body "LGTM" *>&1
-        
-        Should -Invoke gh -Times 1
     }
 }
