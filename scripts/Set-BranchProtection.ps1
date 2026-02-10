@@ -108,17 +108,20 @@ function Get-BranchProtectionId {
         [string]$Branch
     )
 
+    # Escape double quotes to prevent GraphQL injection
+    $escapedOwner = $Owner.Replace('"', '\"')
+    $escapedRepo = $Repo.Replace('"', '\"')
+    $escapedBranch = $Branch.Replace('"', '\"')
+
     $query = @"
 query {
-  repository(owner: "$Owner", name: "$Repo") {
+  repository(owner: "$escapedOwner", name: "$escapedRepo") {
     branchProtectionRules(first: 10) {
       nodes {
         id
         pattern
         requiresStatusChecks
-        requiredStatusChecks {
-          contexts
-        }
+        requiredStatusCheckContexts
       }
     }
     id
@@ -131,14 +134,14 @@ query {
         
         $repoId = $response.data.repository.id
         $existingRule = $response.data.repository.branchProtectionRules.nodes | 
-            Where-Object { $_.pattern -eq $Branch }
+            Where-Object { $_.pattern -eq $escapedBranch }
         
         return @{
             RepoId = $repoId
             RuleId = $existingRule.id
             Pattern = $existingRule.pattern
             RequiresStatusChecks = $existingRule.requiresStatusChecks
-            RequiredStatusChecks = $existingRule.requiredStatusChecks.contexts
+            RequiredStatusChecks = $existingRule.requiredStatusCheckContexts
         }
     }
     catch {
@@ -155,13 +158,18 @@ function Set-BranchProtectionRule {
         [string[]]$RequiredStatusChecks
     )
 
+    # Escape double quotes to prevent GraphQL injection
+    $escapedRepoId = $RepoId.Replace('"', '\"')
+    $escapedRuleId = $RuleId.Replace('"', '\"')
+    $escapedBranch = $Branch.Replace('"', '\"')
+
     if ($RuleId) {
         # Update existing rule
         # Note: gh CLI accepts '-f query=' for both queries and mutations
         $graphqlMutation = @"
 mutation {
   updateBranchProtectionRule(input: {
-    branchProtectionRuleId: "$RuleId"
+    branchProtectionRuleId: "$escapedRuleId"
     requiresStatusChecks: true
     requiredStatusCheckContexts: $(ConvertTo-JsonArray $RequiredStatusChecks)
     requiresStrictStatusChecks: false
@@ -169,9 +177,7 @@ mutation {
     branchProtectionRule {
       id
       pattern
-      requiredStatusChecks {
-        contexts
-      }
+      requiredStatusCheckContexts
     }
   }
 }
@@ -183,8 +189,8 @@ mutation {
         $graphqlMutation = @"
 mutation {
   createBranchProtectionRule(input: {
-    repositoryId: "$RepoId"
-    pattern: "$Branch"
+    repositoryId: "$escapedRepoId"
+    pattern: "$escapedBranch"
     requiresStatusChecks: true
     requiredStatusCheckContexts: $(ConvertTo-JsonArray $RequiredStatusChecks)
     requiresStrictStatusChecks: false
@@ -192,9 +198,7 @@ mutation {
     branchProtectionRule {
       id
       pattern
-      requiredStatusChecks {
-        contexts
-      }
+      requiredStatusCheckContexts
     }
   }
 }
