@@ -63,7 +63,19 @@ The README is the first thing a developer sees. If it says *"install this plugin
 
 ## Installation
 
-### Quick Start: Deploy the Anokye System
+### The Two Ways to Deploy
+
+The Anokye System can be deployed in two ways:
+
+1. **Via Okyeame CLI Plugin** (Recommended) — `/plugin install` in GitHub Copilot CLI
+   - Okyeame guides you through Socratic dialog
+   - Automatically runs `Install-Anokye.ps1` for you
+   - Helps configure issue types and project boards
+   - *Currently in development - watch this space*
+
+2. **Manual Deployment** (Available Now) — Run the script directly
+
+### Quick Start: Manual Deployment
 
 Each plugin includes an `Install-Anokye.ps1` script that deploys the full system into your repository:
 
