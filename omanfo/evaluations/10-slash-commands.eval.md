@@ -6,7 +6,7 @@
 
 ## Objective
 
-Verify the slash command scripts return correct structured data and that the okyerema agent correctly dispatches commands. Tests all slash commands defined in status-commands.md, including the 3 P0 script-backed commands and 6 agent-driven commands.
+Verify the slash command scripts return correct structured data and that the okyeame agent correctly dispatches commands. Tests all slash commands defined in status-commands.md, including the 3 P0 script-backed commands and 6 agent-driven commands.
 
 ## Setup
 
@@ -30,9 +30,9 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 
 **Expected:**
 - [ ] Returns a PSCustomObject with structured data
-- [ ] Contains fields: OpenIssues, CompletedIssues, BlockedIssues
+- [ ] Contains fields: TotalOpen, DoneCount, PendingCount, BlockedCount
 - [ ] Contains fields: RecentCommits (array of commit info)
-- [ ] Contains CurrentFocus (inferred issue/PR if available)
+- [ ] Contains Focus (inferred issue/PR if available)
 - [ ] No errors even if no open issues exist
 
 ### 10.2 /sitrep with Focus Issue
@@ -45,7 +45,7 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 ```
 
 **Expected:**
-- [ ] CurrentFocus field reflects the specified issue
+- [ ] Focus field reflects the specified issue
 - [ ] Issue details are included in the output
 - [ ] Script handles non-existent issue numbers gracefully
 
@@ -89,10 +89,10 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 **Expected:**
 - [ ] Returns PSCustomObject with structured PR health data
 - [ ] Contains fields: Number, Title, State, Mergeable
-- [ ] Contains ThreadStats with Total, Resolved, Unresolved counts
-- [ ] Contains ReviewerCategories: Copilot (🤖), Devin (🤖), Human (🧑)
-- [ ] Includes CI check status (passing/failing counts)
-- [ ] Includes approval status and mergeable state
+- [ ] Contains flattened thread fields: TotalThreads, ResolvedThreads, UnresolvedThreads
+- [ ] Contains flattened reviewer fields: AutomatedThreads, HumanThreads, AutomatedResolved, HumanResolved, etc.
+- [ ] Includes CI check status: ChecksStatus, ChecksPassed, ChecksTotal, ChecksFailed
+- [ ] Includes approval status: Approvals, ChangesRequested
 - [ ] Contains Recommendation field with actionable guidance
 
 ### 10.6 /prcheck Reviewer Categorization
@@ -104,14 +104,15 @@ $prHealth = & .github\skills\okyerema\scripts\Get-PRHealth.ps1 `
     -Owner $owner -Repo $repo -PullNumber 10
 
 # Check reviewer categories
-$prHealth.ReviewerCategories
+$prHealth.AutomatedThreads
+$prHealth.HumanThreads
 ```
 
 **Expected:**
-- [ ] Copilot reviews are categorized as 🤖 copilot
-- [ ] Devin reviews are categorized as 🤖 devin
-- [ ] All other reviews are categorized as 🧑 Human
+- [ ] Copilot and Devin reviews are counted in AutomatedThreads, AutomatedResolved, AutomatedUnresolved
+- [ ] All other reviews are counted in HumanThreads, HumanResolved, HumanUnresolved
 - [ ] Category counts are accurate
+- [ ] Thread categorization distinguishes automated vs human reviewers
 
 ### 10.7 /prcheck Brief Mode
 
@@ -138,7 +139,7 @@ $prHealth.ReviewerCategories
 
 **Expected:**
 - [ ] Returns PSCustomObject with hierarchy health data
-- [ ] Contains fields: TotalIssues, TypeDistribution (Epic, Feature, Task, Bug counts)
+- [ ] Contains fields: TotalIssues, TypeCounts (object with Epic, Feature, Task, Bug counts)
 - [ ] Contains Orphans array (issues without parents)
 - [ ] Contains TypeMismatches array (incorrect hierarchy relationships)
 - [ ] Contains MaxDepth (hierarchy depth validation)
@@ -191,11 +192,11 @@ $health.TypeMismatches
 - [ ] References repository conventions from copilot-instructions.md
 - [ ] No script execution (agent introspection only)
 
-### 10.12 Okyerema Agent Command Dispatch
+### 10.12 Okyeame Agent Command Dispatch
 
-**Action:** In a Copilot chat with okyerema agent, test command recognition.
+**Action:** In a Copilot chat with okyeame agent, test command recognition.
 
-> "@okyerema give me a sitrep"
+> "@okyeame give me a sitrep"
 
 **Expected:**
 - [ ] Agent recognizes "sitrep" trigger
@@ -203,11 +204,11 @@ $health.TypeMismatches
 - [ ] Formats output with emoji indicators (🎯, ✅, ⚠️, 🔴, 📊)
 - [ ] Returns structured, readable status report
 
-### 10.13 Okyerema Agent /prcheck Dispatch
+### 10.13 Okyeame Agent /prcheck Dispatch
 
 **Action:** Test prcheck command dispatch.
 
-> "@okyerema /prcheck #10"
+> "@okyeame /prcheck #10"
 
 **Expected:**
 - [ ] Agent recognizes "/prcheck" trigger
@@ -216,11 +217,11 @@ $health.TypeMismatches
 - [ ] Formats output with emoji indicators and categories
 - [ ] Provides actionable recommendation
 
-### 10.14 Okyerema Agent /health Dispatch
+### 10.14 Okyeame Agent /health Dispatch
 
 **Action:** Test health command dispatch.
 
-> "@okyerema /health"
+> "@okyeame /health"
 
 **Expected:**
 - [ ] Agent recognizes "/health" trigger
@@ -281,7 +282,11 @@ $sitrep = & .github\skills\okyerema\scripts\Get-Sitrep.ps1 `
     -Owner $owner -Repo $repo
 
 # Should be able to access properties
-$sitrep.OpenIssues
+$sitrep.TotalOpen
+$sitrep.DoneCount
+$sitrep.PendingCount
+$sitrep.BlockedCount
+$sitrep.Focus
 $sitrep.RecentCommits | Select-Object -First 3
 ```
 
