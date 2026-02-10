@@ -27,10 +27,12 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 - Creating Epics, Features, or Tasks
 - Setting up issue hierarchies
 - Querying or manipulating GitHub Projects
-- Checking issue relationships
+- Checking issue relationships and dependencies
+- Finding ready or blocked work items for agent self-selection
 - Automating issue governance with agentic workflows
 - Assigning work to @copilot coding agent
 - Understanding how work is structured
+- Tracking DAG status and dependency chains
 
 ## Deployment
 
@@ -207,14 +209,14 @@ For detailed GraphQL examples and workflows, reference these guides:
 
 Invoke these scripts for common operations:
 
-### Issue Management
+### Issue Creation & Hierarchy Management
 - **[scripts/Get-IssueTypeIds.ps1](scripts/Get-IssueTypeIds.ps1)** — Retrieve type IDs for an organization
 - **[scripts/New-IssueWithType.ps1](scripts/New-IssueWithType.ps1)** — Create issue with proper type
 - **[scripts/Update-IssueHierarchy.ps1](scripts/Update-IssueHierarchy.ps1)** — Build parent-child relationships using sub-issues API
 - **[scripts/Set-IssueDependency.ps1](scripts/Set-IssueDependency.ps1)** — Establish blocks/blocked-by dependency relationships
 - **[scripts/Test-Hierarchy.ps1](scripts/Test-Hierarchy.ps1)** — Verify relationships via GraphQL
 
-### Status Commands
+### Status & Health Reporting
 - **[scripts/Get-Sitrep.ps1](scripts/Get-Sitrep.ps1)** — Tactical status report (/sitrep)
 - **[scripts/Get-PRHealth.ps1](scripts/Get-PRHealth.ps1)** — Deep PR health check (/prcheck)
 - **[scripts/Get-HierarchyHealth.ps1](scripts/Get-HierarchyHealth.ps1)** — Structural validation (/health)
@@ -230,6 +232,17 @@ Invoke these scripts for common operations:
 - **[scripts/Get-UnresolvedThreads.ps1](scripts/Get-UnresolvedThreads.ps1)** — List unresolved threads
 - **[scripts/Reply-ReviewThread.ps1](scripts/Reply-ReviewThread.ps1)** — Reply to threads, optionally resolve
 - **[scripts/Resolve-ReviewThreads.ps1](scripts/Resolve-ReviewThreads.ps1)** — Bulk resolve/unresolve threads
+
+### Dependency & Work Selection (DAG Queries)
+- **[scripts/Get-DagStatus.ps1](scripts/Get-DagStatus.ps1)** — Recursive issue hierarchy status with readiness tracking
+- **[scripts/Get-ReadyIssues.ps1](scripts/Get-ReadyIssues.ps1)** — Find issues ready to work on (all dependencies met)
+- **[scripts/Get-BlockedIssues.ps1](scripts/Get-BlockedIssues.ps1)** — Find issues blocked by open dependencies
+
+The DAG query scripts enable agent self-selection of work by tracking:
+1. **Hierarchy-based dependencies** — Issues with open child sub-issues are waiting
+2. **Cross-reference dependencies** — Issues blocked by other issues (via "Blocked by #N" in body/comments)
+
+Use these scripts to understand which work is ready, which is blocked, and what the dependency chain looks like.
 
 ## Labels: Use Sparingly
 
