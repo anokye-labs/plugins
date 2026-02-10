@@ -12,6 +12,12 @@
 - **Okyeame** — The agent persona (linguist) for project management, status reporting, and coordination
 - **Okyerema** — The orchestration skill (master drummer) with scripts, references, and workflow automation
 
+## Shared Modules
+
+| Module | Purpose | Description | Status |
+|--------|---------|-------------|--------|
+| [OkyeremanAgentRunner](shared/OkyeremanAgentRunner/) | Runtime Foundation | Common functions for logging, error handling, issue context, PR management, safe output processing, correlation tracking | ✅ Ready |
+
 ## The Anokye System: Three Layers Working in Harmony
 
 The Anokye System is a multi-agent orchestration architecture that transforms how software gets built. Instead of manually creating issues, tracking status, and coordinating work, you install a plugin and your repository becomes an AI-orchestrated environment.
