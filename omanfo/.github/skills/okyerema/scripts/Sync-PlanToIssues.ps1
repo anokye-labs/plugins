@@ -81,6 +81,7 @@ $lines = Get-Content $PlanFile
 $items = @()
 $currentH1 = $null
 $currentH2 = $null
+$currentH3 = $null
 $itemIndex = 0
 
 foreach ($line in $lines) {
@@ -96,6 +97,7 @@ foreach ($line in $lines) {
         }
         $items += $currentH1
         $currentH2 = $null
+        $currentH3 = $null
     }
     elseif ($line -match '^## (.+)$') {
         $title = $matches[1].Trim()
@@ -113,10 +115,11 @@ foreach ($line in $lines) {
         } else {
             $items += $currentH2
         }
+        $currentH3 = $null
     }
     elseif ($line -match '^### (.+)$') {
         $title = $matches[1].Trim()
-        $taskItem = @{
+        $currentH3 = @{
             Index = $itemIndex++
             Level = 3
             Type = "Task"
@@ -126,15 +129,18 @@ foreach ($line in $lines) {
             Parent = if ($currentH2) { $currentH2 } else { $currentH1 }
         }
         if ($currentH2) {
-            $currentH2.Children += $taskItem
+            $currentH2.Children += $currentH3
         } elseif ($currentH1) {
-            $currentH1.Children += $taskItem
+            $currentH1.Children += $currentH3
         } else {
-            $items += $taskItem
+            $items += $currentH3
         }
     }
     elseif ($line.Trim() -and -not $line.StartsWith('#')) {
-        if ($currentH2) {
+        if ($currentH3) {
+            if ($currentH3.Body) { $currentH3.Body += "`n" }
+            $currentH3.Body += $line
+        } elseif ($currentH2) {
             if ($currentH2.Body) { $currentH2.Body += "`n" }
             $currentH2.Body += $line
         } elseif ($currentH1) {

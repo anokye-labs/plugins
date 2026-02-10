@@ -86,6 +86,7 @@ $lines = Get-Content $PlanFile
 $items = @()
 $currentH1 = $null
 $currentH2 = $null
+$currentH3 = $null
 
 foreach ($line in $lines) {
     # Match heading patterns
@@ -101,6 +102,7 @@ foreach ($line in $lines) {
         }
         $items += $currentH1
         $currentH2 = $null
+        $currentH3 = $null
     }
     elseif ($line -match '^## (.+)$') {
         # H2 = Feature
@@ -119,11 +121,12 @@ foreach ($line in $lines) {
             # Standalone feature (no epic parent)
             $items += $currentH2
         }
+        $currentH3 = $null
     }
     elseif ($line -match '^### (.+)$') {
         # H3 = Task
         $title = $matches[1].Trim()
-        $taskItem = @{
+        $currentH3 = @{
             Level = 3
             Type = "Task"
             Title = $title
@@ -132,17 +135,20 @@ foreach ($line in $lines) {
             Parent = if ($currentH2) { $currentH2 } else { $currentH1 }
         }
         if ($currentH2) {
-            $currentH2.Children += $taskItem
+            $currentH2.Children += $currentH3
         } elseif ($currentH1) {
-            $currentH1.Children += $taskItem
+            $currentH1.Children += $currentH3
         } else {
             # Standalone task
-            $items += $taskItem
+            $items += $currentH3
         }
     }
     elseif ($line.Trim() -and -not $line.StartsWith('#')) {
         # Accumulate body content for the current item
-        if ($currentH2) {
+        if ($currentH3) {
+            if ($currentH3.Body) { $currentH3.Body += "`n" }
+            $currentH3.Body += $line
+        } elseif ($currentH2) {
             if ($currentH2.Body) { $currentH2.Body += "`n" }
             $currentH2.Body += $line
         } elseif ($currentH1) {
@@ -347,7 +353,7 @@ mutation {
 
 # Create all issues
 foreach ($item in $items) {
-    Create-Issues-Recursive $item | Out-Null
+    Create-IssuesRecursive $item | Out-Null
 }
 
 Write-Host ""
