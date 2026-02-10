@@ -1,5 +1,6 @@
 # New-IssueWithType.ps1
 # Create a GitHub issue with proper organization issue type
+# Implements default assignment policy: Task/Bug → @copilot, Epic/Feature → owner
 
 param(
     [Parameter(Mandatory)][string]$Owner,
@@ -7,7 +8,8 @@ param(
     [Parameter(Mandatory)][string]$Title,
     [Parameter(Mandatory)][string]$TypeName,  # Epic, Feature, Task, Bug
     [string]$Body = "",
-    [string[]]$Labels = @()
+    [string[]]$Labels = @(),
+    [string]$Assignee = "auto"  # "auto" = use policy, "username", "@copilot", or "" = none
 )
 
 $ErrorActionPreference = "Stop"
@@ -19,9 +21,13 @@ query {
     id
     owner {
       ... on Organization {
+        login
         issueTypes(first: 25) {
           nodes { id name }
         }
+      }
+      ... on User {
+        login
       }
     }
   }
@@ -30,6 +36,7 @@ query {
 
 $result = gh api graphql -f query="$query" | ConvertFrom-Json
 $repoId = $result.data.repository.id
+$repoOwnerLogin = $result.data.repository.owner.login
 $typeId = ($result.data.repository.owner.issueTypes.nodes | Where-Object { $_.name -eq $TypeName }).id
 
 if (-not $typeId) {
@@ -103,6 +110,42 @@ mutation {
         $missing = $Labels | Where-Object { $_ -notin ($allLabelNodes.name) }
         Write-Host "  + Labels: $($appliedLabels -join ', ')" -ForegroundColor Gray
         if ($missing) { Write-Warning "Labels not found (skipped): $($missing -join ', ')" }
+    }
+}
+
+# Determine assignee based on policy
+$targetAssignee = $null
+if ($Assignee -eq "auto") {
+    # Apply default assignment policy
+    if ($TypeName -eq "Task" -or $TypeName -eq "Bug") {
+        $targetAssignee = "@copilot"
+        Write-Host "  → Applying default policy: $TypeName → @copilot" -ForegroundColor Gray
+    } elseif ($TypeName -eq "Epic" -or $TypeName -eq "Feature") {
+        $targetAssignee = $repoOwnerLogin
+        Write-Host "  → Applying default policy: $TypeName → $repoOwnerLogin" -ForegroundColor Gray
+    }
+} elseif ($Assignee -ne "") {
+    $targetAssignee = $Assignee
+}
+
+# Assign issue if target assignee is specified
+if ($targetAssignee) {
+    try {
+        # Use REST API for bot assignment (GraphQL doesn't work for @copilot)
+        # Strip @ prefix if present for REST API
+        $assigneeLogin = $targetAssignee -replace '^@', ''
+        
+        $assignResult = gh api "repos/$Owner/$Repo/issues/$($issue.number)/assignees" `
+            --method POST `
+            -f "assignees[]=$assigneeLogin" 2>&1
+        
+        if ($LASTEXITCODE -eq 0) {
+            Write-Host "  + Assigned to: $targetAssignee" -ForegroundColor Gray
+        } else {
+            Write-Warning "Failed to assign to $targetAssignee : $assignResult"
+        }
+    } catch {
+        Write-Warning "Failed to assign to $targetAssignee : $_"
     }
 }
 
