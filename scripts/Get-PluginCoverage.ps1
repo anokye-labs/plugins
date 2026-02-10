@@ -77,6 +77,11 @@ $actualScripts = @()
 
 if ($manifest.PSObject.Properties['skills']) {
     # New format: array of skills - aggregate scripts across all skills
+    if ($manifest.skills.Count -eq 0) {
+        Write-Error "Manifest has 'skills' array but it is empty. At least one skill must be defined."
+        exit 1
+    }
+    
     foreach ($skill in $manifest.skills) {
         $declaredScripts += $skill.scripts
         

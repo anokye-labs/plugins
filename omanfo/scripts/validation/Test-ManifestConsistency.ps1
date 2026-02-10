@@ -61,6 +61,10 @@ $skillsToValidate = @()
 if ($manifest.PSObject.Properties['skills']) {
     # New format: array of skills
     $skillsToValidate = $manifest.skills
+    if ($skillsToValidate.Count -eq 0) {
+        Write-ValidationError "Manifest has 'skills' array but it is empty. At least one skill must be defined."
+        exit 1
+    }
 } elseif ($manifest.PSObject.Properties['skill']) {
     # Old format: single skill object
     $skillsToValidate = @($manifest.skill)
