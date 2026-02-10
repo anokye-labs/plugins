@@ -1,17 +1,58 @@
 # Omanfo Plugin Test Suite
 
-This directory contains the Pester 5 unit test suite for the Omanfo plugin's Okyerema scripts.
+This directory contains the Pester 5 test suite for the Omanfo plugin's Okyerema scripts.
 
 **Note**: Tests are located at the repository root (`tests/omanfo/`) rather than inside the plugin directory (`omanfo/`). This keeps tests available for development and CI while excluding them from the plugin distribution package.
 
+## Test Runner
+
+The master test runner is `Run-LocalTests.ps1`.
+
+### Usage
+
+```powershell
+# From the tests/omanfo directory
+cd tests/omanfo
+
+# Run all tests
+./Run-LocalTests.ps1
+
+# Run only smoke tests
+./Run-LocalTests.ps1 -TestLevel Smoke
+
+# Run unit tests
+./Run-LocalTests.ps1 -TestLevel Unit
+
+# Run E2E tests with custom repository
+./Run-LocalTests.ps1 -TestLevel E2E -TestRepo myorg/myrepo
+```
+
+### Parameters
+
+- **`-TestLevel`**: The level of tests to run
+  - `Unit` - Unit tests (*.Unit.Tests.ps1)
+  - `Smoke` - Smoke tests (*.Smoke.Tests.ps1 or Smoke/*.Tests.ps1)
+  - `E2E` - End-to-end tests (*.E2E.Tests.ps1 or E2E/*.Tests.ps1)
+  - `All` - All test levels (default)
+
+- **`-TestRepo`**: Repository to use for E2E tests (default: anokye-labs/plugins)
+
+### Test Naming Conventions
+
+The runner discovers test files based on naming conventions:
+
+- **Unit tests**: `*.Unit.Tests.ps1`
+- **Smoke tests**: `*.Smoke.Tests.ps1` or files in `Smoke/` subdirectory
+- **E2E tests**: `*.E2E.Tests.ps1` or files in `E2E/` subdirectory
+
 ## Overview
 
-- **Total Tests**: 116 tests
-- **Test Files**: 6 organized by capability area
+- **Total Tests**: 116+ tests
+- **Test Files**: 6 unit test files + smoke tests, organized by capability area
 - **Fixture Files**: 6 mock JSON and markdown files
 - **Coverage**: All 28 Okyerema scripts
 
-## Test Files
+## Unit Test Files
 
 ### IssueManagement.Tests.ps1 (24 tests)
 Tests for issue creation, hierarchy management, and dependency tracking:
@@ -55,6 +96,29 @@ Tests for plan-to-issue materialization:
 - **Invoke-PlanMaterialization** (4 tests) - Markdown plan parsing and issue creation
 - **Sync-PlanToIssues** (4 tests) - Plan-issue synchronization
 
+## Smoke Tests
+
+### Install-Plugin.Smoke.Tests.ps1
+Tests the full plugin installation lifecycle via `copilot plugin` CLI:
+- Marketplace add
+- Plugin install
+- Plugin list
+- Plugin update
+- Plugin uninstall
+- Plugin reinstall
+
+**Note**: These tests require the `copilot` CLI to be installed. They will be automatically skipped if the CLI is not available.
+
+### Skill-Loading.Smoke.Tests.ps1
+Tests skill discovery and slash command recognition:
+- Validates all expected skill directories exist
+- Checks skill structure (SKILL.md, scripts, agent files)
+- Validates slash command documentation
+- Verifies supporting scripts for commands
+- Validates skill metadata
+- Checks plugin manifest.json
+- Verifies agent configuration files
+
 ## Test Fixtures
 
 Located in `tests/omanfo/fixtures/`:
@@ -67,7 +131,13 @@ Located in `tests/omanfo/fixtures/`:
 
 ## Running Tests
 
-### Run All Tests
+### Run All Tests (via Runner)
+```powershell
+cd tests/omanfo
+./Run-LocalTests.ps1
+```
+
+### Run All Unit Tests
 ```powershell
 cd tests/omanfo/unit
 Invoke-Pester
@@ -98,9 +168,9 @@ Invoke-Pester -Configuration $config
 Tests mock the `gh` CLI command at the command level:
 ```powershell
 Mock gh { return $mockJson } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-Mock gh { 
+Mock gh {
     $global:LASTEXITCODE = 0
-    return $mockJson 
+    return $mockJson
 } -ParameterFilter { $args[0] -eq 'api' }
 ```
 
@@ -113,9 +183,9 @@ $output = & $scriptPath -Owner "test" -Repo "repo" *>&1
 ### Setting Exit Codes
 Scripts check `$LASTEXITCODE`. Set it in mocks:
 ```powershell
-Mock gh { 
+Mock gh {
     $global:LASTEXITCODE = 0
-    return $mockData 
+    return $mockData
 }
 ```
 
@@ -164,17 +234,39 @@ All 28 Okyerema scripts have corresponding tests:
 - ✅ Add-IssuesToProject
 - ✅ Invoke-PRCompletion
 
-## Dependencies
+## Requirements
 
 - **Pester 5.x** - PowerShell testing framework (5.7.1+ recommended)
 - **PowerShell 7.x** - Cross-platform PowerShell
+- **GitHub CLI** (`gh`) for some tests
+- **Copilot CLI** (`copilot`) for Install-Plugin smoke tests (optional)
+
+## Exit Codes
+
+- **0**: All tests passed
+- **1**: One or more tests failed
 
 ## Contributing
 
 When adding new tests:
-1. Follow the existing test patterns
+1. Follow the existing test patterns and naming conventions
 2. Use descriptive test names with "Should" prefix
 3. Mock external dependencies (`gh`, `git`)
 4. Set `$LASTEXITCODE` in mocks when scripts check it
 5. Organize tests by script capability area
 6. Add test fixtures to `tests/fixtures/` as needed
+7. Place tests in appropriate subdirectories or use naming suffixes
+8. Use Pester 5.x syntax
+9. Add `-Skip` conditions for tests requiring specific tools
+10. Document test requirements in the test file
+
+## CI Integration
+
+These tests can be integrated into GitHub Actions workflows:
+
+```yaml
+- name: Run Omanfo Tests
+  run: |
+    cd tests/omanfo
+    pwsh -File Run-LocalTests.ps1 -TestLevel Smoke
+```
