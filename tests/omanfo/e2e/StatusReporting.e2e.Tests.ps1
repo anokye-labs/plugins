@@ -53,22 +53,7 @@ BeforeAll {
     # Setup: Create a few test issues for status reporting
     Write-Host "📝 Setting up test issues..." -ForegroundColor Cyan
     
-    # Create a Feature with child Tasks
-    $setupQuery = @"
-mutation CreateTestIssue {
-  createIssue(input: {
-    repositoryId: \"<repo-id>\"
-    title: \"E2E-$script:RunId: Test Feature for Status\"
-    body: \"Test feature for status reporting E2E tests\"
-  }) {
-    issue {
-      number
-    }
-  }
-}
-"@
-    
-    # We'll let copilot create them to keep it consistent
+    # Let copilot create test issues
     $setupPrompt = @"
 Create a Feature issue in $script:TestRepo titled 'E2E-$script:RunId: Status Test Feature' with two Task sub-issues:
 - Task 1: Implement feature component
