@@ -3,9 +3,9 @@
     Deploys the Anokye System into a target repository.
 
 .DESCRIPTION
-    Deploys the Okyerema skill files, shared asafo skills, documentation, and agent entry point
-    into the target repository, transforming it into an Anokye-System-enabled environment.
-    Optionally skips documentation or agent files.
+    Deploys the Okyerema skill files, shared asafo skills, documentation, agent entry point,
+    and copilot-instructions.md into the target repository, transforming it into an 
+    Anokye-System-enabled environment. Optionally skips documentation or agent files.
 
 .PARAMETER TargetRepo
     Path to the target repository root. Defaults to current directory.
@@ -110,6 +110,10 @@ if (-not $SkipAgents) {
     Write-Host "`nInstalling agent entry point..." -ForegroundColor White
     Copy-PluginFiles (Join-Path $pluginRoot "agents.md") (Join-Path $TargetRepo "agents.md") "agents.md"
 }
+
+# 4. Install copilot-instructions.md (always)
+Write-Host "`nInstalling repository rules..." -ForegroundColor White
+Copy-PluginFiles (Join-Path $pluginRoot ".github\copilot-instructions.md") (Join-Path $TargetRepo ".github\copilot-instructions.md") "copilot-instructions.md"
 
 # Summary
 $fileCount = (Get-ChildItem $skillDst -Recurse -File).Count
