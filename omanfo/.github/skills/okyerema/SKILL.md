@@ -133,6 +133,47 @@ Epic #1: Phase 0 Setup
 ❌ Use gh CLI for project field manipulation — Use GraphQL
 ❌ Use labels for structure — Labels are for categorization only
 
+## Known Limitations & API Exceptions
+
+### Copilot Bot Assignment Requires REST API
+
+**The Exception:** While the core principle states "Use GraphQL API for all write operations," **Copilot bot assignment is a documented exception** that requires the REST API.
+
+**Why REST is Required:**
+- Copilot's node ID (`BOT_kgDOC9w8XQ`) is a BOT type, not a User type
+- The GraphQL `addAssigneesToAssignable` mutation returns `NOT_FOUND` error for BOT-type node IDs
+- GitHub's REST API `/repos/{owner}/{repo}/issues/{number}/assignees` endpoint properly handles bot assignees
+
+**Working Pattern (REST API):**
+```bash
+# Assign Copilot to an issue using REST API
+gh api repos/OWNER/REPO/issues/NUMBER/assignees \
+  --method POST \
+  -f 'assignees[]=Copilot'
+```
+
+**Alternative (gh CLI):**
+```bash
+# Using gh issue edit command (wraps REST API)
+gh issue edit NUMBER --add-assignee Copilot
+```
+
+**What Does NOT Work:**
+```graphql
+# ❌ This mutation fails for BOT-type assignees
+mutation {
+  addAssigneesToAssignable(input: {
+    assignableId: "I_issue_node_id"
+    assigneeIds: ["BOT_kgDOC9w8XQ"]
+  }) {
+    assignable { id }
+  }
+}
+# Returns: NOT_FOUND error
+```
+
+**Note:** The `updateIssue` mutation with `assigneeIds` field may work in some contexts, but REST API is the officially documented and reliable method for bot assignment. Always use REST for @copilot assignments.
+
 ## References (Load When Needed)
 
 For detailed GraphQL examples and workflows, reference these guides:
