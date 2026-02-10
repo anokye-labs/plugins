@@ -55,48 +55,83 @@ if (-not (Test-Path $manifestPath)) {
 }
 
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-$skillPath = Join-Path $pluginDir $manifest.skill.path
 
-# Check if skill directory exists
-if (-not (Test-Path $skillPath)) {
-    Write-ValidationError "Skill directory not found: $skillPath"
+# Support both old format (skill) and new format (skills array)
+$skillsToValidate = @()
+if ($manifest.PSObject.Properties['skills']) {
+    # New format: array of skills
+    $skillsToValidate = $manifest.skills
+    if ($skillsToValidate.Count -eq 0) {
+        Write-ValidationError "Manifest has 'skills' array but it is empty. At least one skill must be defined."
+        exit 1
+    }
+} elseif ($manifest.PSObject.Properties['skill']) {
+    # Old format: single skill object
+    $skillsToValidate = @($manifest.skill)
+} else {
+    Write-ValidationError "No 'skill' or 'skills' property found in manifest"
     exit 1
 }
 
-# Count references
-$referencesDir = Join-Path $skillPath "references"
-$actualReferences = @()
-if (Test-Path $referencesDir) {
-    $actualReferences = @(Get-ChildItem -Path $referencesDir -Filter "*.md" -File)
-}
-
-$manifestReferences = $manifest.skill.references
-if ($actualReferences.Count -ne $manifestReferences) {
-    Write-ValidationError "Reference count mismatch: manifest=$manifestReferences, actual=$($actualReferences.Count)"
-} else {
-    Write-ValidationSuccess "Reference count matches: $($actualReferences.Count)"
-}
-
-# Count scripts
-$scriptsDir = Join-Path $skillPath "scripts"
-$actualScripts = @()
-if (Test-Path $scriptsDir) {
-    $actualScripts = @(Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File)
-}
-
-$manifestScripts = $manifest.skill.scripts
-if ($actualScripts.Count -ne $manifestScripts) {
-    Write-ValidationError "Script count mismatch: manifest=$manifestScripts, actual=$($actualScripts.Count)"
-} else {
-    Write-ValidationSuccess "Script count matches: $($actualScripts.Count)"
-}
-
-# Verify SKILL.md exists
-$skillMd = Join-Path $skillPath $manifest.skill.entryPoint
-if (-not (Test-Path $skillMd)) {
-    Write-ValidationError "SKILL.md not found at: $skillMd"
-} else {
-    Write-ValidationSuccess "SKILL.md exists"
+# Validate each skill
+foreach ($skill in $skillsToValidate) {
+    Write-Host "`nValidating skill: $($skill.name)" -ForegroundColor Cyan
+    
+    $skillPath = Join-Path $pluginDir $skill.path
+    
+    # Check if skill directory exists
+    if (-not (Test-Path $skillPath)) {
+        Write-ValidationError "Skill directory not found: $skillPath"
+        continue
+    } else {
+        Write-ValidationSuccess "Skill directory exists: $skillPath"
+    }
+    
+    # Count references
+    $referencesDir = Join-Path $skillPath "references"
+    $actualReferences = @()
+    if (Test-Path $referencesDir) {
+        $actualReferences = @(Get-ChildItem -Path $referencesDir -Filter "*.md" -File)
+    }
+    
+    $manifestReferences = $skill.references
+    if ($actualReferences.Count -ne $manifestReferences) {
+        Write-ValidationError "[$($skill.name)] Reference count mismatch: manifest=$manifestReferences, actual=$($actualReferences.Count)"
+    } else {
+        Write-ValidationSuccess "[$($skill.name)] Reference count matches: $($actualReferences.Count)"
+    }
+    
+    # Count scripts
+    $scriptsDir = Join-Path $skillPath "scripts"
+    $actualScripts = @()
+    if (Test-Path $scriptsDir) {
+        $actualScripts = @(Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File)
+    }
+    
+    $manifestScripts = $skill.scripts
+    if ($actualScripts.Count -ne $manifestScripts) {
+        Write-ValidationError "[$($skill.name)] Script count mismatch: manifest=$manifestScripts, actual=$($actualScripts.Count)"
+    } else {
+        Write-ValidationSuccess "[$($skill.name)] Script count matches: $($actualScripts.Count)"
+    }
+    
+    # Verify SKILL.md exists
+    $skillMd = Join-Path $skillPath $skill.entryPoint
+    if (-not (Test-Path $skillMd)) {
+        Write-ValidationError "[$($skill.name)] SKILL.md not found at: $skillMd"
+    } else {
+        Write-ValidationSuccess "[$($skill.name)] SKILL.md exists"
+    }
+    
+    # Verify agent file if specified
+    if ($skill.PSObject.Properties['agentFile']) {
+        $agentFile = Join-Path $pluginDir $skill.agentFile
+        if (-not (Test-Path $agentFile)) {
+            Write-ValidationError "[$($skill.name)] Agent file not found at: $agentFile"
+        } else {
+            Write-ValidationSuccess "[$($skill.name)] Agent file exists: $($skill.agentFile)"
+        }
+    }
 }
 
 # Count evaluations if specified

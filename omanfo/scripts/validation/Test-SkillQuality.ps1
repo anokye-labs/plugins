@@ -55,55 +55,74 @@ if (-not (Test-Path $manifestPath)) {
 }
 
 $manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-$skillPath = Join-Path $pluginDir $manifest.skill.path
-$skillMd = Join-Path $skillPath "SKILL.md"
 
-if (-not (Test-Path $skillMd)) {
-    Write-ValidationError "SKILL.md not found at: $skillMd"
+# Support both old format (skill) and new format (skills array)
+$skillsToValidate = @()
+if ($manifest.PSObject.Properties['skills']) {
+    # New format: array of skills
+    $skillsToValidate = $manifest.skills
+} elseif ($manifest.PSObject.Properties['skill']) {
+    # Old format: single skill object
+    $skillsToValidate = @($manifest.skill)
+} else {
+    Write-ValidationError "No 'skill' or 'skills' property found in manifest"
     exit 1
 }
 
-# Check line count
-$lines = Get-Content $skillMd
-$lineCount = $lines.Count
-
-if ($lineCount -le 500) {
-    Write-ValidationSuccess "SKILL.md has $lineCount lines (under 500 line limit)"
-} else {
-    Write-ValidationError "SKILL.md has $lineCount lines (exceeds 500 line limit)"
-}
-
-# Check for YAML frontmatter
-$content = Get-Content $skillMd -Raw
-
-# Check if file starts with ---
-if (-not $content.StartsWith('---')) {
-    Write-ValidationError "SKILL.md does not start with YAML frontmatter (---)"
-    exit $script:exitCode
-}
-
-# Extract frontmatter
-$frontmatterMatch = [regex]::Match($content, '(?s)^---\s*\n(.*?)\n---')
-if (-not $frontmatterMatch.Success) {
-    Write-ValidationError "SKILL.md has invalid YAML frontmatter structure"
-    exit $script:exitCode
-}
-
-Write-ValidationSuccess "SKILL.md has valid YAML frontmatter structure"
-
-$frontmatter = $frontmatterMatch.Groups[1].Value
-
-# Check for required fields
-if ($frontmatter -match '^\s*name:\s*\S' -or $frontmatter -match '\n\s*name:\s*\S') {
-    Write-ValidationSuccess "YAML frontmatter contains 'name' field"
-} else {
-    Write-ValidationError "YAML frontmatter missing 'name' field"
-}
-
-if ($frontmatter -match '^\s*description:\s*\S' -or $frontmatter -match '\n\s*description:\s*\S') {
-    Write-ValidationSuccess "YAML frontmatter contains 'description' field"
-} else {
-    Write-ValidationError "YAML frontmatter missing 'description' field"
+# Validate each skill
+foreach ($skill in $skillsToValidate) {
+    Write-Host "`nValidating skill: $($skill.name)" -ForegroundColor Cyan
+    
+    $skillPath = Join-Path $pluginDir $skill.path
+    $skillMd = Join-Path $skillPath "SKILL.md"
+    
+    if (-not (Test-Path $skillMd)) {
+        Write-ValidationError "[$($skill.name)] SKILL.md not found at: $skillMd"
+        continue
+    }
+    
+    # Check line count
+    $lines = Get-Content $skillMd
+    $lineCount = $lines.Count
+    
+    if ($lineCount -le 500) {
+        Write-ValidationSuccess "[$($skill.name)] SKILL.md has $lineCount lines (under 500 line limit)"
+    } else {
+        Write-ValidationError "[$($skill.name)] SKILL.md has $lineCount lines (exceeds 500 line limit)"
+    }
+    
+    # Check for YAML frontmatter
+    $content = Get-Content $skillMd -Raw
+    
+    # Check if file starts with ---
+    if (-not $content.StartsWith('---')) {
+        Write-ValidationError "[$($skill.name)] SKILL.md does not start with YAML frontmatter (---)"
+        continue
+    }
+    
+    # Extract frontmatter
+    $frontmatterMatch = [regex]::Match($content, '(?s)^---\s*\n(.*?)\n---')
+    if (-not $frontmatterMatch.Success) {
+        Write-ValidationError "[$($skill.name)] SKILL.md has invalid YAML frontmatter structure"
+        continue
+    }
+    
+    Write-ValidationSuccess "[$($skill.name)] SKILL.md has valid YAML frontmatter structure"
+    
+    $frontmatter = $frontmatterMatch.Groups[1].Value
+    
+    # Check for required fields
+    if ($frontmatter -match '^\s*name:\s*\S' -or $frontmatter -match '\n\s*name:\s*\S') {
+        Write-ValidationSuccess "[$($skill.name)] YAML frontmatter contains 'name' field"
+    } else {
+        Write-ValidationError "[$($skill.name)] YAML frontmatter missing 'name' field"
+    }
+    
+    if ($frontmatter -match '^\s*description:\s*\S' -or $frontmatter -match '\n\s*description:\s*\S') {
+        Write-ValidationSuccess "[$($skill.name)] YAML frontmatter contains 'description' field"
+    } else {
+        Write-ValidationError "[$($skill.name)] YAML frontmatter missing 'description' field"
+    }
 }
 
 Write-Host "`n" -NoNewline

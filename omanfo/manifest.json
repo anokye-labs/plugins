@@ -1,17 +1,27 @@
 {
   "name": "omanfo",
   "version": "1.0.0",
-  "description": "The community toolkit for GitHub Copilot — orchestration, documents, product management, automation",
+  "description": "The Omanfo plugin — Okyeame (agent for project management) and Okyerema (orchestration skill) for the Anokye System",
   "author": "anokye-labs",
   "license": "MIT",
   "repository": "https://github.com/anokye-labs/plugins",
-  "skill": {
-    "name": "okyerema",
-    "path": ".github/skills/okyerema",
-    "entryPoint": "SKILL.md",
-    "references": 8,
-    "scripts": 10
-  },
+  "skills": [
+    {
+      "name": "okyeame",
+      "path": ".github/skills/okyeame",
+      "entryPoint": "SKILL.md",
+      "agentFile": "okyeame.agent.md",
+      "references": 0,
+      "scripts": 0
+    },
+    {
+      "name": "okyerema",
+      "path": ".github/skills/okyerema",
+      "entryPoint": "SKILL.md",
+      "references": 8,
+      "scripts": 10
+    }
+  ],
   "documentation": {
     "howWeWork": "how-we-work.md",
     "agents": "agents.md"
