@@ -21,6 +21,7 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 4. **Use labels only for categorization** — never for structure
 5. **Automate issue governance** — propose agentic workflows for repos that lack them
 6. **Hierarchy: Epic → Feature → Task** — 3 levels when grouping exists, 2 levels when tasks are standalone
+7. **Default assignment policy** — Tasks and Bugs auto-assign to @copilot; Epics and Features to authenticated user
 
 ## When to Use This Skill
 
@@ -146,6 +147,49 @@ Epic #1: Phase 0 Setup
 ❌ Use tasklists for hierarchy — Use sub-issues API instead
 ❌ Use gh CLI for project field manipulation — Use GraphQL
 ❌ Use labels for structure — Labels are for categorization only
+
+## Default Assignment Policy
+
+The Anokye System follows a **humans opt-in, not opt-out** philosophy for task assignment. Issue types determine default assignees based on their nature and scope:
+
+| Issue Type | Default Assignee | Reasoning |
+|------------|------------------|-----------|
+| **Epic** | Authenticated user | Strategic oversight and planning — requires human judgment |
+| **Feature** | Authenticated user | Review and approval scope — human coordination needed |
+| **Task** | `@copilot` | Execution scope — well-defined work suitable for agent automation |
+| **Bug** | `@copilot` | Fix scope — debugging and patching is agent-friendly work |
+
+### Rationale
+
+When issues are created in bulk (e.g., via plan materialization or batch scripts), assigning all issues to humans creates busywork. The human then has to manually unassign themselves and assign `@copilot` for every task. This policy inverts that:
+
+- **Tasks and Bugs** are execution work — assign to `@copilot` by default
+- **Epics and Features** are coordination work — assign to the authenticated user by default
+- Humans can always reassign when needed, but the defaults minimize manual work
+
+**Note:** Epics and Features are assigned to the **authenticated user** (the person running the script), not the repository owner. This is because organization accounts cannot be assigned to issues — only user accounts can be assignees.
+
+### Implementation
+
+The `New-IssueWithType.ps1` script implements this policy automatically:
+- Pass `-Assignee "auto"` (or omit the parameter) to use the default policy
+- Pass `-Assignee "username"` to assign to a specific user
+- Pass `-Assignee "@copilot"` to explicitly assign to Copilot (regardless of type)
+- Pass `-Assignee ""` to create unassigned issues
+
+```powershell
+# Uses default policy: Task → @copilot, Epic → authenticated user
+./New-IssueWithType.ps1 -Owner "anokye-labs" -Repo "plugins" -Title "Add tests" -TypeName "Task"
+
+# Explicit assignment overrides default
+./New-IssueWithType.ps1 -Owner "anokye-labs" -Repo "plugins" -Title "Add tests" -TypeName "Task" -Assignee "alice"
+
+# No assignment
+./New-IssueWithType.ps1 -Owner "anokye-labs" -Repo "plugins" -Title "Add tests" -TypeName "Task" -Assignee ""
+```
+```
+
+**Important:** This policy applies to **bulk creation workflows**. For interactive issue creation in the GitHub UI, humans choose assignees as usual.
 
 ## Known Limitations & API Exceptions
 
