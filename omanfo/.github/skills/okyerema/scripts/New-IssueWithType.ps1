@@ -14,12 +14,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Get repo ID and type IDs
+# Get repo ID, owner info, and type IDs
 $query = @"
 query {
   repository(owner: `"$Owner`", name: `"$Repo`") {
     id
     owner {
+      __typename
       ... on Organization {
         login
         issueTypes(first: 25) {
@@ -31,16 +32,28 @@ query {
       }
     }
   }
+  viewer {
+    login
+  }
 }
 "@
 
 $result = gh api graphql -f query="$query" | ConvertFrom-Json
 $repoId = $result.data.repository.id
 $repoOwnerLogin = $result.data.repository.owner.login
-$typeId = ($result.data.repository.owner.issueTypes.nodes | Where-Object { $_.name -eq $TypeName }).id
+$ownerType = $result.data.repository.owner.__typename
+$authenticatedUser = $result.data.viewer.login
 
-if (-not $typeId) {
-    Write-Error "Issue type '$TypeName' not found. Available: $($result.data.repository.owner.issueTypes.nodes.name -join ', ')"
+# Check if organization has issue types
+if ($ownerType -eq "Organization") {
+    $typeId = ($result.data.repository.owner.issueTypes.nodes | Where-Object { $_.name -eq $TypeName }).id
+    
+    if (-not $typeId) {
+        Write-Error "Issue type '$TypeName' not found. Available: $($result.data.repository.owner.issueTypes.nodes.name -join ', ')"
+        return
+    }
+} else {
+    Write-Error "Issue types are only supported for organization-owned repositories. This repository is owned by a user account."
     return
 }
 
@@ -121,8 +134,10 @@ if ($Assignee -eq "auto") {
         $targetAssignee = "@copilot"
         Write-Host "  → Applying default policy: $TypeName → @copilot" -ForegroundColor Gray
     } elseif ($TypeName -eq "Epic" -or $TypeName -eq "Feature") {
-        $targetAssignee = $repoOwnerLogin
-        Write-Host "  → Applying default policy: $TypeName → $repoOwnerLogin" -ForegroundColor Gray
+        # For Epics/Features, assign to authenticated user (orgs can't be assignees)
+        # Note: Owner is guaranteed to be an org at this point (checked earlier)
+        $targetAssignee = $authenticatedUser
+        Write-Host "  → Applying default policy: $TypeName → $authenticatedUser (authenticated user)" -ForegroundColor Gray
     }
 } elseif ($Assignee -ne "") {
     $targetAssignee = $Assignee

@@ -21,7 +21,7 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 4. **Use labels only for categorization** — never for structure
 5. **Automate issue governance** — propose agentic workflows for repos that lack them
 6. **Hierarchy: Epic → Feature → Task** — 3 levels when grouping exists, 2 levels when tasks are standalone
-7. **Default assignment policy** — Tasks and Bugs auto-assign to @copilot; Epics and Features to humans
+7. **Default assignment policy** — Tasks and Bugs auto-assign to @copilot; Epics and Features to authenticated user
 
 ## When to Use This Skill
 
@@ -151,8 +151,8 @@ The Anokye System follows a **humans opt-in, not opt-out** philosophy for task a
 
 | Issue Type | Default Assignee | Reasoning |
 |------------|------------------|-----------|
-| **Epic** | Human (repo owner) | Strategic oversight and planning — requires human judgment |
-| **Feature** | Human (repo owner) | Review and approval scope — human coordination needed |
+| **Epic** | Authenticated user | Strategic oversight and planning — requires human judgment |
+| **Feature** | Authenticated user | Review and approval scope — human coordination needed |
 | **Task** | `@copilot` | Execution scope — well-defined work suitable for agent automation |
 | **Bug** | `@copilot` | Fix scope — debugging and patching is agent-friendly work |
 
@@ -161,8 +161,10 @@ The Anokye System follows a **humans opt-in, not opt-out** philosophy for task a
 When issues are created in bulk (e.g., via plan materialization or batch scripts), assigning all issues to humans creates busywork. The human then has to manually unassign themselves and assign `@copilot` for every task. This policy inverts that:
 
 - **Tasks and Bugs** are execution work — assign to `@copilot` by default
-- **Epics and Features** are coordination work — assign to humans by default
+- **Epics and Features** are coordination work — assign to the authenticated user by default
 - Humans can always reassign when needed, but the defaults minimize manual work
+
+**Note:** Epics and Features are assigned to the **authenticated user** (the person running the script), not the repository owner. This is because organization accounts cannot be assigned to issues — only user accounts can be assignees.
 
 ### Implementation
 
