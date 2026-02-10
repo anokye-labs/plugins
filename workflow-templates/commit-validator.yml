@@ -1,0 +1,196 @@
+name: Commit Validator
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (show what would be validated without failing)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate-commits:
+    name: Validate Commit Messages
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Validate commit messages
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          $ErrorActionPreference = "Stop"
+          
+          Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "   COMMIT MESSAGE VALIDATOR" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+          
+          # Configuration
+          $dryRun = $env:DRY_RUN -eq 'true'
+          $prNumber = $env:PR_NUMBER
+          $owner = "${{ github.repository_owner }}"
+          $repo = "${{ github.event.repository.name }}"
+          
+          if ($dryRun) {
+            Write-Host "▶ DRY RUN MODE - No failures will be reported`n" -ForegroundColor Yellow
+          }
+          
+          # Get commits in this PR
+          Write-Host "▶ Fetching commits in PR #${prNumber}..." -ForegroundColor Blue
+          git fetch origin $env:BASE_REF
+          $commits = git log --format="%H|%s|%an|%ae" origin/$env:BASE_REF..HEAD
+          
+          if (-not $commits) {
+            Write-Host "  ✓ No commits to validate`n" -ForegroundColor Green
+            exit 0
+          }
+          
+          $commitList = $commits -split "`n"
+          Write-Host "  Found $($commitList.Count) commit(s) to validate`n" -ForegroundColor White
+          
+          # Validation results
+          $violations = @()
+          $validatedCommits = 0
+          
+          # Issue reference patterns (flexible to support various formats)
+          $issuePatterns = @(
+            '#(\d+)',                           # #123
+            'GH-(\d+)',                         # GH-123
+            '(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?)\s+#(\d+)',  # Closes #123, fixes #456
+            '(?:anokye-labs/\w+)?#(\d+)'       # anokye-labs/repo#123
+          )
+          
+          foreach ($commitLine in $commitList) {
+            if (-not $commitLine) { continue }
+            
+            $parts = $commitLine -split '\|'
+            $hash = $parts[0]
+            $message = $parts[1]
+            $author = $parts[2]
+            $email = $parts[3]
+            
+            $validatedCommits++
+            $shortHash = $hash.Substring(0, 7)
+            
+            Write-Host "  [$validatedCommits/$($commitList.Count)] $shortHash - $message" -ForegroundColor White
+            
+            # Check if commit message references an issue
+            $hasIssueRef = $false
+            $referencedIssues = @()
+            
+            foreach ($pattern in $issuePatterns) {
+              if ($message -match $pattern) {
+                $hasIssueRef = $true
+                # Extract issue number
+                $issueNum = $matches[1]
+                if ($issueNum -and $referencedIssues -notcontains $issueNum) {
+                  $referencedIssues += $issueNum
+                }
+              }
+            }
+            
+            if (-not $hasIssueRef) {
+              $violation = @{
+                Commit = $shortHash
+                Message = $message
+                Author = $author
+                Email = $email
+                Error = "Commit message does not reference an issue"
+              }
+              $violations += $violation
+              Write-Host "    ✗ No issue reference found" -ForegroundColor Red
+            } else {
+              Write-Host "    ✓ References issue(s): $($referencedIssues -join ', ')" -ForegroundColor Green
+              
+              # Verify issues exist (via GraphQL)
+              foreach ($issueNum in $referencedIssues) {
+                $query = @"
+          {
+            repository(owner: "$owner", name: "$repo") {
+              issue(number: $issueNum) {
+                number
+                title
+                state
+              }
+            }
+          }
+          "@
+                
+                try {
+                  $result = gh api graphql -f query="$query" 2>&1
+                  if ($LASTEXITCODE -eq 0) {
+                    $issueData = $result | ConvertFrom-Json
+                    if ($issueData.data.repository.issue) {
+                      $issueState = $issueData.data.repository.issue.state
+                      Write-Host "      Issue #${issueNum}: $issueState" -ForegroundColor Cyan
+                    } else {
+                      Write-Host "      ⚠ Issue #${issueNum} not found in repository" -ForegroundColor Yellow
+                      # Note: We don't fail on this as the issue might be in a different repo
+                    }
+                  }
+                } catch {
+                  Write-Host "      ⚠ Could not verify issue #${issueNum}: $_" -ForegroundColor Yellow
+                }
+              }
+            }
+            Write-Host ""
+          }
+          
+          # Summary
+          Write-Host "═══════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "   VALIDATION RESULTS" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+          
+          Write-Host "  Total commits validated: $validatedCommits" -ForegroundColor White
+          Write-Host "  Violations found: $($violations.Count)" -ForegroundColor White
+          
+          if ($violations.Count -eq 0) {
+            Write-Host "`n✅ All commits have valid issue references!`n" -ForegroundColor Green
+            exit 0
+          } else {
+            Write-Host "`n❌ Validation failed with $($violations.Count) violation(s):`n" -ForegroundColor Red
+            
+            foreach ($v in $violations) {
+              Write-Host "  Commit: $($v.Commit)" -ForegroundColor Red
+              Write-Host "  Message: $($v.Message)" -ForegroundColor White
+              Write-Host "  Author: $($v.Author) <$($v.Email)>" -ForegroundColor White
+              Write-Host "  Error: $($v.Error)" -ForegroundColor Red
+              Write-Host ""
+            }
+            
+            Write-Host "REQUIREMENT:" -ForegroundColor Yellow
+            Write-Host "All commits must reference an issue using one of these formats:" -ForegroundColor White
+            Write-Host "  - #123" -ForegroundColor White
+            Write-Host "  - GH-123" -ForegroundColor White
+            Write-Host "  - Closes #123, Fixes #456" -ForegroundColor White
+            Write-Host "  - anokye-labs/repo#123" -ForegroundColor White
+            Write-Host ""
+            
+            if ($dryRun) {
+              Write-Host "DRY RUN MODE: Violations detected but not failing the check`n" -ForegroundColor Yellow
+              exit 0
+            } else {
+              exit 1
+            }
+          }
+      
+      - name: Block direct pushes
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "::error::Direct pushes to main branch are not allowed. Please use a Pull Request."
+          exit 1

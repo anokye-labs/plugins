@@ -1,0 +1,58 @@
+name: Agent Authentication
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (show validation results without failing)'
+        required: false
+        type: boolean
+        default: false
+
+jobs:
+  validate-agent-auth:
+    name: Validate Agent Authentication
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Validate commit authors
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'false' }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+          HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # Load the validation script
+          $scriptPath = Join-Path $PWD "workflow-templates/scripts/Test-AgentAuth.ps1"
+          if (Test-Path $scriptPath) {
+            . $scriptPath
+          } else {
+            Write-Host "::error::Agent auth validation script not found at $scriptPath"
+            Write-Host "Please ensure workflow-templates/scripts/Test-AgentAuth.ps1 exists"
+            exit 1
+          }
+          
+          # Run validation
+          $dryRun = $env:DRY_RUN -eq 'true'
+          $owner = "${{ github.repository_owner }}"
+          $repo = "${{ github.event.repository.name }}"
+          $prNumber = $env:PR_NUMBER
+          
+          Test-AgentAuth `
+            -Owner $owner `
+            -Repo $repo `
+            -PRNumber $prNumber `
+            -BaseRef $env:BASE_REF `
+            -DryRun:$dryRun
