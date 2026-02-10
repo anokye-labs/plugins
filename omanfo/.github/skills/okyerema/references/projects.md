@@ -227,7 +227,7 @@ The `Add-IssuesToProject.ps1` script automates bulk adding issues to projects wi
 **Features:**
 - ✅ Bulk add multiple issues in one operation
 - ✅ Set custom field values (Status, Priority, Sprint, etc.)
-- ✅ Automatic retry with exponential backoff
+- ✅ Automatic retry with configurable delay
 - ✅ Error handling with detailed logging
 - ✅ Support for TEXT, NUMBER, DATE, and SINGLE_SELECT fields
 - ✅ Rate limiting to avoid API throttling

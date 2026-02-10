@@ -228,7 +228,10 @@ mutation {
     }
     catch {
         Write-Warning "  ⚠ Failed to add issue #$($issue.Number): $($_.Exception.Message)"
-        $addFailures += $issue.Number
+        $addFailures += [PSCustomObject]@{
+            Number = $issue.Number
+            Error = $_.Exception.Message
+        }
     }
 }
 
@@ -239,7 +242,7 @@ if ($fieldMap.Count -gt 0 -and $addedItems.Count -gt 0) {
     Write-Host "`n[4/4] Setting custom field values..." -ForegroundColor Yellow
     
     $fieldUpdateCount = 0
-    $fieldUpdateFailures = 0
+    $fieldUpdateFailures = @()
     
     foreach ($item in $addedItems) {
         foreach ($fieldName in $fieldMap.Keys) {
@@ -281,12 +284,16 @@ mutation {
             }
             catch {
                 Write-Warning "  ⚠ Failed to set $fieldName for #$($item.Number): $($_.Exception.Message)"
-                $fieldUpdateFailures++
+                $fieldUpdateFailures += [PSCustomObject]@{
+                    IssueNumber = $item.Number
+                    FieldName = $fieldName
+                    Error = $_.Exception.Message
+                }
             }
         }
     }
     
-    Write-Host "  → Updated $fieldUpdateCount field value(s) ($fieldUpdateFailures failure(s))" -ForegroundColor Green
+    Write-Host "  → Updated $fieldUpdateCount field value(s) ($($fieldUpdateFailures.Count) failure(s))" -ForegroundColor Green
 }
 
 # Summary
@@ -299,8 +306,8 @@ if ($addedItems.Count -gt 0) {
 }
 
 if ($addFailures.Count -gt 0) {
-    Write-Host "Failed: $($addFailures.Count) issue(s)" -ForegroundColor Yellow
-    Write-Host "Issues: #$($addFailures -join ', #')" -ForegroundColor Gray
+    Write-Host "Failed to add: $($addFailures.Count) issue(s)" -ForegroundColor Yellow
+    Write-Host "Issues: #$($addFailures.Number -join ', #')" -ForegroundColor Gray
 }
 
 if ($fieldMap.Count -gt 0) {
@@ -314,6 +321,8 @@ if ($fieldMap.Count -gt 0) {
     AddedCount = $addedItems.Count
     FailedCount = $addFailures.Count
     AddedIssues = $addedItems.Number
-    FailedIssues = $addFailures
+    FailedIssues = $addFailures.Number
+    FailedIssueDetails = $addFailures
     FieldsSet = $fieldMap.Keys
+    FieldUpdateFailures = if ($fieldUpdateFailures) { $fieldUpdateFailures } else { @() }
 }
