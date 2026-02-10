@@ -26,3 +26,4 @@ Desktop.ini
 
 ## Test artifacts
 test-*-eval/
+coverage-report.md

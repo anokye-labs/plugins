@@ -30,6 +30,26 @@ Each plugin includes an `Install-Plugin.ps1` script that copies the skill files 
 
 Or manually copy the `.github/skills/<plugin-name>/` directory into your repository.
 
+## CI Validation
+
+All plugins are validated through a comprehensive CI pipeline that runs on every PR:
+
+- ✅ **Manifest Consistency** - Verifies manifest.json matches actual files
+- ✅ **Plugin Installation** - Tests installation process and file structure
+- ✅ **Coverage Enforcement** - Requires 80% feature coverage (scripts + evaluations)
+- ✅ **Evaluation Scenarios** - Runs automated validation checks
+- 📊 **Coverage Report** - Generated as workflow artifact
+
+### Coverage Requirements
+
+Every feature must have:
+1. **Script(s)** - PowerShell implementation in `.github/skills/<name>/scripts/`
+2. **Evaluation** - Test scenario in `evaluations/NN-feature-name.eval.md`
+
+Current coverage: **100%** (8/8 features validated)
+
+See [validation documentation](omanfo/scripts/validation/README.md) for details.
+
 ## Plugin Structure
 
 Each plugin follows a standard layout:
