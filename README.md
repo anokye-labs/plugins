@@ -45,19 +45,20 @@ The Anokye System is a multi-agent orchestration architecture that transforms ho
 
 | Layer | Role | Where It Lives | How It's Installed |
 |-------|------|---------------|-------------------|
-| **Okyeame** (linguist) | CLI agent. Guides developers through Socratic dialog. Creates issues, reports status, automates repo setup. | Copilot CLI plugin | `/plugin install` |
-| **Okyerema** (master drummer) | Repo skill. Keeps cloud agents in rhythm. Scripts, references, workflow automation. | Target repo `.github/skills/okyerema/` | `Install-Anokye.ps1` (automated by Okyeame) |
+| **Okyeame** (linguist) | CLI agent. Guides developers through Socratic dialog. Creates issues, reports status, automates repo setup. | Copilot CLI plugin | `copilot plugin install omanfo@anokye-plugins` |
+| **Okyerema** (master drummer) | Repo skill. Keeps cloud agents in rhythm. Scripts, references, workflow automation. | Target repo `.github/skills/okyerema/` | Auto-deployed from Omanfo plugin |
 | **Asafo** (warriors) | Implementation agents. @copilot, specialist agents. Execute Tasks. | Cloud (GitHub Actions) | Deployed by Okyerema workflows |
 
 ### The Flow: From Plugin to Fully Orchestrated Repo
 
-1. **Developer installs the plugin** → gets Okyeame in their CLI
-2. **Okyeame detects an unconfigured repo** → guides setup through Socratic dialog
-3. **Okyeame runs Install-Anokye.ps1** → deploys Okyerema skill, docs, scripts into the repo
-4. **Repo is now Anokye-System-enabled** → cloud agents can use Okyerema
-5. **Developer tells Okyeame to plan work** → Okyeame uses Okyerema to create typed issues with hierarchy
-6. **Asafo (@copilot) picks up Tasks** → writes code, opens PRs
-7. **Okyeame monitors progress** → reports status, surfaces blockers
+1. **Developer registers the marketplace** → `copilot plugin marketplace add anokye-labs/plugins`
+2. **Developer installs the plugin** → `copilot plugin install omanfo@anokye-plugins`
+3. **Okyeame detects an unconfigured repo** → guides setup through Socratic dialog
+4. **Okyeame deploys Okyerema skill** → copies `.github/skills/okyerema/` into the target repo
+5. **Repo is now Anokye-System-enabled** → cloud agents can use Okyerema
+6. **Developer tells Okyeame to plan work** → Okyeame uses Okyerema to create typed issues with hierarchy
+7. **Asafo (@copilot) picks up Tasks** → writes code, opens PRs
+8. **Okyeame monitors progress** → reports status, surfaces blockers
 
 ### Okyeame's Socratic Dialog
 
@@ -91,28 +92,35 @@ The README is the first thing a developer sees. If it says *"install this plugin
 
 ## Installation
 
-### The Two Ways to Deploy
+### Quick Start: Marketplace Installation (Recommended)
 
-The Anokye System can be deployed in two ways:
+The Omanfo plugin is distributed through the Anokye Plugins marketplace. Install it in three steps:
 
-1. **Via Okyeame CLI Plugin** (Recommended) — `/plugin install` in GitHub Copilot CLI
-   - Okyeame guides you through Socratic dialog
-   - Automatically runs `Install-Anokye.ps1` for you
-   - Helps configure issue types and project boards
-   - *Currently in development - watch this space*
+```bash
+# Step 1: Register the Anokye Plugins marketplace (one-time setup)
+copilot plugin marketplace add anokye-labs/plugins
 
-2. **Manual Deployment** (Available Now) — Run the script directly
+# Step 2: Browse available plugins
+copilot plugin marketplace browse anokye-plugins
 
-### Quick Start: Manual Deployment
+# Step 3: Install the Omanfo plugin
+copilot plugin install omanfo@anokye-plugins
+```
 
-The Omanfo plugin includes an `Install-Anokye.ps1` script that deploys the full system into your repository:
+Once installed, Okyeame is available in your Copilot CLI and will guide you through deploying the Okyerema skill to your repositories.
+
+### Manual / Advanced Deployment
+
+For advanced users or automated deployment scenarios, the Omanfo plugin includes an `Install-Anokye.ps1` script that directly deploys skill files into a target repository:
 
 ```powershell
-# Deploy the Anokye System to your repository
-& S:\anokye-labs\plugins\omanfo\scripts\Install-Anokye.ps1 -TargetRepo .
+# Deploy Okyerema skill files directly to your repository
+& /path/to/plugins/omanfo/scripts/Install-Anokye.ps1 -TargetRepo .
 ```
 
 Or manually copy the `.github/skills/` directory from the plugin into your repository.
+
+**Note:** This approach bypasses Okyeame's Socratic dialog and is intended for automation pipelines or situations where you need fine-grained control over the deployment process.
 
 ### What Gets Deployed
 
