@@ -89,7 +89,7 @@ Document the outcomes of this decision:
 
 ## Example ADR
 
-For a concrete example, see the ADR template in the [product-management skill](../.github/skills/product-management/SKILL.md#architecture-decision-record-adr), which includes a simplified format suitable for quick architectural decisions.
+For a concrete example, see the ADR template in the [product-management skill](../.github/skills/product-management/SKILL.md#architecture-decision-record-adr) (installed with Omanfo), which includes a simplified format suitable for quick architectural decisions.
 
 ## Numbering Convention
 

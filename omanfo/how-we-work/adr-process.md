@@ -119,7 +119,7 @@ Some decisions are borderline. Here's how to decide:
 
 ## Integration with Product Management
 
-The [product-management skill](../.github/skills/product-management/SKILL.md) provides a **lightweight ADR template** suitable for quick architectural decisions during feature development. Use it when:
+The [product-management skill](../.github/skills/product-management/SKILL.md) (installed with Omanfo) provides a **lightweight ADR template** suitable for quick architectural decisions during feature development. Use it when:
 
 - You need to document a decision quickly during active development
 - The decision is important but doesn't require extensive alternatives analysis
