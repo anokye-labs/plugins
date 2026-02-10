@@ -26,7 +26,7 @@ git init
 **Action:** Run the installation script.
 
 ```powershell
-& S:\anokye-labs\plugins\omanfo\scripts\Install-Plugin.ps1 -TargetRepo $testRepo -Force
+& S:\anokye-labs\plugins\omanfo\scripts\Install-Anokye.ps1 -TargetRepo $testRepo -Force
 ```
 
 **Expected:**
@@ -78,7 +78,7 @@ Test-Path "$testRepo\agents.md"
 ```powershell
 Remove-Item "$testRepo\how-we-work.md" -Force
 Remove-Item "$testRepo\agents.md" -Force
-& S:\anokye-labs\plugins\omanfo\scripts\Install-Plugin.ps1 -TargetRepo $testRepo -SkipDocs -SkipAgents -Force
+& S:\anokye-labs\plugins\omanfo\scripts\Install-Anokye.ps1 -TargetRepo $testRepo -SkipDocs -SkipAgents -Force
 ```
 
 **Expected:**
