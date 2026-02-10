@@ -20,6 +20,8 @@ We use GitHub Issues and Projects as our primary coordination mechanism. Our app
 ### For Everyone
 - **[Getting Started](./how-we-work/getting-started.md)** — New to GitHub Issues? Start here
 - **[Our Way](./how-we-work/our-way.md)** — How we structure and coordinate work
+- **[ADR Process](./how-we-work/adr-process.md)** — When to document architectural decisions
+- **[ADR Template](./how-we-work/adr-template.md)** — Template for Architecture Decision Records
 - **[Glossary](./how-we-work/glossary.md)** — Akan terms and concepts we use
 
 ### For Agents
