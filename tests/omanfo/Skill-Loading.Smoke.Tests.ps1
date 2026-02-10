@@ -4,7 +4,9 @@
 
 BeforeAll {
     # Get the plugin root directory
-    $script:PluginRoot = Split-Path -Parent $PSScriptRoot
+    # From tests/omanfo/ we need to go up to repo root, then to omanfo/
+    $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
+    $script:PluginRoot = Join-Path $repoRoot "omanfo"
     $script:SkillsPath = Join-Path $script:PluginRoot ".github/skills"
     
     # Expected skills from marketplace.json
