@@ -11,6 +11,17 @@
 **Omanfo** ("The People") is the single plugin that contains:
 - **Okyeame** — The agent persona (linguist) for project management, status reporting, and coordination
 - **Okyerema** — The orchestration skill (master drummer) with scripts, references, and workflow automation
+- **Agent Archetypes** — Reusable templates for doc-sync, issue-labeler, and pr-reviewer automation
+
+## Agent Archetypes
+
+| Archetype | Purpose | Related Issues |
+|-----------|---------|----------------|
+| [doc-sync](omanfo/archetypes/doc-sync.agent.md) | Keep docs in sync with code changes | anokye-labs/akwaaba#226-#232 |
+| [issue-labeler](omanfo/archetypes/issue-labeler.agent.md) | Automatic issue classification | anokye-labs/akwaaba#233-#241 |
+| [pr-reviewer](omanfo/archetypes/pr-reviewer.agent.md) | Automated PR reviews | anokye-labs/akwaaba#243-#253 |
+
+See [archetypes documentation](omanfo/archetypes/README.md) for deployment and customization.
 
 ## Shared Modules
 
