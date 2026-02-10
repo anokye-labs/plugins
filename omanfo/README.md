@@ -72,6 +72,18 @@ your-repo/
 └── agents.md                       # Agent entry point
 ```
 
+## Agent Archetypes
+
+The [archetypes/](archetypes/) directory contains reusable `.agent.md` templates for common automation patterns:
+
+| Archetype | Purpose | Related Issues |
+|-----------|---------|----------------|
+| [doc-sync](archetypes/doc-sync.agent.md) | Documentation synchronization — detects when code changes but docs don't | anokye-labs/akwaaba#226-#232 |
+| [issue-labeler](archetypes/issue-labeler.agent.md) | Automatic issue classification with type, priority, and phase labels | anokye-labs/akwaaba#233-#241 |
+| [pr-reviewer](archetypes/pr-reviewer.agent.md) | Automated PR reviews with validation and auto-approve for agent PRs | anokye-labs/akwaaba#243-#253 |
+
+See [archetypes/README.md](archetypes/README.md) for deployment guide and customization instructions.
+
 ## Evaluations
 
 See [evaluations/](evaluations/) for test scenarios that validate the plugin after installation. Run these to confirm everything works in your environment.
