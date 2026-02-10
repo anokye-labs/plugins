@@ -175,7 +175,7 @@ The `New-IssueWithType.ps1` script implements this policy automatically:
 - Pass `-Assignee ""` to create unassigned issues
 
 ```powershell
-# Uses default policy: Task → @copilot, Epic → owner
+# Uses default policy: Task → @copilot, Epic → authenticated user
 ./New-IssueWithType.ps1 -Owner "anokye-labs" -Repo "plugins" -Title "Add tests" -TypeName "Task"
 
 # Explicit assignment overrides default
@@ -183,6 +183,7 @@ The `New-IssueWithType.ps1` script implements this policy automatically:
 
 # No assignment
 ./New-IssueWithType.ps1 -Owner "anokye-labs" -Repo "plugins" -Title "Add tests" -TypeName "Task" -Assignee ""
+```
 ```
 
 **Important:** This policy applies to **bulk creation workflows**. For interactive issue creation in the GitHub UI, humans choose assignees as usual.

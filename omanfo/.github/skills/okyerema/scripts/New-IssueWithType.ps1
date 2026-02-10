@@ -1,6 +1,6 @@
 # New-IssueWithType.ps1
 # Create a GitHub issue with proper organization issue type
-# Implements default assignment policy: Task/Bug → @copilot, Epic/Feature → owner
+# Implements default assignment policy: Task/Bug → @copilot, Epic/Feature → authenticated user
 
 param(
     [Parameter(Mandatory)][string]$Owner,
