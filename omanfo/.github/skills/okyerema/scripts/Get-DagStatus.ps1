@@ -9,6 +9,9 @@
     
     An issue is "ready" if all its children are closed. This enables agents to
     understand which work items can be started based on dependency completion.
+    
+    LIMITATION: Due to GraphQL pagination constraints, only the first 100 sub-issues
+    per issue are checked. Issues with more than 100 children may be misclassified.
 
 .PARAMETER Owner
     Repository owner (organization or user).

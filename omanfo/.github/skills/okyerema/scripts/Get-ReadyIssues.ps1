@@ -8,6 +8,9 @@
     2. No open blocking issues referenced in body/comments (cross-reference dependencies)
     
     This enables agents to self-select work items that have all dependencies resolved.
+    
+    LIMITATION: Due to GraphQL pagination constraints, only the first 100 sub-issues
+    per issue are checked. Issues with more than 100 children may be misclassified.
 
 .PARAMETER Owner
     Repository owner (organization or user).

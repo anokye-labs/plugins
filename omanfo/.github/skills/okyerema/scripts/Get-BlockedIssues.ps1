@@ -9,6 +9,9 @@
     
     This helps identify work items that cannot proceed and surfaces the blockers
     so they can be prioritized.
+    
+    LIMITATION: Due to GraphQL pagination constraints, only the first 100 sub-issues
+    per issue are checked. Issues with more than 100 children may be misclassified.
 
 .PARAMETER Owner
     Repository owner (organization or user).
@@ -116,9 +119,14 @@ foreach ($issue in $allIssues) {
 
 # --- Parse blocking references from body and comments ---
 # Looks for patterns like "Blocked by #123" or "Depends on anokye-labs/plugins#45"
+# Returns objects with Owner, Repo, and Number to handle cross-repo references correctly
 
 function Get-BlockingReferences {
-    param([object]$Issue)
+    param(
+        [object]$Issue,
+        [string]$CurrentOwner,
+        [string]$CurrentRepo
+    )
     
     $blockers = @()
     $text = $Issue.body
@@ -134,31 +142,67 @@ function Get-BlockingReferences {
         return $blockers
     }
     
-    # Match patterns: "blocked by #123", "depends on #456", "blocked by owner/repo#789"
-    $patterns = @(
-        'blocked\s+by[:\s]+#(\d+)',
-        'depends\s+on[:\s]+#(\d+)',
-        'blocked\s+by[:\s]+[\w-]+/[\w-]+#(\d+)',
-        'depends\s+on[:\s]+[\w-]+/[\w-]+#(\d+)'
-    )
+    # Match patterns with capture groups for owner/repo and issue number
+    # Pattern 1: Cross-repo reference "owner/repo#123"
+    $crossRepoPattern = 'blocked\s+by[:\s]+([\w-]+)/([\w-]+)#(\d+)|depends\s+on[:\s]+([\w-]+)/([\w-]+)#(\d+)'
+    $crossRepoMatches = [regex]::Matches($text, $crossRepoPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
     
-    foreach ($pattern in $patterns) {
-        $matches = [regex]::Matches($text, $pattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
-        foreach ($match in $matches) {
-            $blockerNumber = [int]$match.Groups[1].Value
-            if ($blockerNumber -gt 0) {
-                $blockers += $blockerNumber
+    foreach ($match in $crossRepoMatches) {
+        # Extract owner, repo, and number from whichever set of capture groups matched
+        $owner = if ($match.Groups[1].Success) { $match.Groups[1].Value } else { $match.Groups[4].Value }
+        $repo = if ($match.Groups[2].Success) { $match.Groups[2].Value } else { $match.Groups[5].Value }
+        $number = if ($match.Groups[3].Success) { [int]$match.Groups[3].Value } else { [int]$match.Groups[6].Value }
+        
+        if ($number -gt 0) {
+            $blockers += [PSCustomObject]@{
+                Owner = $owner
+                Repo = $repo
+                Number = $number
+                IsExternal = ($owner -ne $CurrentOwner -or $repo -ne $CurrentRepo)
             }
         }
     }
     
-    return $blockers | Select-Object -Unique
+    # Pattern 2: Local reference "#123"
+    $localPattern = 'blocked\s+by[:\s]+#(\d+)|depends\s+on[:\s]+#(\d+)'
+    $localMatches = [regex]::Matches($text, $localPattern, [System.Text.RegularExpressions.RegexOptions]::IgnoreCase)
+    
+    foreach ($match in $localMatches) {
+        # Skip if this was already matched as part of a cross-repo reference
+        $alreadyMatched = $false
+        foreach ($crossMatch in $crossRepoMatches) {
+            if ($match.Index -ge $crossMatch.Index -and $match.Index -lt ($crossMatch.Index + $crossMatch.Length)) {
+                $alreadyMatched = $true
+                break
+            }
+        }
+        
+        if (-not $alreadyMatched) {
+            $number = if ($match.Groups[1].Success) { [int]$match.Groups[1].Value } else { [int]$match.Groups[2].Value }
+            if ($number -gt 0) {
+                $blockers += [PSCustomObject]@{
+                    Owner = $CurrentOwner
+                    Repo = $CurrentRepo
+                    Number = $number
+                    IsExternal = $false
+                }
+            }
+        }
+    }
+    
+    # Return unique blockers (by Owner/Repo/Number combination)
+    return $blockers | Sort-Object -Property Owner, Repo, Number -Unique
 }
 
 # --- Analyze blocking status ---
 
 function Get-BlockingInfo {
-    param([object]$Issue, [hashtable]$IssueMap)
+    param(
+        [object]$Issue,
+        [hashtable]$IssueMap,
+        [string]$CurrentOwner,
+        [string]$CurrentRepo
+    )
     
     $blockingInfo = @{
         IsBlocked = $false
@@ -177,18 +221,21 @@ function Get-BlockingInfo {
     }
     
     # Check 2: Cross-referenced blocking issues
-    $blockerNumbers = Get-BlockingReferences -Issue $Issue
-    foreach ($blockerNum in $blockerNumbers) {
-        $blocker = $IssueMap[$blockerNum]
-        if ($blocker -and $blocker.state -eq "OPEN") {
-            $blockingInfo.IsBlocked = $true
-            $blockingInfo.BlockedByReferences += $blocker
-        } elseif (-not $blocker) {
-            # Blocker might be in a different repo or not found - treat as blocking
+    $blockerRefs = Get-BlockingReferences -Issue $Issue -CurrentOwner $CurrentOwner -CurrentRepo $CurrentRepo
+    foreach ($blockerRef in $blockerRefs) {
+        # Only check local issues in our issue map
+        if (-not $blockerRef.IsExternal) {
+            $blocker = $IssueMap[$blockerRef.Number]
+            if ($blocker -and $blocker.state -eq "OPEN") {
+                $blockingInfo.IsBlocked = $true
+                $blockingInfo.BlockedByReferences += $blocker
+            }
+        } else {
+            # External blocker - we can't check its state, so treat as blocking
             $blockingInfo.IsBlocked = $true
             $blockingInfo.BlockedByReferences += [PSCustomObject]@{
-                number = $blockerNum
-                title = "(external or not found)"
+                number = $blockerRef.Number
+                title = "($($blockerRef.Owner)/$($blockerRef.Repo)#$($blockerRef.Number) - external)"
                 state = "UNKNOWN"
             }
         }
@@ -214,7 +261,7 @@ foreach ($issue in $allIssues) {
         }
     }
     
-    $blockingInfo = Get-BlockingInfo -Issue $issue -IssueMap $issueMap
+    $blockingInfo = Get-BlockingInfo -Issue $issue -IssueMap $issueMap -CurrentOwner $Owner -CurrentRepo $Repo
     
     if ($blockingInfo.IsBlocked) {
         $blockedIssues += [PSCustomObject]@{
