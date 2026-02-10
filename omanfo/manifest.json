@@ -8,7 +8,7 @@
   "skills": [
     {
       "name": "okyeame",
-      "path": "../.github/skills/okyeame",
+      "path": ".github/skills/okyeame",
       "entryPoint": "SKILL.md",
       "agentFile": "okyeame.agent.md",
       "references": 0,
@@ -16,7 +16,7 @@
     },
     {
       "name": "okyerema",
-      "path": "../.github/skills/okyerema",
+      "path": ".github/skills/okyerema",
       "entryPoint": "SKILL.md",
       "references": 9,
       "scripts": 28

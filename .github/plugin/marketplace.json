@@ -14,17 +14,17 @@
       "description": "The Omanfo plugin -- Okyeame agent, Okyerema coordinator, and project management skills.",
       "version": "0.1.0",
       "skills": [
-        "../skills/okyerema",
-        "../skills/doc-coauthoring",
-        "../skills/docx",
-        "../skills/github-issue-creator",
-        "../skills/internal-comms",
-        "../skills/pdf",
-        "../skills/pptx",
-        "../skills/product-management",
-        "../skills/productivity",
-        "../skills/skill-creator",
-        "../skills/xlsx"
+        "omanfo/.github/skills/okyerema",
+        "omanfo/.github/skills/doc-coauthoring",
+        "omanfo/.github/skills/docx",
+        "omanfo/.github/skills/github-issue-creator",
+        "omanfo/.github/skills/internal-comms",
+        "omanfo/.github/skills/pdf",
+        "omanfo/.github/skills/pptx",
+        "omanfo/.github/skills/product-management",
+        "omanfo/.github/skills/productivity",
+        "omanfo/.github/skills/skill-creator",
+        "omanfo/.github/skills/xlsx"
       ]
     }
   ]
