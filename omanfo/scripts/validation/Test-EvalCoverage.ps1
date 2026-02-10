@@ -74,6 +74,13 @@ if (-not (Test-Path $evalPath)) {
 # Get all eval files
 $evalFiles = @(Get-ChildItem -Path $evalPath -Filter "*.eval.md" -File | Sort-Object Name)
 
+# Check if manifest declares evaluations but none exist
+$manifestCount = $manifest.evaluations.count
+if ($evalFiles.Count -eq 0 -and $manifestCount -gt 0) {
+    Write-ValidationError "manifest.json declares $manifestCount evaluation(s) but no .eval.md files found in: $evalPath"
+    exit 1
+}
+
 if ($evalFiles.Count -eq 0) {
     Write-ValidationWarning "No evaluation files found in: $evalPath"
     exit 0

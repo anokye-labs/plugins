@@ -59,18 +59,22 @@ $errorCount = 0
 foreach ($file in $psFiles) {
     $relativePath = $file.FullName.Substring($pluginDir.Length + 1)
     
-    try {
-        # Parse the file
-        $null = [System.Management.Automation.Language.Parser]::ParseFile(
-            $file.FullName,
-            [ref]$null,
-            [ref]$null
-        )
-        Write-ValidationSuccess $relativePath
-    }
-    catch {
-        Write-ValidationError "$relativePath - $($_.Exception.Message)"
+    # Parse the file - ParseFile returns errors via [ref] parameters
+    $tokens = $null
+    $parseErrors = $null
+    $null = [System.Management.Automation.Language.Parser]::ParseFile(
+        $file.FullName,
+        [ref]$tokens,
+        [ref]$parseErrors
+    )
+    
+    if ($parseErrors.Count -gt 0) {
+        foreach ($err in $parseErrors) {
+            Write-ValidationError "$relativePath - Line $($err.Extent.StartLineNumber): $($err.Message)"
+        }
         $errorCount++
+    } else {
+        Write-ValidationSuccess $relativePath
     }
 }
 
