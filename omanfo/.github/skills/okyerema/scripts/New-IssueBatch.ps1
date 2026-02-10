@@ -117,8 +117,10 @@ mutation {
     }
     catch {
         Write-Host "  ✗ Failed to create issue '$title' [$typeName]: $_" -ForegroundColor Red
-        if ($_.Exception.Message -match "GraphQL") {
-            Write-Host "    Hint: This may be a GraphQL API error. Check issue type name and permissions." -ForegroundColor Yellow
+        if ($_.Exception.Message -match "rate limit") {
+            Write-Host "    Hint: Rate limit exceeded. Wait before retrying." -ForegroundColor Yellow
+        } elseif ($_.Exception.Message -match "permission\|unauthorized\|forbidden") {
+            Write-Host "    Hint: Check repository permissions and authentication." -ForegroundColor Yellow
         }
         $failedCount++
     }
