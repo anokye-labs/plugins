@@ -40,6 +40,10 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+# --- Constants for parent suggestion logic ---
+$MinWordLength = 3    # Minimum word length to consider for keyword matching
+$MaxKeywords = 5      # Maximum number of keywords to extract from orphan titles
+
 # --- Paginated fetch of all open issues with hierarchy fields ---
 
 $allIssues = @()
@@ -162,9 +166,9 @@ if ($SuggestParents -and $orphans.Count -gt 0) {
         }
         
         # Try to match by title keywords
-        $orphanWords = ($orphan.Title -split '\s+' | Where-Object { $_.Length -gt 3 }) | Select-Object -First 5
+        $orphanWords = ($orphan.Title -split '\s+' | Where-Object { $_.Length -gt $MinWordLength }) | Select-Object -First $MaxKeywords
         foreach ($parent in $potentialParents) {
-            $parentWords = ($parent.title -split '\s+' | Where-Object { $_.Length -gt 3 })
+            $parentWords = ($parent.title -split '\s+' | Where-Object { $_.Length -gt $MinWordLength })
             $wordMatches = 0
             foreach ($word in $orphanWords) {
                 if ($word -in $parentWords) {
