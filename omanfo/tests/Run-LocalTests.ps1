@@ -83,20 +83,28 @@ function Get-TestFiles {
             $testFiles += $unitTests
         }
         'Smoke' {
-            # Find files matching *.Smoke.Tests.ps1 or *.Tests.ps1 in Smoke/ subdirectory
+            # Find files matching *.Smoke.Tests.ps1 (recursively)
             $smokeTests = Get-ChildItem -Path $TestsPath -Filter "*.Smoke.Tests.ps1" -Recurse -File -ErrorAction SilentlyContinue
+            
+            # Also find *.Tests.ps1 in Smoke/ subdirectory (but not *.Smoke.Tests.ps1 to avoid duplicates)
             $smokePath = Join-Path $TestsPath "Smoke"
             if (Test-Path $smokePath) {
-                $smokeTests += Get-ChildItem -Path $smokePath -Filter "*.Tests.ps1" -Recurse -File -ErrorAction SilentlyContinue
+                $smokeSubdirTests = Get-ChildItem -Path $smokePath -Filter "*.Tests.ps1" -Recurse -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -notlike "*.Smoke.Tests.ps1" }
+                $smokeTests += $smokeSubdirTests
             }
             $testFiles += $smokeTests
         }
         'E2E' {
-            # Find files matching *.E2E.Tests.ps1 or *.Tests.ps1 in E2E/ subdirectory
+            # Find files matching *.E2E.Tests.ps1 (recursively)
             $e2eTests = Get-ChildItem -Path $TestsPath -Filter "*.E2E.Tests.ps1" -Recurse -File -ErrorAction SilentlyContinue
+            
+            # Also find *.Tests.ps1 in E2E/ subdirectory (but not *.E2E.Tests.ps1 to avoid duplicates)
             $e2ePath = Join-Path $TestsPath "E2E"
             if (Test-Path $e2ePath) {
-                $e2eTests += Get-ChildItem -Path $e2ePath -Filter "*.Tests.ps1" -Recurse -File -ErrorAction SilentlyContinue
+                $e2eSubdirTests = Get-ChildItem -Path $e2ePath -Filter "*.Tests.ps1" -Recurse -File -ErrorAction SilentlyContinue |
+                    Where-Object { $_.Name -notlike "*.E2E.Tests.ps1" }
+                $e2eTests += $e2eSubdirTests
             }
             $testFiles += $e2eTests
         }
