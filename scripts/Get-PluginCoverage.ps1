@@ -101,7 +101,11 @@ $evaluationCoverage = if ($declaredEvaluations -gt 0) {
     100 
 }
 
-$overallCoverage = [math]::Round((($actualScripts.Count + $actualEvaluations.Count) / ($declaredScripts + $declaredEvaluations)) * 100, 2)
+$overallCoverage = if (($declaredScripts + $declaredEvaluations) -gt 0) {
+    [math]::Round((($actualScripts.Count + $actualEvaluations.Count) / ($declaredScripts + $declaredEvaluations)) * 100, 2)
+} else {
+    100
+}
 
 # Determine status
 $scriptsMet = $actualScripts.Count -ge $declaredScripts
@@ -113,7 +117,7 @@ $allPassed = $scriptsMet -and $evaluationsMet -and $coverageMet
 $report = [PSCustomObject]@{
     Plugin = $manifest.name
     Version = $manifest.version
-    Timestamp = (Get-Date).ToString("yyyy-MM-ddTHH:mm:ssZ")
+    Timestamp = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ")
     Scripts = [PSCustomObject]@{
         Declared = $declaredScripts
         Actual = $actualScripts.Count
