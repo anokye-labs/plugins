@@ -98,36 +98,36 @@ Tests use unique run IDs and prefixed issue titles:
 
 ```powershell
 # Using the test runner
-pwsh -File ./Run-E2ETests.ps1
+pwsh -File ./tests/omanfo/e2e/Run-E2ETests.ps1
 
 # Or using Pester directly
-Invoke-Pester -Path ./omanfo/tests/e2e/
+Invoke-Pester -Path ./tests/omanfo/e2e/
 ```
 
 ### Run Specific Test Suite
 
 ```powershell
 # Issue creation tests only
-Invoke-Pester -Path ./omanfo/tests/e2e/IssueCreation.e2e.Tests.ps1
+Invoke-Pester -Path ./tests/omanfo/e2e/IssueCreation.e2e.Tests.ps1
 
 # Hierarchy tests only
-Invoke-Pester -Path ./omanfo/tests/e2e/Hierarchy.e2e.Tests.ps1
+Invoke-Pester -Path ./tests/omanfo/e2e/Hierarchy.e2e.Tests.ps1
 
 # Status reporting tests
-Invoke-Pester -Path ./omanfo/tests/e2e/StatusReporting.e2e.Tests.ps1
+Invoke-Pester -Path ./tests/omanfo/e2e/StatusReporting.e2e.Tests.ps1
 
 # PR workflow tests
-Invoke-Pester -Path ./omanfo/tests/e2e/PRWorkflow.e2e.Tests.ps1
+Invoke-Pester -Path ./tests/omanfo/e2e/PRWorkflow.e2e.Tests.ps1
 
 # Complete workflow test
-Invoke-Pester -Path ./omanfo/tests/e2e/FullWorkflow.e2e.Tests.ps1
+Invoke-Pester -Path ./tests/omanfo/e2e/FullWorkflow.e2e.Tests.ps1
 ```
 
 ### Run with Custom Repository
 
 ```powershell
 $env:E2E_TEST_REPO = "my-org/my-test-repo"
-Invoke-Pester -Path ./omanfo/tests/e2e/IssueCreation.e2e.Tests.ps1
+Invoke-Pester -Path ./tests/omanfo/e2e/IssueCreation.e2e.Tests.ps1
 ```
 
 ## Test Structure
@@ -255,6 +255,6 @@ When adding new E2E tests:
 
 ## See Also
 
-- [Evaluations](../../evaluations/) - Manual test scenarios
-- [Validation Scripts](../../scripts/validation/) - Static validation tests
+- [Evaluations](../../../omanfo/evaluations/) - Manual test scenarios
+- [Validation Scripts](../../../omanfo/scripts/validation/) - Static validation tests
 - [OkyeremanAgentRunner Tests](../../../shared/OkyeremanAgentRunner/Tests/) - Unit tests
