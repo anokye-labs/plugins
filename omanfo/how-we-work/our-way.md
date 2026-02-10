@@ -73,7 +73,7 @@ We follow a strict policy on labels:
 
 ### ❌ Never Use Labels For
 - **Issue types** — That's what types are for
-- **Relationships** — That's what tasklists are for
+- **Relationships** — That's what sub-issues are for
 - **Status** — That's what issue state and Projects are for
 - **Working around missing features** — Find the proper tool
 

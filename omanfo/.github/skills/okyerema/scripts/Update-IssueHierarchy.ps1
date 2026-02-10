@@ -22,7 +22,18 @@ query {
 }
 "@
 
-$result = gh api graphql -f query="$parentQuery" | ConvertFrom-Json
+$rawResult = gh api graphql -f query="$parentQuery" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Write-Error "GraphQL query failed for parent issue #${ParentNumber}: $rawResult"
+    exit 1
+}
+
+$result = $rawResult | ConvertFrom-Json
+if ($result.errors) {
+    Write-Error "GraphQL errors querying parent issue #${ParentNumber}: $($result.errors | ConvertTo-Json -Compress)"
+    exit 1
+}
+
 $parentId = $result.data.repository.issue.id
 $parentTitle = $result.data.repository.issue.title
 
@@ -42,7 +53,18 @@ query {
 }
 "@
     
-    $childResult = gh api graphql -f query="$childQuery" | ConvertFrom-Json
+    $rawChildResult = gh api graphql -f query="$childQuery" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "GraphQL query failed for child issue #${num}: $rawChildResult"
+        exit 1
+    }
+    
+    $childResult = $rawChildResult | ConvertFrom-Json
+    if ($childResult.errors) {
+        Write-Error "GraphQL errors querying child issue #${num}: $($childResult.errors | ConvertTo-Json -Compress)"
+        exit 1
+    }
+    
     $childIds += [PSCustomObject]@{
         Number = $num
         Id = $childResult.data.repository.issue.id
