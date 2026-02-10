@@ -163,6 +163,11 @@ function Invoke-WithRetry {
             
             # Check for rate limiting
             if ($errorMessage -match 'rate limit|too many requests|429') {
+                if ($attempt -gt $MaxRetries) {
+                    Write-AgentLog "All $MaxRetries retry attempts exhausted (rate limit)." -Level Error -Quiet
+                    throw
+                }
+                
                 Write-AgentLog "Rate limit detected. Waiting before retry..." -Level Warn -Quiet
                 
                 # Try to parse retry-after header if available
@@ -719,6 +724,7 @@ function ConvertTo-SafeOutput {
         $sanitized = $sanitized -replace 'ghu_[a-zA-Z0-9]{30,}', $RedactionMarker
         $sanitized = $sanitized -replace 'ghs_[a-zA-Z0-9]{30,}', $RedactionMarker
         $sanitized = $sanitized -replace 'ghr_[a-zA-Z0-9]{30,}', $RedactionMarker
+        $sanitized = $sanitized -replace 'github_pat_[a-zA-Z0-9_]{30,}', $RedactionMarker
 
         # Generic API keys (optional, may have false positives)
         if ($IncludeGenericSecrets) {
@@ -772,7 +778,8 @@ function Limit-OutputLength {
             return $Text
         }
 
-        $truncated = $Text.Substring(0, $MaxLength - $Ellipsis.Length) + $Ellipsis
+        $truncateAt = [Math]::Max(0, $MaxLength - $Ellipsis.Length)
+        $truncated = $Text.Substring(0, $truncateAt) + $Ellipsis
         Write-AgentLog "Output truncated from $($Text.Length) to $MaxLength characters" -Level Debug -Quiet
         return $truncated
     }

@@ -112,6 +112,18 @@ Describe "Error Handling Functions" {
 
             $result | Should -Be "Success"
         }
+
+        It "Should throw after exhausting retries on rate limit" {
+            $script:attemptCount = 0
+            {
+                Invoke-WithRetry -ScriptBlock {
+                    $script:attemptCount++
+                    $ex = New-Object System.Exception 'rate limit exceeded'
+                    throw $ex
+                } -MaxRetries 1
+            } | Should -Throw
+            $script:attemptCount | Should -BeGreaterThan 1
+        }
     }
 
     Context "New-AgentError" {
@@ -226,6 +238,13 @@ Describe "Safe Output Processing Functions" {
             $output | Should -Match "\[REDACTED\]"
         }
 
+        It "Should redact github_pat_ tokens" {
+            $input = "Token: github_pat_1234567890abcdefghijklmnopqrstuvwxyz"
+            $output = ConvertTo-SafeOutput -Text $input
+            $output | Should -Not -Match "github_pat_"
+            $output | Should -Match "\[REDACTED\]"
+        }
+
         It "Should support custom redaction marker" {
             $input = "Token: ghp_1234567890abcdefghijklmnopqrstuv"
             $output = ConvertTo-SafeOutput -Text $input -RedactionMarker "***"
@@ -261,6 +280,17 @@ Describe "Safe Output Processing Functions" {
         It "Should handle pipeline input" {
             $output = ("a" * 1000) | Limit-OutputLength -MaxLength 50
             $output.Length | Should -Be 50
+        }
+
+        It "Should handle small MaxLength gracefully" {
+            $output = Limit-OutputLength -Text "Hello World" -MaxLength 2 -Ellipsis "..."
+            $output | Should -Not -BeNullOrEmpty
+            $output | Should -Match '\.\.\.'
+        }
+
+        It "Should handle MaxLength equal to Ellipsis length" {
+            $output = Limit-OutputLength -Text "Hello World" -MaxLength 3 -Ellipsis "..."
+            $output | Should -Be "..."
         }
     }
 
