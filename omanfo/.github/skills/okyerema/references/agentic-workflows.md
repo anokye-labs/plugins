@@ -78,7 +78,7 @@ gh issue edit {num} --add-assignee Copilot
 ```
 
 **Why REST is Required:**
-- Copilot's node ID (`BOT_kgDOC9w8XQ`) is a BOT type, not a User type
+- Copilot's node ID (e.g., `BOT_kgDOC9w8XQ`) is a BOT type, not a User type
 - GraphQL `addAssigneesToAssignable` mutation returns `NOT_FOUND` for BOT IDs
 - REST API `/repos/{owner}/{repo}/issues/{number}/assignees` properly handles bot assignees
 

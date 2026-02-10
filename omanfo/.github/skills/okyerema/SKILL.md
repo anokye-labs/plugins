@@ -140,14 +140,14 @@ Epic #1: Phase 0 Setup
 **The Exception:** While the core principle states "Use GraphQL API for all write operations," **Copilot bot assignment is a documented exception** that requires the REST API.
 
 **Why REST is Required:**
-- Copilot's node ID (`BOT_kgDOC9w8XQ`) is a BOT type, not a User type
+- Copilot's node ID (e.g., `BOT_kgDOC9w8XQ`) is a BOT type, not a User type
 - The GraphQL `addAssigneesToAssignable` mutation returns `NOT_FOUND` error for BOT-type node IDs
 - GitHub's REST API `/repos/{owner}/{repo}/issues/{number}/assignees` endpoint properly handles bot assignees
 
 **Working Pattern (REST API):**
 ```bash
 # Assign Copilot to an issue using REST API
-gh api repos/OWNER/REPO/issues/NUMBER/assignees \
+gh api repos/{owner}/{repo}/issues/{number}/assignees \
   --method POST \
   -f 'assignees[]=Copilot'
 ```
@@ -155,7 +155,7 @@ gh api repos/OWNER/REPO/issues/NUMBER/assignees \
 **Alternative (gh CLI):**
 ```bash
 # Using gh issue edit command (wraps REST API)
-gh issue edit NUMBER --add-assignee Copilot
+gh issue edit {number} --add-assignee Copilot
 ```
 
 **What Does NOT Work:**
@@ -164,7 +164,7 @@ gh issue edit NUMBER --add-assignee Copilot
 mutation {
   addAssigneesToAssignable(input: {
     assignableId: "I_issue_node_id"
-    assigneeIds: ["BOT_kgDOC9w8XQ"]
+    assigneeIds: ["BOT_kgDOC9w8XQ"]  # Example BOT node ID
   }) {
     assignable { id }
   }
