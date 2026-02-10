@@ -26,3 +26,6 @@ Desktop.ini
 
 ## Test artifacts
 test-*-eval/
+
+## Coverage reports
+scripts/coverage-report.json
