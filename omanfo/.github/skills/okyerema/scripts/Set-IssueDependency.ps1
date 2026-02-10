@@ -114,7 +114,7 @@ query {
         }
         
         # Match "Depends on #N" (equivalent to blocked by)
-        $dependsMatches = [regex]::Matches($text, '(?i)depends\s+on:?\s*(?:[\w-]+/[\w-]+)?#(\d+)')
+        $dependsMatches = [regex]::Matches($text, '(?i)depends\s*on:?\s*(?:[\w-]+/[\w-]+)?#(\d+)')
         foreach ($match in $dependsMatches) {
             $num = [int]$match.Groups[1].Value
             if ($num -notin $dependencies.BlockedBy) {
@@ -258,8 +258,16 @@ mutation {
         # Verify and display all dependencies
         Write-Host "`nAll dependencies for #${IssueNumber}:" -ForegroundColor Cyan
         $allDeps = Get-IssueDependencies -Owner $Owner -Repo $Repo -IssueNumber $IssueNumber
-        Write-Host "  Blocked by: #$($allDeps.BlockedBy -join ', #')" -ForegroundColor Gray
-        Write-Host "  Blocks: #$($allDeps.Blocks -join ', #')" -ForegroundColor Gray
+        if ($allDeps.BlockedBy.Count -gt 0) {
+            Write-Host "  Blocked by: #$($allDeps.BlockedBy -join ', #')" -ForegroundColor Gray
+        } else {
+            Write-Host "  Blocked by: (none)" -ForegroundColor Gray
+        }
+        if ($allDeps.Blocks.Count -gt 0) {
+            Write-Host "  Blocks: #$($allDeps.Blocks -join ', #')" -ForegroundColor Gray
+        } else {
+            Write-Host "  Blocks: (none)" -ForegroundColor Gray
+        }
     }
     
     'Remove' {
