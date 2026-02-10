@@ -81,7 +81,6 @@ Write-Host ""
 
 # Parse markdown plan
 Write-Host "Parsing plan document..." -ForegroundColor Cyan
-$content = Get-Content $PlanFile -Raw
 $lines = Get-Content $PlanFile
 
 $items = @()
@@ -295,7 +294,7 @@ mutation {
     return $issue
 }
 
-function Create-Issues-Recursive($item) {
+function Create-IssuesRecursive($item) {
     # Create the item itself
     $issue = Create-IssueFromItem $item
     if (-not $issue) {
@@ -307,7 +306,7 @@ function Create-Issues-Recursive($item) {
     # Create children
     $childIssues = @()
     foreach ($child in $item.Children) {
-        $childIssue = Create-Issues-Recursive $child
+        $childIssue = Create-IssuesRecursive $child
         if ($childIssue) {
             $childIssues += $childIssue
         }

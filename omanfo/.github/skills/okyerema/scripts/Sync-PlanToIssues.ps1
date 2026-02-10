@@ -154,8 +154,15 @@ $toCreate = @()
 $toUpdate = @()
 $unchanged = @()
 
-function Compare-Items($currentItems, $mappingIssues) {
-    foreach ($item in $currentItems) {
+function Compare-Items {
+    param(
+        [Parameter(Mandatory)]
+        [array]$CurrentItems,
+        [Parameter(Mandatory)]
+        [array]$MappingIssues
+    )
+    
+    foreach ($item in $CurrentItems) {
         # Find matching issue by title
         $matchedIssue = $mappingIssues | Where-Object { 
             $_.title -eq $item.Title -and $_.type -eq $item.Type 
@@ -177,8 +184,8 @@ function Compare-Items($currentItems, $mappingIssues) {
             
             # Recursively compare children
             if ($item.Children.Count -gt 0) {
-                $childMappings = $mappingIssues | Where-Object { $_.parent -eq $matchedIssue.number }
-                Compare-Items $item.Children $childMappings
+                $childMappings = $MappingIssues | Where-Object { $_.parent -eq $matchedIssue.number }
+                Compare-Items -CurrentItems $item.Children -MappingIssues $childMappings
             }
         } else {
             # New item
@@ -187,7 +194,7 @@ function Compare-Items($currentItems, $mappingIssues) {
     }
 }
 
-Compare-Items $items $mapping.issues
+Compare-Items -CurrentItems $items -MappingIssues $mapping.issues
 
 Write-Host "  New items: $($toCreate.Count)" -ForegroundColor Cyan
 Write-Host "  Items to update: $($toUpdate.Count)" -ForegroundColor Yellow
