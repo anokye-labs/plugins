@@ -25,7 +25,7 @@ See the full [agent conventions document](how-we-work/agent-conventions.md) for 
 
 The Okyerema (talking drummer) skill teaches agents how to:
 - Create issues with proper organization types (Epic, Feature, Task, Bug)
-- Build parent-child hierarchies using the sub-issues API
+- Build parent-child hierarchies using GitHub's sub-issues API
 - Manipulate GitHub Projects via GraphQL
 - Use labels appropriately (sparingly, for categorization only)
 - Verify relationships and troubleshoot issues
@@ -34,7 +34,7 @@ The Okyerema (talking drummer) skill teaches agents how to:
 
 1. **Use GraphQL for all structured operations** — gh CLI is insufficient
 2. **Use organization issue types** — never labels or title prefixes
-3. **Use sub-issues API for relationships** — `addSubIssue`/`removeSubIssue` mutations with `GraphQL-Features: sub_issues` header
+3. **Use sub-issues API for relationships** — `addSubIssue`/`removeSubIssue` mutations
 4. **Use labels sparingly** — categorization only, never structure
 
 ## Session Context

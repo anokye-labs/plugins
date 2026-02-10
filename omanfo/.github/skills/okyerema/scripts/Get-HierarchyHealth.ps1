@@ -53,7 +53,7 @@ query {
         title
         state
         issueType { name }
-        parent {
+        parentIssue {
           number
           issueType { name }
         }
@@ -115,8 +115,8 @@ foreach ($issue in $allIssues) {
 $orphans = @()
 foreach ($issue in $allIssues) {
     $typeName = if ($issue.issueType) { $issue.issueType.name } else { "Unknown" }
-    # Epics are roots — not orphans. Everything else needs a parent.
-    if ($typeName -ne "Epic" -and -not $issue.parent) {
+    # Epics are roots — not orphans. Everything else needs a parentIssue.
+    if ($typeName -ne "Epic" -and -not $issue.parentIssue) {
         $orphans += [PSCustomObject]@{
             Number = $issue.number
             Title  = $issue.title
@@ -135,17 +135,17 @@ $validChildren = @{
 
 $typeMismatches = @()
 foreach ($issue in $allIssues) {
-    if (-not $issue.parent) { continue }
+    if (-not $issue.parentIssue) { continue }
 
     $childType = if ($issue.issueType) { $issue.issueType.name } else { "Unknown" }
-    $parentType = if ($issue.parent.issueType) { $issue.parent.issueType.name } else { "Unknown" }
+    $parentType = if ($issue.parentIssue.issueType) { $issue.parentIssue.issueType.name } else { "Unknown" }
 
     $allowed = $validChildren[$parentType]
     if ($null -eq $allowed -or $childType -notin $allowed) {
         $typeMismatches += [PSCustomObject]@{
             ChildNumber = $issue.number
             ChildType   = $childType
-            ParentNumber = $issue.parent.number
+            ParentNumber = $issue.parentIssue.number
             ParentType  = $parentType
             Expected    = if ($allowed) { $allowed -join "/" } else { "(cannot have children)" }
         }
@@ -178,7 +178,7 @@ foreach ($issue in $allIssues) {
 }
 
 $maxDepth = 0
-$roots = $allIssues | Where-Object { -not $_.parent }
+$roots = $allIssues | Where-Object { -not $_.parentIssue }
 foreach ($root in $roots) {
     $depth = Get-Depth -Issue $root -IssueMap $issueMap -CurrentDepth 1
     if ($depth -gt $maxDepth) { $maxDepth = $depth }

@@ -11,7 +11,7 @@ We use GitHub Issues and Projects as our primary coordination mechanism. Our app
 | Tool | Purpose | Who Uses It |
 |------|---------|-------------|
 | **Issue Types** | Define what kind of work something is | Everyone |
-| **Tasklists** | Connect work into hierarchies | Agents (via GraphQL) |
+| **Sub-Issues API** | Connect work into hierarchies | Agents (via GraphQL) |
 | **Projects** | Visualize and track progress | Humans + Agents |
 | **Labels** | Categorize for filtering | Sparingly |
 

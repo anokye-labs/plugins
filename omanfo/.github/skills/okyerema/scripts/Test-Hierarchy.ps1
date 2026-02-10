@@ -1,5 +1,5 @@
 # Test-Hierarchy.ps1
-# Verify issue relationships via GraphQL
+# Verify issue relationships via GraphQL using sub-issues API
 
 param(
     [Parameter(Mandatory)][string]$Owner,
@@ -23,7 +23,7 @@ query {
       title
       state
       issueType { name }
-      trackedIssues(first: 50) {
+      subIssues(first: 50) {
         totalCount
         nodes {
           number
@@ -32,18 +32,27 @@ query {
           issueType { name }
         }
       }
-      trackedInIssues(first: 5) {
-        nodes {
-          number
-          issueType { name }
-        }
+      parentIssue {
+        number
+        issueType { name }
       }
     }
   }
 }
 "@
     
-    $result = gh api graphql -f query="$query" | ConvertFrom-Json
+    $rawResult = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$query" 2>&1
+    if ($LASTEXITCODE -ne 0) {
+        Write-Error "GraphQL query failed. Ensure the sub-issues API is available and the GraphQL-Features header is supported: $rawResult"
+        exit 1
+    }
+    
+    $result = $rawResult | ConvertFrom-Json
+    if ($result.errors) {
+        Write-Error "GraphQL errors: $($result.errors | ConvertTo-Json -Compress)"
+        exit 1
+    }
+    
     $issue = $result.data.repository.issue
     
     $typeColor = switch ($issue.issueType.name) {
@@ -58,15 +67,14 @@ query {
     
     Write-Host "${indent}${stateIcon} #$($issue.number) [$($issue.issueType.name)] $($issue.title)" -ForegroundColor $typeColor
     
-    if ($issue.trackedInIssues.nodes.Count -gt 0 -and $Level -eq 0) {
-        $parent = $issue.trackedInIssues.nodes[0]
-        Write-Host "${indent}  ↑ Parent: #$($parent.number) [$($parent.issueType.name)]" -ForegroundColor Gray
+    if ($issue.parentIssue -and $Level -eq 0) {
+        Write-Host "${indent}  ↑ Parent: #$($issue.parentIssue.number) [$($issue.parentIssue.issueType.name)]" -ForegroundColor Gray
     }
     
-    if ($issue.trackedIssues.totalCount -gt 0) {
-        Write-Host "${indent}  ↓ Tracks $($issue.trackedIssues.totalCount) issues:" -ForegroundColor Gray
+    if ($issue.subIssues.totalCount -gt 0) {
+        Write-Host "${indent}  ↓ Has $($issue.subIssues.totalCount) sub-issues:" -ForegroundColor Gray
         
-        foreach ($child in $issue.trackedIssues.nodes) {
+        foreach ($child in $issue.subIssues.nodes) {
             if ($Level -lt $Depth) {
                 Get-IssueTree -Owner $Owner -Repo $Repo -Number $child.number -Level ($Level + 1)
             } else {

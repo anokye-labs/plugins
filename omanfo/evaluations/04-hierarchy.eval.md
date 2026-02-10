@@ -6,7 +6,7 @@
 
 ## Objective
 
-Verify the plugin can build parent-child hierarchies using tasklists and verify them.
+Verify the plugin can build parent-child hierarchies using sub-issues API and verify them.
 
 ## Setup
 
@@ -52,27 +52,29 @@ $task2 = & .github\skills\okyerema\scripts\New-IssueWithType.ps1 `
 & .github\skills\okyerema\scripts\Update-IssueHierarchy.ps1 `
     -Owner $owner -Repo $repo `
     -ParentNumber <epic-number> `
-    -ChildNumbers @(<feat1-number>, <feat2-number>) `
-    -ChildType "Features"
+    -ChildNumbers @(<feat1-number>, <feat2-number>)
 ```
 
 **Expected:**
-- [ ] Epic body is updated with a tasklist section
-- [ ] Tasklist contains `## Tracked Features` heading
-- [ ] Both features appear as `- [ ] #<number>` entries
+- [ ] Epic and Features are linked via sub-issues API
+- [ ] Both features appear as sub-issues of the epic
 - [ ] Script completes without error
 
-### 4.2 Wait for GitHub Parsing
+### 4.2 Verify Relationships
 
-**Action:** Wait 2-5 minutes for GitHub to parse the tasklist, then verify.
+**Action:** Verify the relationships immediately (no waiting required).
 
 ```powershell
-Start-Sleep -Seconds 120
+& .github\skills\okyerema\scripts\Test-Hierarchy.ps1 `
+    -Owner $owner -Repo $repo `
+    -IssueNumber <epic-number> `
+    -Depth 2
 ```
 
 **Expected:**
-- [ ] GitHub UI shows "tracked by" on child issues
-- [ ] Parent shows tracked items count
+- [ ] GitHub UI shows parent-child relationships
+- [ ] GraphQL query returns correct structure
+- [ ] No delay needed for verification
 
 ### 4.3 Create 3-Level Hierarchy (Epic → Feature → Tasks)
 
@@ -82,21 +84,19 @@ Start-Sleep -Seconds 120
 & .github\skills\okyerema\scripts\Update-IssueHierarchy.ps1 `
     -Owner $owner -Repo $repo `
     -ParentNumber <feat1-number> `
-    -ChildNumbers @(<task1-number>, <task2-number>) `
-    -ChildType "Tasks"
+    -ChildNumbers @(<task1-number>, <task2-number>)
 ```
 
 **Expected:**
-- [ ] Feature A body has a `## Tracked Tasks` section
-- [ ] Both tasks appear in the tasklist
-- [ ] Original feature body is preserved above the tasklist
+- [ ] Feature A has both tasks as sub-issues
+- [ ] Relationships are created via sub-issues API
+- [ ] No body modification needed
 
 ### 4.4 Verify Hierarchy Tree
 
 **Action:** Use the hierarchy verification script.
 
 ```powershell
-Start-Sleep -Seconds 120
 & .github\skills\okyerema\scripts\Test-Hierarchy.ps1 `
     -Owner $owner -Repo $repo `
     -IssueNumber <epic-number> `
@@ -117,14 +117,13 @@ Start-Sleep -Seconds 120
 & .github\skills\okyerema\scripts\Update-IssueHierarchy.ps1 `
     -Owner $owner -Repo $repo `
     -ParentNumber <epic-number> `
-    -ChildNumbers @(<feat1-number>, <feat2-number>) `
-    -ChildType "Features"
+    -ChildNumbers @(<feat1-number>, <feat2-number>)
 ```
 
 **Expected:**
-- [ ] No duplicate entries in tasklist
+- [ ] Existing relationships are maintained
 - [ ] Script handles existing entries gracefully
-- [ ] Body is not corrupted
+- [ ] No errors or duplicate relationships
 
 ### 4.6 Copilot Builds Hierarchy
 
@@ -134,7 +133,7 @@ Start-Sleep -Seconds 120
 
 **Expected:**
 - [ ] Copilot creates all 3 issues with correct types
-- [ ] Builds the hierarchy via tasklist
+- [ ] Builds the hierarchy correctly
 - [ ] Reports the created structure
 
 ## Cleanup
