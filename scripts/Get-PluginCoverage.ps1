@@ -108,10 +108,21 @@ $overallCoverage = if (($declaredScripts + $declaredEvaluations) -gt 0) {
 }
 
 # Determine status
-$scriptsMet = $actualScripts.Count -ge $declaredScripts
-$evaluationsMet = $actualEvaluations.Count -ge $declaredEvaluations
-$coverageMet = $overallCoverage -ge $MinimumCoverage
-$allPassed = $scriptsMet -and $evaluationsMet -and $coverageMet
+# When MinimumCoverage < 100, use only percentage check (not raw count checks)
+# This allows gradual coverage improvement without requiring 100% immediately
+if ($MinimumCoverage -eq 100) {
+    # Strict mode: require exact count match AND 100% coverage
+    $scriptsMet = $actualScripts.Count -ge $declaredScripts
+    $evaluationsMet = $actualEvaluations.Count -ge $declaredEvaluations
+    $coverageMet = $overallCoverage -ge $MinimumCoverage
+    $allPassed = $scriptsMet -and $evaluationsMet -and $coverageMet
+} else {
+    # Percentage mode: require only that coverage meets threshold
+    $scriptsMet = $scriptCoverage -ge $MinimumCoverage
+    $evaluationsMet = $evaluationCoverage -ge $MinimumCoverage
+    $coverageMet = $overallCoverage -ge $MinimumCoverage
+    $allPassed = $coverageMet
+}
 
 # Build report object
 $report = [PSCustomObject]@{

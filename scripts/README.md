@@ -37,6 +37,8 @@ Reads `manifest.json` to identify declared capabilities (scripts and evaluations
 - **PluginPath** - Path to the plugin directory. Defaults to `omanfo` relative to repository root.
 - **OutputFormat** - Output format: `json`, `text`, or `both`. Defaults to `both`.
 - **MinimumCoverage** - Minimum coverage percentage required (0-100). Defaults to 100.
+  - When set to **100** (default): Enforces strict mode requiring exact count match (actual ≥ declared) AND 100% coverage
+  - When set to **< 100**: Uses percentage-based validation only, allowing gradual coverage improvement
 
 ### Exit Codes
 
