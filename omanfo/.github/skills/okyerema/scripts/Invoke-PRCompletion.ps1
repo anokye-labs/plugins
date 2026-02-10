@@ -221,6 +221,7 @@ while ($iteration -lt $MaxIterations) {
     # Step 4: Commit and push changes
     Write-Host "[4/6] Committing and pushing changes..." -ForegroundColor White
     
+    $changesCommitted = $false
     $gitStatus = git status --porcelain
     if (-not $gitStatus) {
         Write-Host "  No changes to commit." -ForegroundColor Yellow
@@ -243,21 +244,35 @@ Iteration $iteration of $MaxIterations
             Write-Host "    $commitMessage" -ForegroundColor Gray
             Write-Host ""
             Write-Host "  [DRY RUN] Would push to $Branch" -ForegroundColor Yellow
+            $changesCommitted = $true  # For dry-run, treat as if committed
         } else {
-            # Stage only tracked files to avoid committing unintended changes
-            git add -u
-            git commit -m $commitMessage -m $commitDetails
-            $commitSha = git rev-parse --short HEAD
-            Write-Host "  ✓ Committed: $commitSha" -ForegroundColor Green
+            # Stage all changes including new files
+            git add -A
             
-            git push origin $Branch
-            Write-Host "  ✓ Pushed to $Branch" -ForegroundColor Green
+            # Verify files were staged
+            $stagedFiles = git diff --cached --name-only
+            if ($stagedFiles) {
+                git commit -m $commitMessage -m $commitDetails
+                $commitSha = git rev-parse --short HEAD
+                Write-Host "  ✓ Committed: $commitSha" -ForegroundColor Green
+                
+                git push origin $Branch
+                Write-Host "  ✓ Pushed to $Branch" -ForegroundColor Green
+                $changesCommitted = $true
+            } else {
+                Write-Host "  No files staged after git add." -ForegroundColor Yellow
+            }
         }
     }
     Write-Host ""
     
     # Step 5: Reply to threads
     Write-Host "[5/6] Replying to review threads..." -ForegroundColor White
+    
+    if (-not $changesCommitted) {
+        Write-Host "  Skipping replies - no changes were committed." -ForegroundColor Yellow
+        Write-Host ""
+    } else {
     
     foreach ($thread in $threadsToProcess) {
         $replyBody = @"
@@ -284,10 +299,17 @@ Please review the changes.
         
         $totalThreadsProcessed++
     }
+    
+    }  # End of if ($changesCommitted)
     Write-Host ""
     
     # Step 6: Resolve threads
     Write-Host "[6/6] Resolving threads..." -ForegroundColor White
+    
+    if (-not $changesCommitted) {
+        Write-Host "  Skipping resolution - no changes were committed." -ForegroundColor Yellow
+        Write-Host ""
+    } else {
     
     if ($AutoResolve) {
         $shouldResolve = $true
@@ -319,6 +341,8 @@ Please review the changes.
     } else {
         Write-Host "  Skipped resolution" -ForegroundColor Yellow
     }
+    
+    }  # End of if ($changesCommitted)
     Write-Host ""
     
     # Check if we should continue

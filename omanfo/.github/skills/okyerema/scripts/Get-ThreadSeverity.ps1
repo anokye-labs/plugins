@@ -265,7 +265,11 @@ foreach ($thread in $threads) {
         Severity = $determinedSeverity
         Confidence = $confidence
         Reason = $reason
-        FirstComment = $firstComment.Substring(0, [Math]::Min($PREVIEW_MAX_LENGTH, $firstComment.Length))
+        FirstComment = if ($firstComment) { 
+            $firstComment.Substring(0, [Math]::Min($PREVIEW_MAX_LENGTH, $firstComment.Length)) 
+        } else { 
+            "" 
+        }
         CommentCount = $thread.comments.nodes.Count
     }
     
