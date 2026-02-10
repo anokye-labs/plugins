@@ -82,19 +82,40 @@ mutation {
 
 ## Workflow: Address Review Feedback
 
+### Manual Workflow
+
 1. **Read** unresolved threads → `Get-UnresolvedThreads.ps1`
-2. **Fix** the code
-3. **Commit & push** to the PR branch
-4. **Reply** to each thread explaining the fix → `Reply-ReviewThread.ps1 -Resolve`
-5. **Verify** no unresolved threads remain → `Get-UnresolvedThreads.ps1`
+2. **Classify** thread severity → `Get-ThreadSeverity.ps1`
+3. **Fix** the code
+4. **Commit & push** to the PR branch
+5. **Reply** to each thread explaining the fix → `Reply-ReviewThread.ps1 -Resolve`
+6. **Verify** no unresolved threads remain → `Get-UnresolvedThreads.ps1`
+
+### Automated Workflow
+
+Use `Invoke-PRCompletion.ps1` for automated orchestration of the review-classify-fix-commit-push-reply-resolve cycle:
+
+```powershell
+# Run the complete PR completion loop
+.\Invoke-PRCompletion.ps1 -Owner ORG -Repo REPO -PullNumber 6
+
+# Dry-run mode to preview actions
+.\Invoke-PRCompletion.ps1 -Owner ORG -Repo REPO -PullNumber 6 -DryRun
+
+# With options: max iterations, auto-resolve, min severity filter
+.\Invoke-PRCompletion.ps1 -Owner ORG -Repo REPO -PullNumber 6 `
+    -MaxIterations 3 -AutoResolve -MinSeverity High
+```
 
 ## Helper Scripts
 
 | Script | Purpose |
 |--------|---------|
 | `Get-UnresolvedThreads.ps1` | List unresolved (or all) threads with comment details |
+| `Get-ThreadSeverity.ps1` | Classify review threads by severity (Critical, High, Medium, Low, Info) |
 | `Reply-ReviewThread.ps1` | Reply to a thread by ID or index, optionally resolve |
 | `Resolve-ReviewThreads.ps1` | Bulk resolve/unresolve threads |
+| `Invoke-PRCompletion.ps1` | Orchestrate complete review-fix-push-reply-resolve cycle |
 
 ## Common Patterns
 
@@ -109,4 +130,23 @@ foreach ($t in $threads) {
 ### Bulk resolve all (no reply)
 ```powershell
 .\Resolve-ReviewThreads.ps1 -Owner ORG -Repo REPO -PullNumber 6 -All
+```
+
+### Classify threads by severity
+```powershell
+# Analyze all unresolved threads
+.\Get-ThreadSeverity.ps1 -Owner ORG -Repo REPO -PullNumber 6
+
+# Analyze specific thread by index
+.\Get-ThreadSeverity.ps1 -Owner ORG -Repo REPO -PullNumber 6 -ThreadIndex 0
+```
+
+### Automated PR completion loop
+```powershell
+# Dry-run mode to preview what would happen
+.\Invoke-PRCompletion.ps1 -Owner ORG -Repo REPO -PullNumber 6 -DryRun
+
+# Run with automatic resolution and high-severity filter
+.\Invoke-PRCompletion.ps1 -Owner ORG -Repo REPO -PullNumber 6 `
+    -AutoResolve -MinSeverity High -MaxIterations 2
 ```
