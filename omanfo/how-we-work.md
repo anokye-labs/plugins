@@ -25,6 +25,7 @@ We use GitHub Issues and Projects as our primary coordination mechanism. Our app
 - **[Glossary](./how-we-work/glossary.md)** — Akan terms and concepts we use
 
 ### For Agents
+- **[Agent Conventions](./how-we-work/agent-conventions.md)** — Behavioral expectations for AI agents
 - **[Okyerema Skill](/.github/skills/okyerema/SKILL.md)** — The agent skill with GraphQL examples and helper scripts
 
 ## Quick Summary
