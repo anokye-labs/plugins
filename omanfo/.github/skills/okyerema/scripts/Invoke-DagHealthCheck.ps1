@@ -126,9 +126,9 @@ $colors = @{}
 $cycles = @()
 
 function Find-Cycles {
-    param([int]$Node, [System.Collections.Generic.List[int]]$Path)
+    param([int]$Node, [System.Collections.Generic.List[int]]$Path, [hashtable]$Colors)
     
-    if ($colors[$Node] -eq 1) {
+    if ($Colors[$Node] -eq 1) {
         # Back edge detected - cycle found
         $cycleStart = $Path.IndexOf($Node)
         if ($cycleStart -ge 0) {
@@ -138,45 +138,44 @@ function Find-Cycles {
         }
     }
     
-    if ($colors[$Node] -eq 2) {
+    if ($Colors[$Node] -eq 2) {
         # Already processed
         return $null
     }
     
-    $colors[$Node] = 1  # Gray - in progress
+    $Colors[$Node] = 1  # Gray - in progress
     $Path.Add($Node)
     
     # Visit children
     if ($parentToChildren.ContainsKey($Node)) {
         foreach ($child in $parentToChildren[$Node]) {
-            $cycle = Find-Cycles -Node $child -Path $Path
+            $cycle = Find-Cycles -Node $child -Path $Path -Colors $Colors
             if ($cycle) {
                 # Clean up before returning cycle
                 $Path.RemoveAt($Path.Count - 1)
-                $colors[$Node] = 2  # Black - completed
+                $Colors[$Node] = 2  # Black - completed
                 return $cycle
             }
         }
     }
     
     $Path.RemoveAt($Path.Count - 1)
-    $colors[$Node] = 2  # Black - completed
+    $Colors[$Node] = 2  # Black - completed
     return $null
 }
 
-# Initialize all nodes as unvisited
+# Run cycle detection from each node with its own color map
 foreach ($issue in $allIssues) {
-    $colors[$issue.number] = 0
-}
-
-# Run cycle detection from each unvisited node
-foreach ($issue in $allIssues) {
-    if ($colors[$issue.number] -eq 0) {
-        $path = New-Object System.Collections.Generic.List[int]
-        $cycle = Find-Cycles -Node $issue.number -Path $path
-        if ($cycle) {
-            $cycles += ,@($cycle)  # Add as array element
-        }
+    # Each DFS traversal gets its own color map to avoid false positives
+    $colors = @{}
+    foreach ($iss in $allIssues) {
+        $colors[$iss.number] = 0
+    }
+    
+    $path = New-Object System.Collections.Generic.List[int]
+    $cycle = Find-Cycles -Node $issue.number -Path $path -Colors $colors
+    if ($cycle) {
+        $cycles += ,@($cycle)  # Add as array element
     }
 }
 
