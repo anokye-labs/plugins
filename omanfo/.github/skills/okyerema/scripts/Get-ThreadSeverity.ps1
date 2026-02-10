@@ -208,7 +208,7 @@ foreach ($thread in $threads) {
     }
     
     # Combine all comments in thread for analysis
-    $allText = ($thread.comments.nodes | ForEach-Object { $_.body }) -join " "
+    $allText = ($thread.comments.nodes | ForEach-Object { if ($_.body) { $_.body } }) -join " "
     $firstComment = $thread.comments.nodes[0].body
     
     # Score each severity level
@@ -216,7 +216,7 @@ foreach ($thread in $threads) {
     foreach ($severity in $severityPatterns.Keys) {
         $score = 0
         foreach ($pattern in $severityPatterns[$severity]) {
-            if ($allText -imatch $pattern) {
+            if ($allText -and $allText -imatch $pattern) {
                 $score++
             }
         }
@@ -251,7 +251,7 @@ foreach ($thread in $threads) {
         # Find which patterns matched
         $matchedPatterns = @()
         foreach ($pattern in $severityPatterns[$determinedSeverity]) {
-            if ($allText -imatch $pattern) {
+            if ($allText -and $allText -imatch $pattern) {
                 $matchedPatterns += $pattern
             }
         }
