@@ -197,7 +197,7 @@ For detailed GraphQL examples and workflows, reference these guides:
 - **[Issue Types](references/issue-types.md)** — Creating, updating, verifying types
 - **[Relationships](references/relationships.md)** — Parent-child, hierarchy queries, orphan detection
 - **[Projects](references/projects.md)** — GitHub Projects V2 GraphQL API
-- **[PR Reviews](references/pr-reviews.md)** — Reply to, resolve, and find unresolved review threads
+- **[PR Reviews](references/pr-reviews.md)** — PR intelligence suite: status, timeline, comment analysis, review submission, thread management
 - **[Labels](references/labels.md)** — When and how to use labels properly
 - **[Status Commands](references/status-commands.md)** — Slash command reference (/sitrep, /prcheck, /health, etc.)
 - **[Agentic Workflows](references/agentic-workflows.md)** — gh-aw, @copilot assignment, automated governance
@@ -207,14 +207,29 @@ For detailed GraphQL examples and workflows, reference these guides:
 
 Invoke these scripts for common operations:
 
+### Issue Management
 - **[scripts/Get-IssueTypeIds.ps1](scripts/Get-IssueTypeIds.ps1)** — Retrieve type IDs for an organization
 - **[scripts/New-IssueWithType.ps1](scripts/New-IssueWithType.ps1)** — Create issue with proper type
 - **[scripts/Update-IssueHierarchy.ps1](scripts/Update-IssueHierarchy.ps1)** — Build parent-child relationships using sub-issues API
 - **[scripts/Set-IssueDependency.ps1](scripts/Set-IssueDependency.ps1)** — Establish blocks/blocked-by dependency relationships
 - **[scripts/Test-Hierarchy.ps1](scripts/Test-Hierarchy.ps1)** — Verify relationships via GraphQL
+
+### Status Commands
 - **[scripts/Get-Sitrep.ps1](scripts/Get-Sitrep.ps1)** — Tactical status report (/sitrep)
 - **[scripts/Get-PRHealth.ps1](scripts/Get-PRHealth.ps1)** — Deep PR health check (/prcheck)
 - **[scripts/Get-HierarchyHealth.ps1](scripts/Get-HierarchyHealth.ps1)** — Structural validation (/health)
+
+### PR Intelligence
+- **[scripts/Get-PRStatus.ps1](scripts/Get-PRStatus.ps1)** — Comprehensive PR status (approvals, checks, merge readiness)
+- **[scripts/Get-ThreadSeverity.ps1](scripts/Get-ThreadSeverity.ps1)** — Categorize review comments by actionability
+- **[scripts/Find-IssueByPR.ps1](scripts/Find-IssueByPR.ps1)** — Discover PRs linked to issues
+- **[scripts/Get-PRTimeline.ps1](scripts/Get-PRTimeline.ps1)** — Timeline view of review activity
+- **[scripts/Submit-PRReview.ps1](scripts/Submit-PRReview.ps1)** — Submit structured reviews programmatically
+
+### Thread Management
+- **[scripts/Get-UnresolvedThreads.ps1](scripts/Get-UnresolvedThreads.ps1)** — List unresolved threads
+- **[scripts/Reply-ReviewThread.ps1](scripts/Reply-ReviewThread.ps1)** — Reply to threads, optionally resolve
+- **[scripts/Resolve-ReviewThreads.ps1](scripts/Resolve-ReviewThreads.ps1)** — Bulk resolve/unresolve threads
 
 ## Labels: Use Sparingly
 
