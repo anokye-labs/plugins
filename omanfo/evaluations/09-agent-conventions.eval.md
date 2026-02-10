@@ -2,7 +2,7 @@
 
 **Priority:** 🔴 Critical  
 **Time:** 15 minutes  
-**Prerequisites:** Omanfo plugin installed, test repository, GitHub CLI authenticated
+**Prerequisites:** Omanfo plugin installed, test repository with GitHub remote, GitHub CLI authenticated with repo creation permissions
 
 ## Objective
 
