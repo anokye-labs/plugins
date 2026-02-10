@@ -77,7 +77,7 @@ if ($lineCount -le 500) {
 $content = Get-Content $skillMd -Raw
 
 # Check if file starts with ---
-if (-not $content.TrimStart().StartsWith('---')) {
+if (-not $content.StartsWith('---')) {
     Write-ValidationError "SKILL.md does not start with YAML frontmatter (---)"
     exit $script:exitCode
 }

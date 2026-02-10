@@ -99,7 +99,7 @@ foreach ($file in $evalFiles) {
     }
     
     # Check for time estimate
-    if ($content -match '\*\*Time:\*\*\s*\d+\s*(minute|hour)') {
+    if ($content -match '\*\*Time:\*\*\s*\d+\s*(minutes?|hours?)') {
         Write-Host "  ✓ Has time estimate" -ForegroundColor Gray
     } else {
         Write-ValidationError "  $($file.Name): Missing time estimate"
