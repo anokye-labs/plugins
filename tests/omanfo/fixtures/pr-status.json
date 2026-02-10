@@ -1,0 +1,93 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "number": 42,
+        "title": "Add new feature",
+        "state": "OPEN",
+        "mergeable": "MERGEABLE",
+        "isDraft": false,
+        "author": {
+          "login": "copilot"
+        },
+        "baseRefName": "main",
+        "headRefName": "feature/new-feature",
+        "commits": {
+          "totalCount": 3,
+          "nodes": [
+            {
+              "commit": {
+                "oid": "abc123def456",
+                "message": "feat: implement new feature",
+                "statusCheckRollup": {
+                  "state": "SUCCESS",
+                  "contexts": {
+                    "nodes": [
+                      {
+                        "name": "CI / test",
+                        "conclusion": "SUCCESS"
+                      },
+                      {
+                        "name": "CI / lint",
+                        "conclusion": "SUCCESS"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          ]
+        },
+        "reviewThreads": {
+          "totalCount": 5,
+          "nodes": [
+            {
+              "id": "PRRT_kwDOCfc9t85abc123",
+              "isResolved": true,
+              "isOutdated": false,
+              "isCollapsed": false,
+              "comments": {
+                "totalCount": 2,
+                "nodes": [
+                  {
+                    "author": {
+                      "login": "reviewer1"
+                    },
+                    "body": "Consider refactoring this section"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "PRRT_kwDOCfc9t85abc124",
+              "isResolved": false,
+              "isOutdated": false,
+              "isCollapsed": false,
+              "comments": {
+                "totalCount": 1,
+                "nodes": [
+                  {
+                    "author": {
+                      "login": "copilot"
+                    },
+                    "body": "This needs attention"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "reviews": {
+          "nodes": [
+            {
+              "author": {
+                "login": "reviewer1"
+              },
+              "state": "APPROVED"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

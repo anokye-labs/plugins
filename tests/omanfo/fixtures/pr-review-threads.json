@@ -1,0 +1,101 @@
+{
+  "data": {
+    "repository": {
+      "pullRequest": {
+        "number": 42,
+        "reviewThreads": {
+          "totalCount": 8,
+          "nodes": [
+            {
+              "id": "PRRT_kwDOCfc9t85abc123",
+              "isResolved": true,
+              "isOutdated": false,
+              "isCollapsed": false,
+              "comments": {
+                "totalCount": 3,
+                "nodes": [
+                  {
+                    "id": "PRRC_kwDOCfc9t85xyz001",
+                    "author": {
+                      "login": "reviewer1"
+                    },
+                    "body": "Consider refactoring",
+                    "createdAt": "2026-01-15T10:00:00Z",
+                    "path": "src/main.js",
+                    "line": 42
+                  },
+                  {
+                    "id": "PRRC_kwDOCfc9t85xyz002",
+                    "author": {
+                      "login": "copilot"
+                    },
+                    "body": "Agreed, will refactor",
+                    "createdAt": "2026-01-15T11:00:00Z"
+                  },
+                  {
+                    "id": "PRRC_kwDOCfc9t85xyz003",
+                    "author": {
+                      "login": "reviewer1"
+                    },
+                    "body": "LGTM",
+                    "createdAt": "2026-01-15T12:00:00Z"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "PRRT_kwDOCfc9t85abc124",
+              "isResolved": false,
+              "isOutdated": false,
+              "isCollapsed": false,
+              "comments": {
+                "totalCount": 2,
+                "nodes": [
+                  {
+                    "id": "PRRC_kwDOCfc9t85xyz004",
+                    "author": {
+                      "login": "copilot"
+                    },
+                    "body": "Critical security issue here",
+                    "createdAt": "2026-01-16T10:00:00Z",
+                    "path": "src/auth.js",
+                    "line": 25
+                  },
+                  {
+                    "id": "PRRC_kwDOCfc9t85xyz005",
+                    "author": {
+                      "login": "reviewer2"
+                    },
+                    "body": "Needs immediate attention",
+                    "createdAt": "2026-01-16T11:00:00Z"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "PRRT_kwDOCfc9t85abc125",
+              "isResolved": false,
+              "isOutdated": true,
+              "isCollapsed": false,
+              "comments": {
+                "totalCount": 1,
+                "nodes": [
+                  {
+                    "id": "PRRC_kwDOCfc9t85xyz006",
+                    "author": {
+                      "login": "reviewer1"
+                    },
+                    "body": "Minor style issue",
+                    "createdAt": "2026-01-10T10:00:00Z",
+                    "path": "src/utils.js",
+                    "line": 15
+                  }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  }
+}
