@@ -1,27 +1,28 @@
 <#
 .SYNOPSIS
-    Installs the Omanfo plugin into a target repository.
+    Deploys the Anokye System into a target repository.
 
 .DESCRIPTION
-    Copies the Okyerema skill files, shared asafo skills, documentation, and agent entry point
-    into the target repository. Optionally skips documentation or agent files.
+    Deploys the Okyerema skill files, shared asafo skills, documentation, and agent entry point
+    into the target repository, transforming it into an Anokye-System-enabled environment.
+    Optionally skips documentation or agent files.
 
 .PARAMETER TargetRepo
     Path to the target repository root. Defaults to current directory.
 
 .PARAMETER SkipDocs
-    Skip copying how-we-work documentation files.
+    Skip deploying how-we-work documentation files.
 
 .PARAMETER SkipAgents
-    Skip copying agents.md entry point.
+    Skip deploying agents.md entry point.
 
 .PARAMETER Force
     Overwrite existing files without prompting.
 
 .EXAMPLE
-    .\Install-Plugin.ps1 -TargetRepo C:\repos\my-project
-    .\Install-Plugin.ps1 -TargetRepo . -SkipDocs
-    .\Install-Plugin.ps1 -Force
+    .\Install-Anokye.ps1 -TargetRepo C:\repos\my-project
+    .\Install-Anokye.ps1 -TargetRepo . -SkipDocs
+    .\Install-Anokye.ps1 -Force
 #>
 [CmdletBinding()]
 param(
@@ -65,7 +66,7 @@ function Copy-PluginFiles {
     Write-Host "  ✅ $Label" -ForegroundColor Green
 }
 
-Write-Host "`n🥁 Installing Omanfo Plugin" -ForegroundColor Cyan
+Write-Host "`n🥁 Deploying Anokye System" -ForegroundColor Cyan
 Write-Host "   Target: $TargetRepo`n" -ForegroundColor Gray
 
 # 1. Install skill files (always)
@@ -112,7 +113,7 @@ if (-not $SkipAgents) {
 
 # Summary
 $fileCount = (Get-ChildItem $skillDst -Recurse -File).Count
-Write-Host "`n✅ Omanfo plugin installed successfully!" -ForegroundColor Green
+Write-Host "`n✅ Anokye System deployed successfully!" -ForegroundColor Green
 Write-Host "   Skill files: $fileCount" -ForegroundColor Gray
 Write-Host "   Location: $skillDst" -ForegroundColor Gray
 

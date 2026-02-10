@@ -23,8 +23,8 @@ See **[Okyeame](../okyeame/)** for the linguist agent.
 ### Quick Install
 
 ```powershell
-# From your target repo root
-& S:\anokye-labs\plugins\omanfo\scripts\Install-Plugin.ps1 -TargetRepo .
+# Deploy the Anokye System to your target repo
+& S:\anokye-labs\plugins\omanfo\scripts\Install-Anokye.ps1 -TargetRepo .
 ```
 
 ### Manual Install
