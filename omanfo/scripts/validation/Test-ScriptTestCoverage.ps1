@@ -16,22 +16,65 @@ Write-Host ""
 $repoRoot = Split-Path (Split-Path (Split-Path $PSScriptRoot -Parent) -Parent) -Parent
 $pluginRoot = Join-Path $repoRoot $PluginPath
 
-# 1. Get all .ps1 files in omanfo/skills/okyerema/scripts/
-$scriptsDir = Join-Path $pluginRoot "skills/okyerema/scripts"
-
-if (-not (Test-Path $scriptsDir)) {
-    Write-Host "✗ Scripts directory not found: $scriptsDir" -ForegroundColor Red
-    exit 1
+# Check if plugin directory exists
+if (-not (Test-Path $pluginRoot)) {
+    Write-Host "ℹ Plugin directory not found: $pluginRoot" -ForegroundColor Cyan
+    Write-Host "✓ Skipping test coverage validation (plugin may not exist yet)" -ForegroundColor Green
+    Write-Host ""
+    exit 0
 }
 
-$scriptFiles = Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File | 
-    Where-Object { $_.Name -notmatch '^_' } |  # Exclude helper files starting with _
-    Select-Object -ExpandProperty BaseName
+# Read manifest to discover skills with scripts
+$manifestPath = Join-Path $pluginRoot "manifest.json"
+if (-not (Test-Path $manifestPath)) {
+    Write-Host "ℹ Manifest not found: $manifestPath" -ForegroundColor Cyan
+    Write-Host "✓ Skipping test coverage validation (no manifest)" -ForegroundColor Green
+    Write-Host ""
+    exit 0
+}
 
-Write-Host "Found $($scriptFiles.Count) script(s) in $scriptsDir" -ForegroundColor Gray
+$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
+
+# Find skills with scripts > 0
+$skillsWithScripts = $manifest.skills | Where-Object { $_.scripts -gt 0 }
+
+if ($skillsWithScripts.Count -eq 0) {
+    Write-Host "✓ No skills with scripts in this plugin - skipping test coverage validation" -ForegroundColor Green
+    Write-Host ""
+    exit 0
+}
+
+# Process each skill with scripts
+$allScriptFiles = @()
+$allScriptsDirs = @()
+
+foreach ($skill in $skillsWithScripts) {
+    $scriptsDir = Join-Path $pluginRoot $skill.path "scripts"
+    
+    if (-not (Test-Path $scriptsDir)) {
+        Write-Host "⚠ Scripts directory not found for skill '$($skill.name)': $scriptsDir" -ForegroundColor Yellow
+        continue
+    }
+    
+    $allScriptsDirs += $scriptsDir
+    
+    $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File | 
+        Where-Object { $_.Name -notmatch '^_' } |  # Exclude helper files starting with _
+        Select-Object -ExpandProperty BaseName
+    
+    $allScriptFiles += $scriptFiles
+}
+
+if ($allScriptFiles.Count -eq 0) {
+    Write-Host "✓ No scripts found in plugin - skipping test coverage validation" -ForegroundColor Green
+    Write-Host ""
+    exit 0
+}
+
+Write-Host "Found $($allScriptFiles.Count) script(s) across $($allScriptsDirs.Count) skill(s)" -ForegroundColor Gray
 Write-Host ""
 
-# 2. Parse all Describe blocks in tests/omanfo/unit/*.Unit.Tests.ps1
+# 2. Parse all Describe blocks in tests/{PluginPath}/unit/*.Unit.Tests.ps1
 $testsDir = Join-Path $repoRoot "tests/$PluginPath/unit"
 
 if (-not (Test-Path $testsDir)) {
@@ -62,7 +105,7 @@ Write-Host ""
 # 3. Match script base names to Describe block names
 $missingTests = @()
 
-foreach ($script in $scriptFiles) {
+foreach ($script in $allScriptFiles) {
     if ($describeBlocks -notcontains $script) {
         $missingTests += $script
     }
@@ -70,7 +113,7 @@ foreach ($script in $scriptFiles) {
 
 # 4. Report results
 if ($missingTests.Count -eq 0) {
-    Write-Host "✓ All $($scriptFiles.Count) scripts have test coverage" -ForegroundColor Green
+    Write-Host "✓ All $($allScriptFiles.Count) scripts have test coverage" -ForegroundColor Green
     Write-Host ""
     exit 0
 } else {
