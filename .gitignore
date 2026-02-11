@@ -27,5 +27,10 @@ Desktop.ini
 ## Test artifacts
 test-*-eval/
 
+## Node.js
+node_modules/
+package-lock.json
+*.log
+
 ## Coverage reports
 scripts/coverage-report.json
