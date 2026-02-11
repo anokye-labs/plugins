@@ -19,7 +19,7 @@ async function main() {
     {
       shouldNotBeEmpty: true,
       shouldContain: ['state', 'mergeable'],
-      shouldCallTools: ['Get-PullRequestStatus']
+      shouldCallTools: ['Get-PRHealth']
     }
   );
 

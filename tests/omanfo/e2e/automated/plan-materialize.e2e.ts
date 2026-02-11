@@ -104,11 +104,27 @@ Test plan for automated E2E testing
       return false;
     }
 
-    // Track all created issues for cleanup
-    childIssues.forEach((issue: any) => {
+    // Track all created issues for cleanup (including grandchildren)
+    for (const issue of childIssues) {
       createdIssues.push(issue.number);
       console.log(`  - #${issue.number}: ${issue.title} (${issue.issueType?.name || 'Unknown'})`);
-    });
+      
+      // Query sub-issues of this issue (e.g., Tasks under each Feature)
+      try {
+        const grandchildJson = execSync(
+          `gh api graphql -f query='query { repository(owner: "${owner}", name: "${repo}") { issue(number: ${issue.number}) { subIssues(first: 100) { nodes { number title issueType { name } } } } } }' --jq '.data.repository.issue.subIssues.nodes'`,
+          { encoding: 'utf-8' }
+        );
+        
+        const grandchildren = JSON.parse(grandchildJson);
+        grandchildren.forEach((grandchild: any) => {
+          createdIssues.push(grandchild.number);
+          console.log(`    - #${grandchild.number}: ${grandchild.title} (${grandchild.issueType?.name || 'Unknown'})`);
+        });
+      } catch (error) {
+        // Silently continue if querying grandchildren fails
+      }
+    }
 
     console.log('\n✅ Test "Plan Materialization" PASSED');
     return true;

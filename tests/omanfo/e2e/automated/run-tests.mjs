@@ -27,6 +27,11 @@ async function runTest(testFile) {
       }
     );
 
+    child.on('error', (err) => {
+      console.error(`Failed to start test process: ${err.message}`);
+      resolve({ testFile, exitCode: 1 });
+    });
+
     child.on('close', (code) => {
       resolve({ testFile, exitCode: code });
     });
