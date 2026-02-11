@@ -119,6 +119,160 @@ function Get-TestFiles {
     return $testFiles | Select-Object -Unique
 }
 
+# Run automated E2E tests (Node.js/TypeScript)
+function Invoke-AutomatedE2ETests {
+    param(
+        [string]$TestsPath,
+        [string]$TestRepo
+    )
+    
+    $automatedPath = Join-Path $TestsPath "e2e/automated"
+    
+    if (-not (Test-Path $automatedPath)) {
+        Write-Host "No automated E2E tests found at: $automatedPath" -ForegroundColor Gray
+        return $null
+    }
+    
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "Running Automated E2E Tests (SDK)" -ForegroundColor Cyan
+    Write-Host "========================================`n" -ForegroundColor Cyan
+    
+    # Check for Node.js
+    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $nodeCmd) {
+        Write-Warning "Node.js not found. Skipping automated E2E tests."
+        Write-Host "Install Node.js from: https://nodejs.org" -ForegroundColor Yellow
+        return $null
+    }
+    
+    $nodeVersion = node --version
+    Write-Host "Node.js: $nodeVersion" -ForegroundColor Green
+    
+    # Check for npm
+    $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+    if (-not $npmCmd) {
+        Write-Warning "npm not found. Skipping automated E2E tests."
+        Write-Host "npm is typically installed with Node.js" -ForegroundColor Yellow
+        return $null
+    }
+    
+    # Check for gh CLI
+    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+    if (-not $ghCmd) {
+        Write-Warning "GitHub CLI (gh) not found. Skipping automated E2E tests."
+        Write-Host "Install from: https://cli.github.com" -ForegroundColor Yellow
+        return $null
+    }
+    
+    # Run validation script to check all prerequisites
+    Write-Host "Validating prerequisites..." -ForegroundColor Cyan
+    Push-Location $automatedPath
+    try {
+        $validationOutput = node validate-setup.mjs 2>&1
+        $validationExitCode = $LASTEXITCODE
+        
+        # Show validation output
+        $validationOutput | ForEach-Object { Write-Host $_ }
+        
+        if ($validationExitCode -ne 0) {
+            Write-Warning "Prerequisite validation failed. Skipping automated E2E tests."
+            Pop-Location
+            return $null
+        }
+    }
+    catch {
+        Write-Warning "Failed to run validation: $_"
+        Pop-Location
+        return $null
+    }
+    finally {
+        if ((Get-Location).Path -eq $automatedPath) {
+            Pop-Location
+        }
+    }
+    
+    # Check if dependencies are installed
+    $nodeModulesPath = Join-Path $automatedPath "node_modules"
+    if (-not (Test-Path $nodeModulesPath)) {
+        Write-Host "Installing dependencies..." -ForegroundColor Cyan
+        Push-Location $automatedPath
+        try {
+            npm install --silent
+            if ($LASTEXITCODE -ne 0) {
+                Write-Error "Failed to install dependencies"
+            }
+            Write-Host "✓ Dependencies installed" -ForegroundColor Green
+        }
+        finally {
+            Pop-Location
+        }
+    }
+    else {
+        Write-Host "✓ Dependencies already installed" -ForegroundColor Green
+    }
+    
+    # Set environment variables
+    $env:E2E_TEST_REPO = $TestRepo
+    
+    # Find all *.e2e.ts test files
+    $testFiles = Get-ChildItem -Path $automatedPath -Filter "*.e2e.ts" -File | 
+        Where-Object { $_.Name -notlike "copilot-harness.ts" }
+    
+    if ($testFiles.Count -eq 0) {
+        Write-Warning "No automated E2E test files found"
+        return $null
+    }
+    
+    Write-Host "Found $($testFiles.Count) automated test(s):`n" -ForegroundColor Green
+    foreach ($file in $testFiles) {
+        Write-Host "  - $($file.Name)" -ForegroundColor Gray
+    }
+    Write-Host ""
+    
+    # Run each test file
+    $results = @{
+        Total = 0
+        Passed = 0
+        Failed = 0
+    }
+    
+    Push-Location $automatedPath
+    try {
+        foreach ($testFile in $testFiles) {
+            $results.Total++
+            Write-Host "`n▶ Running $($testFile.Name)..." -ForegroundColor Cyan
+            
+            $output = node --loader ts-node/esm $testFile.Name 2>&1
+            $exitCode = $LASTEXITCODE
+            
+            # Display output
+            $output | ForEach-Object { Write-Host $_ }
+            
+            if ($exitCode -eq 0) {
+                $results.Passed++
+                Write-Host "✓ $($testFile.Name) PASSED" -ForegroundColor Green
+            }
+            else {
+                $results.Failed++
+                Write-Host "✗ $($testFile.Name) FAILED" -ForegroundColor Red
+            }
+        }
+    }
+    finally {
+        Pop-Location
+    }
+    
+    Write-Host "`n========================================" -ForegroundColor Cyan
+    Write-Host "Automated E2E Test Summary" -ForegroundColor Cyan
+    Write-Host "========================================`n" -ForegroundColor Cyan
+    Write-Host "  Total: $($results.Total)" -ForegroundColor White
+    Write-Host "  Passed: $($results.Passed)" -ForegroundColor Green
+    Write-Host "  Failed: $($results.Failed)" -ForegroundColor $(if ($results.Failed -gt 0) { 'Red' } else { 'Green' })
+    Write-Host ""
+    
+    return $results
+}
+
 # Main execution
 try {
     Write-Host "`n========================================" -ForegroundColor Cyan
@@ -171,6 +325,12 @@ try {
     
     $result = Invoke-Pester -Configuration $config
     
+    # Run automated E2E tests if E2E level is requested
+    $automatedResults = $null
+    if ($TestLevel -eq 'E2E' -or $TestLevel -eq 'All') {
+        $automatedResults = Invoke-AutomatedE2ETests -TestsPath $testsPath -TestRepo $TestRepo
+    }
+    
     # Print summary
     Write-Host "`n========================================" -ForegroundColor Cyan
     Write-Host "Test Summary" -ForegroundColor Cyan
@@ -219,15 +379,26 @@ try {
     }
     
     # Overall results
-    Write-Host "Overall Results:" -ForegroundColor Cyan
+    Write-Host "Pester Tests:" -ForegroundColor Cyan
     Write-Host "  Total Tests: $($result.TotalCount)" -ForegroundColor White
     Write-Host "  Passed: $($result.PassedCount)" -ForegroundColor Green
     Write-Host "  Failed: $($result.FailedCount)" -ForegroundColor $(if ($result.FailedCount -gt 0) { 'Red' } else { 'Green' })
     Write-Host "  Skipped: $($result.SkippedCount)" -ForegroundColor Yellow
     Write-Host "  Duration: $($result.Duration)`n" -ForegroundColor White
     
+    # Include automated test results if available
+    $totalFailed = $result.FailedCount
+    if ($automatedResults) {
+        Write-Host "Automated E2E Tests:" -ForegroundColor Cyan
+        Write-Host "  Total: $($automatedResults.Total)" -ForegroundColor White
+        Write-Host "  Passed: $($automatedResults.Passed)" -ForegroundColor Green
+        Write-Host "  Failed: $($automatedResults.Failed)" -ForegroundColor $(if ($automatedResults.Failed -gt 0) { 'Red' } else { 'Green' })
+        Write-Host ""
+        $totalFailed += $automatedResults.Failed
+    }
+    
     # Exit with appropriate code
-    if ($result.FailedCount -gt 0) {
+    if ($totalFailed -gt 0) {
         Write-Host "Tests FAILED!" -ForegroundColor Red
         exit 1
     }

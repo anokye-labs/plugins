@@ -1,8 +1,16 @@
 # End-to-End (E2E) Tests for Omanfo Plugin
 
-This directory contains comprehensive E2E tests that exercise the Omanfo plugin through live `copilot` CLI commands against a real GitHub repository.
+This directory contains comprehensive E2E tests that exercise the Omanfo plugin through live commands against a real GitHub repository.
 
-## Overview
+## Test Types
+
+### 1. Manual E2E Tests (Root Directory)
+These tests require a human operator with the Copilot CLI installed and configured. They validate the plugin by executing natural language prompts via `copilot -p "prompt" --allow-all-tools -s` and verifying state changes through the GitHub API.
+
+### 2. Automated E2E Tests (automated/ Directory)
+These tests use the `@github/copilot-sdk` to programmatically drive Copilot sessions without human intervention. They're designed for CI/CD pipelines and automated testing. See [automated/README.md](automated/README.md) for details.
+
+## Overview (Manual Tests)
 
 These tests validate the plugin's capabilities by:
 - Executing natural language prompts via `copilot -p "prompt" --allow-all-tools -s`
