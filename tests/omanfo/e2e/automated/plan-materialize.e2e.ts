@@ -89,9 +89,9 @@ Test plan for automated E2E testing
     }
     console.log(`✓ Epic has correct type: ${epicType}`);
 
-    // Find child issues (Features and Tasks)
+    // Find child issues (sub-issues of the Epic)
     const childIssuesJson = execSync(
-      `gh api graphql -f query='query { repository(owner: "${owner}", name: "${repo}") { issue(number: ${epicNumber}) { trackedInIssues(first: 100) { nodes { number title issueType { name } } } } } }' --jq '.data.repository.issue.trackedInIssues.nodes'`,
+      `gh api graphql -f query='query { repository(owner: "${owner}", name: "${repo}") { issue(number: ${epicNumber}) { subIssues(first: 100) { nodes { number title issueType { name } } } } } }' --jq '.data.repository.issue.subIssues.nodes'`,
       { encoding: 'utf-8' }
     );
 

@@ -46,17 +46,17 @@ export class CopilotTestHarness {
       this.session = await this.client.createSession({
         model: config.model || 'gpt-4o',
         skillDirectories,
-        tools: config.tools || []
-      });
-
-      // Hook into tool execution to track usage
-      this.session.onPreToolUse?.((tool: any) => {
-        console.log(`[PreTool] ${tool.name}`);
-      });
-
-      this.session.onPostToolUse?.((tool: any, result: any) => {
-        console.log(`[PostTool] ${tool.name} -> ${result ? 'success' : 'failure'}`);
-        this.toolCallLog.push(tool.name);
+        tools: config.tools || [],
+        hooks: {
+          onPreToolUse: (input: any, invocation: any) => {
+            console.log(`[PreTool] ${input.toolName}`);
+            this.toolCallLog.push(input.toolName);
+            return { permissionDecision: "allow" };
+          },
+          onPostToolUse: (input: any, invocation: any) => {
+            console.log(`[PostTool] ${input.toolName} -> completed`);
+          }
+        }
       });
 
       console.log('✓ Copilot SDK client started');
@@ -81,12 +81,15 @@ export class CopilotTestHarness {
 
       const result = await this.session.sendAndWait({ prompt });
 
+      // SDK returns AssistantMessageEvent with data.content
+      const content = result?.data?.content || result?.content || '';
+      
       console.log(`📥 Response received`);
-      console.log(`   Content length: ${result.content?.length || 0} chars`);
+      console.log(`   Content length: ${content.length} chars`);
       console.log(`   Tools called: ${this.toolCallLog.join(', ') || 'none'}`);
 
       return {
-        content: result.content || '',
+        content,
         toolCalls: [...this.toolCallLog],
         success: true
       };
@@ -105,6 +108,16 @@ export class CopilotTestHarness {
    * Stop the client and cleanup
    */
   async stop(): Promise<void> {
+    try {
+      // Destroy session before stopping client
+      if (this.session) {
+        await this.session.destroy();
+        console.log('✓ Session destroyed');
+      }
+    } catch (error) {
+      console.error('Error destroying session:', error);
+    }
+    
     if (this.client) {
       try {
         await this.client.stop();
