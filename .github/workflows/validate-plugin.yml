@@ -98,6 +98,11 @@ jobs:
           & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath omanfo
           if ($LASTEXITCODE -ne 0) { $failures++ }
           
+          # Test 7: Script Test Coverage
+          Write-Host "`n▶ Running Test-ScriptTestCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ScriptTestCoverage.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
           # Summary
           Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
           if ($failures -eq 0) {
@@ -148,6 +153,11 @@ jobs:
           # Test 6: Markdown Structure
           Write-Host "`n▶ Running Test-MarkdownStructure..." -ForegroundColor Blue
           & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 7: Script Test Coverage
+          Write-Host "`n▶ Running Test-ScriptTestCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ScriptTestCoverage.ps1 -PluginPath okyeame
           if ($LASTEXITCODE -ne 0) { $failures++ }
           
           # Summary

@@ -266,9 +266,7 @@ Describe "Invoke-DagHealthCheck" {
         
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
-        # Cycles property should exist
         $result.PSObject.Properties.Name | Should -Contain "Cycles"
-        # Cycles.Count should match CycleCount
         $result.Cycles.Count | Should -Be $result.CycleCount
     }
 }

@@ -33,7 +33,7 @@ Describe "Get-ReadyIssues" {
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
-    It "Should return array of ready issues" {
+    It "Should return PSCustomObject with ReadyIssues" {
         Mock gh { 
             $global:LASTEXITCODE = 0
             return $fixtureData 
@@ -42,6 +42,7 @@ Describe "Get-ReadyIssues" {
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
         $result | Should -BeOfType [PSCustomObject]
+        $result.ReadyIssues | Should -Not -BeNullOrEmpty
     }
 }
 
@@ -72,7 +73,7 @@ Describe "Get-BlockedIssues" {
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
-    It "Should return array of blocked issues" {
+    It "Should return PSCustomObject with BlockedIssues" {
         Mock gh { 
             $global:LASTEXITCODE = 0
             return $fixtureData 
@@ -81,6 +82,7 @@ Describe "Get-BlockedIssues" {
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
         $result | Should -BeOfType [PSCustomObject]
+        $result.PSObject.Properties.Name | Should -Contain "BlockedIssues"
     }
 }
 
@@ -111,7 +113,7 @@ Describe "Get-OrphanedIssues" {
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
-    It "Should return array of orphaned issues" {
+    It "Should return PSCustomObject with Orphans" {
         Mock gh { 
             $global:LASTEXITCODE = 0
             return $fixtureData 
@@ -120,6 +122,7 @@ Describe "Get-OrphanedIssues" {
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
         $result | Should -BeOfType [PSCustomObject]
+        $result.Orphans | Should -Not -BeNullOrEmpty
     }
 }
 

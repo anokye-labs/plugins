@@ -127,6 +127,12 @@ Describe "Resolve-ReviewThreads" {
         $cmd.Parameters.Keys | Should -Contain "ThreadIds"
     }
 
+    It "Should have required PullNumber parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "PullNumber"
+        $cmd.Parameters['PullNumber'].Attributes.Mandatory | Should -Be $true
+    }
+
     It "Should accept array of thread IDs" {
         $cmd = Get-Command $scriptPath
         $cmd.Parameters['ThreadIds'].ParameterType.Name | Should -Match "String\[\]"
