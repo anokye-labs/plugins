@@ -253,3 +253,125 @@ Describe "Test-Hierarchy" {
         $cmd.Parameters.Keys | Should -Contain "Depth"
     }
 }
+
+Describe "Add-IssuesToProject" {
+    BeforeAll {
+        $scriptPath = Join-Path $scriptsPath "Add-IssuesToProject.ps1"
+    }
+
+    It "Should have required parameters" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "Owner"
+        $cmd.Parameters.Keys | Should -Contain "Repo"
+        $cmd.Parameters.Keys | Should -Contain "ProjectNumber"
+        $cmd.Parameters.Keys | Should -Contain "IssueNumbers"
+        $cmd.Parameters['Owner'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['Repo'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['ProjectNumber'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['IssueNumbers'].Attributes.Mandatory | Should -Be $true
+    }
+
+    It "Should accept optional FieldValues parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "FieldValues"
+        $cmd.Parameters['FieldValues'].ParameterType.Name | Should -Be 'Hashtable'
+    }
+
+    It "Should have RetryAttempts parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "RetryAttempts"
+        $cmd.Parameters['RetryAttempts'].ParameterType.Name | Should -Be 'Int32'
+    }
+
+    It "Should have RetryDelayMs parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "RetryDelayMs"
+        $cmd.Parameters['RetryDelayMs'].ParameterType.Name | Should -Be 'Int32'
+    }
+}
+
+Describe "New-IssueBatch" {
+    BeforeAll {
+        $scriptPath = Join-Path $scriptsPath "New-IssueBatch.ps1"
+    }
+
+    It "Should have required parameters" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "Owner"
+        $cmd.Parameters.Keys | Should -Contain "Repo"
+        $cmd.Parameters.Keys | Should -Contain "Issues"
+        $cmd.Parameters['Owner'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['Repo'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['Issues'].Attributes.Mandatory | Should -Be $true
+    }
+
+    It "Should accept array of issue specifications" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters['Issues'].ParameterType.Name | Should -Match 'Object\[\]|Array'
+    }
+}
+
+Describe "New-IssueHierarchy" {
+    BeforeAll {
+        $scriptPath = Join-Path $scriptsPath "New-IssueHierarchy.ps1"
+    }
+
+    It "Should have required parameters" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "Owner"
+        $cmd.Parameters.Keys | Should -Contain "Repo"
+        $cmd.Parameters.Keys | Should -Contain "Hierarchy"
+        $cmd.Parameters['Owner'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['Repo'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['Hierarchy'].Attributes.Mandatory | Should -Be $true
+    }
+
+    It "Should accept hashtable for hierarchy definition" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters['Hierarchy'].ParameterType.Name | Should -Be 'Hashtable'
+    }
+}
+
+Describe "Invoke-PRCompletion" {
+    BeforeAll {
+        $scriptPath = Join-Path $scriptsPath "Invoke-PRCompletion.ps1"
+    }
+
+    It "Should have required parameters" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "Owner"
+        $cmd.Parameters.Keys | Should -Contain "Repo"
+        $cmd.Parameters.Keys | Should -Contain "PullNumber"
+        $cmd.Parameters['Owner'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['Repo'].Attributes.Mandatory | Should -Be $true
+        $cmd.Parameters['PullNumber'].Attributes.Mandatory | Should -Be $true
+    }
+
+    It "Should have optional DryRun parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "DryRun"
+        $cmd.Parameters['DryRun'].ParameterType.Name | Should -Be 'SwitchParameter'
+    }
+
+    It "Should have optional MaxIterations parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "MaxIterations"
+        $cmd.Parameters['MaxIterations'].ParameterType.Name | Should -Be 'Int32'
+    }
+
+    It "Should have optional AutoResolve parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "AutoResolve"
+        $cmd.Parameters['AutoResolve'].ParameterType.Name | Should -Be 'SwitchParameter'
+    }
+
+    It "Should have MinSeverity parameter with valid values" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "MinSeverity"
+        $cmd.Parameters['MinSeverity'].Attributes.ValidValues | Should -Contain 'Critical'
+        $cmd.Parameters['MinSeverity'].Attributes.ValidValues | Should -Contain 'High'
+        $cmd.Parameters['MinSeverity'].Attributes.ValidValues | Should -Contain 'Medium'
+        $cmd.Parameters['MinSeverity'].Attributes.ValidValues | Should -Contain 'Low'
+        $cmd.Parameters['MinSeverity'].Attributes.ValidValues | Should -Contain 'Info'
+    }
+}
