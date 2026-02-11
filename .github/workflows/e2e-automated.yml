@@ -28,11 +28,11 @@ jobs:
         with:
           node-version: '20'
           cache: 'npm'
-          cache-dependency-path: tests/omanfo/e2e/automated/package.json
+          cache-dependency-path: tests/omanfo/e2e/automated/package-lock.json
       
       - name: Install dependencies
         working-directory: tests/omanfo/e2e/automated
-        run: npm ci
+        run: npm install
       
       - name: Setup GitHub CLI
         run: |

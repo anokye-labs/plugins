@@ -29,8 +29,9 @@ test-*-eval/
 
 ## Node.js
 node_modules/
-package-lock.json
 *.log
+# Allow package-lock.json in automated E2E tests for reproducible CI builds
+!tests/omanfo/e2e/automated/package-lock.json
 
 ## Coverage reports
 scripts/coverage-report.json

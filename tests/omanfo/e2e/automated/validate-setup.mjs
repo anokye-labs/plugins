@@ -25,9 +25,10 @@ console.log('✓ ES modules enabled');
 
 // Check for GitHub token
 const hasToken = !!process.env.GITHUB_TOKEN || !!process.env.GH_TOKEN;
-console.log(`\nGitHub token: ${hasToken ? '✓ Available' : '⚠️  Not set (required for tests)'}`);
+console.log(`\nGitHub token: ${hasToken ? '✓ Available' : '❌ Not set (required for tests)'}`);
 if (!hasToken) {
-  console.log('  Set GITHUB_TOKEN or use `gh auth login`');
+  console.error('  Set GITHUB_TOKEN or use `gh auth login`');
+  errors++;
 }
 
 // Check for gh CLI

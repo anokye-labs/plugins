@@ -8,6 +8,7 @@ import { CopilotTestHarness } from './copilot-harness.js';
 import { execSync } from 'child_process';
 import { writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import { tmpdir } from 'os';
 
 async function main() {
   const testRepo = process.env.E2E_TEST_REPO || 'anokye-labs/plugins';
@@ -24,8 +25,8 @@ async function main() {
     console.log('🧪 Test: Plan Materialization');
     console.log('='.repeat(60));
 
-    // Create a test plan file
-    planFile = join('/tmp', `test-plan-${runId}.md`);
+    // Create a test plan file in platform-independent temp directory
+    planFile = join(tmpdir(), `test-plan-${runId}.md`);
     const planContent = `# ${epicTitle}
 
 ## Overview

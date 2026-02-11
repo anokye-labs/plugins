@@ -148,6 +148,49 @@ function Invoke-AutomatedE2ETests {
     $nodeVersion = node --version
     Write-Host "Node.js: $nodeVersion" -ForegroundColor Green
     
+    # Check for npm
+    $npmCmd = Get-Command npm -ErrorAction SilentlyContinue
+    if (-not $npmCmd) {
+        Write-Warning "npm not found. Skipping automated E2E tests."
+        Write-Host "npm is typically installed with Node.js" -ForegroundColor Yellow
+        return $null
+    }
+    
+    # Check for gh CLI
+    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
+    if (-not $ghCmd) {
+        Write-Warning "GitHub CLI (gh) not found. Skipping automated E2E tests."
+        Write-Host "Install from: https://cli.github.com" -ForegroundColor Yellow
+        return $null
+    }
+    
+    # Run validation script to check all prerequisites
+    Write-Host "Validating prerequisites..." -ForegroundColor Cyan
+    Push-Location $automatedPath
+    try {
+        $validationOutput = node validate-setup.mjs 2>&1
+        $validationExitCode = $LASTEXITCODE
+        
+        # Show validation output
+        $validationOutput | ForEach-Object { Write-Host $_ }
+        
+        if ($validationExitCode -ne 0) {
+            Write-Warning "Prerequisite validation failed. Skipping automated E2E tests."
+            Pop-Location
+            return $null
+        }
+    }
+    catch {
+        Write-Warning "Failed to run validation: $_"
+        Pop-Location
+        return $null
+    }
+    finally {
+        if ((Get-Location).Path -eq $automatedPath) {
+            Pop-Location
+        }
+    }
+    
     # Check if dependencies are installed
     $nodeModulesPath = Join-Path $automatedPath "node_modules"
     if (-not (Test-Path $nodeModulesPath)) {
