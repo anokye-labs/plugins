@@ -23,10 +23,23 @@ if (nodeMajor < 20) {
 console.log(`\nModule system: ${process.env.NODE_OPTIONS || 'default'}`);
 console.log('✓ ES modules enabled');
 
-// Check for GitHub token
+// Check for GitHub token or gh auth
 const hasToken = !!process.env.GITHUB_TOKEN || !!process.env.GH_TOKEN;
-console.log(`\nGitHub token: ${hasToken ? '✓ Available' : '❌ Not set (required for tests)'}`);
+let hasGhAuth = false;
+
 if (!hasToken) {
+  // Fall back to checking if gh CLI is authenticated
+  try {
+    execSync('gh auth status', { encoding: 'utf-8', stdio: 'pipe' });
+    hasGhAuth = true;
+  } catch (e) {
+    // gh auth not configured
+  }
+}
+
+const hasAuth = hasToken || hasGhAuth;
+console.log(`\nGitHub authentication: ${hasAuth ? '✓ Available' : '❌ Not configured'}`);
+if (!hasAuth) {
   console.error('  Set GITHUB_TOKEN or use `gh auth login`');
   errors++;
 }

@@ -32,7 +32,7 @@ jobs:
       
       - name: Install dependencies
         working-directory: tests/omanfo/e2e/automated
-        run: npm install
+        run: npm ci
       
       - name: Setup GitHub CLI
         run: |
