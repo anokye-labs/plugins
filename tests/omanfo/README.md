@@ -1,8 +1,12 @@
 # Omanfo Plugin Test Suite
 
-This directory contains the Pester 5 test suite for the Omanfo plugin's Okyerema scripts.
+This directory contains the comprehensive test suite for the Omanfo plugin's Okyerema skills.
 
 **Note**: Tests are located at the repository root (`tests/omanfo/`) rather than inside the plugin directory (`omanfo/`). This keeps tests available for development and CI while excluding them from the plugin distribution package.
+
+## Test Coverage Status
+
+✅ **100% Script Coverage** - All 28 scripts in `omanfo/skills/okyerema/scripts/` have unit test coverage
 
 ## Test Runner
 
@@ -14,7 +18,7 @@ The master test runner is `Run-LocalTests.ps1`.
 # From the tests/omanfo directory
 cd tests/omanfo
 
-# Run all tests
+# Run all tests (Unit + Smoke + E2E + Automated E2E)
 ./Run-LocalTests.ps1
 
 # Run only smoke tests
@@ -23,16 +27,16 @@ cd tests/omanfo
 # Run unit tests
 ./Run-LocalTests.ps1 -TestLevel Unit
 
-# Run E2E tests with custom repository
+# Run E2E tests (includes both manual Pester E2E and automated Copilot SDK E2E)
 ./Run-LocalTests.ps1 -TestLevel E2E -TestRepo myorg/myrepo
 ```
 
 ### Parameters
 
 - **`-TestLevel`**: The level of tests to run
-  - `Unit` - Unit tests (*.Unit.Tests.ps1)
+  - `Unit` - Unit tests (*.Unit.Tests.ps1) - 100% coverage enforced
   - `Smoke` - Smoke tests (*.Smoke.Tests.ps1 or Smoke/*.Tests.ps1)
-  - `E2E` - End-to-end tests (*.E2E.Tests.ps1 or E2E/*.Tests.ps1)
+  - `E2E` - End-to-end tests (manual Pester + automated Copilot SDK)
   - `All` - All test levels (default)
 
 - **`-TestRepo`**: Repository to use for E2E tests (default: anokye-labs/plugins)
@@ -44,10 +48,92 @@ The runner discovers test files based on naming conventions:
 - **Unit tests**: `*.Unit.Tests.ps1`
 - **Smoke tests**: `*.Smoke.Tests.ps1` or files in `Smoke/` subdirectory
 - **E2E tests**: `*.E2E.Tests.ps1` or files in `E2E/` subdirectory
+- **Automated E2E tests**: Node.js tests in `e2e/automated/` using Copilot SDK
+
+## Test Types
+
+### Unit Tests (`unit/`)
+
+**Purpose**: Test individual script functionality in isolation
+
+- **Count**: 120+ tests across 6 test files
+- **Coverage**: All 28 scripts tested
+- **Technology**: Pester 5, Mock gh CLI
+- **Runtime**: Fast (~5-10 seconds)
+- **CI Enforcement**: ✅ Yes - PRs blocked without coverage
+
+**Test Files:**
+- `IssueManagement.Unit.Tests.ps1` - Issue creation, hierarchy, project management
+- `PRIntelligence.Unit.Tests.ps1` - PR analysis and status
+- `StatusHealth.Unit.Tests.ps1` - DAG health and hierarchy validation
+- `ThreadManagement.Unit.Tests.ps1` - Review thread operations
+- `WorkSelection.Unit.Tests.ps1` - Ready/blocked/stalled/orphaned issue selection
+- `PlanMaterialization.Unit.Tests.ps1` - Plan-to-issues conversion
+
+**CI Validation:**
+The CI workflow includes `Test-ScriptTestCoverage.ps1` (7th validation step) that:
+1. Enumerates all scripts in `omanfo/skills/okyerema/scripts/`
+2. Parses all Describe blocks in unit tests
+3. Fails if any script lacks test coverage
+4. Reports coverage percentage
+
+### Smoke Tests
+
+**Purpose**: Verify basic plugin installation and skill loading
+
+- **Count**: 2 smoke tests
+- **Runtime**: Fast (~2-5 seconds)
+- **Files**:
+  - `Install-Plugin.Smoke.Tests.ps1` - Plugin structure validation
+  - `Skill-Loading.Smoke.Tests.ps1` - Skill loading verification
+
+### E2E Tests - Manual (`e2e/*.e2e.Tests.ps1`)
+
+**Purpose**: Full workflow validation with real Copilot CLI interaction
+
+- **Count**: 5 test suites
+- **Technology**: Pester 5, real `copilot -p` CLI commands
+- **Prerequisites**: Copilot CLI, gh CLI authenticated, network access
+- **Runtime**: Slow (~5-15 minutes)
+- **CI**: ❌ Not in CI (requires human + auth)
+
+**Test Files:**
+- `IssueCreation.e2e.Tests.ps1` - Create typed issues
+- `Hierarchy.e2e.Tests.ps1` - Epic/Feature/Task hierarchies
+- `StatusReporting.e2e.Tests.ps1` - sitrep and health commands
+- `PRWorkflow.e2e.Tests.ps1` - PR analysis and review workflows
+- `FullWorkflow.e2e.Tests.ps1` - End-to-end scenarios
+
+### E2E Tests - Automated (`e2e/automated/`)
+
+**Purpose**: Automated E2E testing in CI without human interaction
+
+- **Count**: 6 automated scenarios
+- **Technology**: Node.js + @github/copilot-sdk (v0.1.23+)
+- **Prerequisites**: Node.js 18+, GitHub auth
+- **Runtime**: Fast (~30-60 seconds)
+- **CI**: ✅ Yes - Runs on main branch pushes
+
+**Test Scenarios:**
+1. `/sitrep` - Structured status reporting
+2. `/health` - Hierarchy health metrics
+3. `/prcheck` - PR analysis and state
+4. `/whatsleft` - Ready/blocked issue lists
+5. Issue creation - Typed issues with hierarchy
+6. Plan materialization - Markdown to issue tree
+
+**Architecture:**
+```javascript
+CopilotClient → createSession({skillDirectories}) 
+              → sendAndWait({prompt}) 
+              → validate response content
+```
+
+**Documentation**: See `e2e/automated/README.md` for detailed setup and usage
 
 ## Overview
 
-- **Total Tests**: 116+ tests
+- **Total Tests**: 130+ tests
 - **Test Files**: 6 unit test files + smoke tests, organized by capability area
 - **Fixture Files**: 6 mock JSON and markdown files
 - **Coverage**: All 28 Okyerema scripts

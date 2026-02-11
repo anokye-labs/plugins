@@ -249,4 +249,3 @@ npm update @github/copilot-sdk
 - [GitHub Copilot SDK Documentation](https://github.com/github/copilot-sdk)
 - [Omanfo Plugin Skills](../../../../omanfo/skills/)
 - [Manual E2E Tests](../)
-- [Issue #<number>: Enforce test coverage and automate E2E](https://github.com/anokye-labs/plugins/issues/<number>)
