@@ -1,0 +1,54 @@
+name: E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'omanfo/**'
+      - 'tests/omanfo/e2e/**'
+      - '.github/workflows/e2e-tests.yml'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  automated-e2e:
+    name: Automated E2E Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: tests/omanfo/e2e/automated/package-lock.json
+      
+      - name: Setup PowerShell
+        shell: pwsh
+        run: |
+          Write-Host "PowerShell version: $($PSVersionTable.PSVersion)" -ForegroundColor Cyan
+      
+      - name: Install npm dependencies
+        working-directory: tests/omanfo/e2e/automated
+        run: npm ci || npm install
+      
+      - name: Run Automated E2E Tests
+        working-directory: tests/omanfo/e2e/automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_TEST_OWNER: anokye-labs
+          E2E_TEST_REPO: plugins
+          E2E_MODEL: gpt-4o
+        run: |
+          npm test
+      
+      - name: Report Results
+        if: always()
+        run: |
+          echo "E2E tests completed. Check logs above for results."

@@ -1,0 +1,22 @@
+{
+  "name": "@anokye-labs/omanfo-e2e-tests",
+  "version": "1.0.0",
+  "description": "Automated E2E tests for Omanfo plugin using GitHub Copilot SDK",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node automated-tests.mjs",
+    "test:sitrep": "node automated-tests.mjs sitrep",
+    "test:health": "node automated-tests.mjs health",
+    "test:prcheck": "node automated-tests.mjs prcheck",
+    "test:whatsleft": "node automated-tests.mjs whatsleft",
+    "test:issue-creation": "node automated-tests.mjs issue-creation",
+    "test:plan-materialization": "node automated-tests.mjs plan-materialization"
+  },
+  "dependencies": {
+    "@github/copilot-sdk": "^0.1.23"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
