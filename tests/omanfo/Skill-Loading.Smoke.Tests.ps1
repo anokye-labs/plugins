@@ -7,7 +7,7 @@ BeforeAll {
     # From tests/omanfo/ we need to go up to repo root, then to omanfo/
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     $script:PluginRoot = Join-Path $repoRoot "omanfo"
-    $script:SkillsPath = Join-Path $script:PluginRoot ".github/skills"
+    $script:SkillsPath = Join-Path $script:PluginRoot "skills"
     
     # Expected skills from marketplace.json
     $script:ExpectedSkills = @(
@@ -39,7 +39,7 @@ BeforeAll {
 }
 
 Describe "Plugin Directory Structure" {
-    It "Should have .github/skills directory" {
+    It "Should have skills directory" {
         Test-Path $script:SkillsPath | Should -Be $true
     }
     

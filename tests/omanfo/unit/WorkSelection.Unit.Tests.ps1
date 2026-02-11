@@ -2,7 +2,7 @@
 # Pester tests for work selection and prioritization scripts
 
 BeforeAll {
-    $scriptsPath = Join-Path $PSScriptRoot "../../../omanfo/.github/skills/okyerema/scripts"
+    $scriptsPath = Join-Path $PSScriptRoot "../../../omanfo/skills/okyerema/scripts"
     $fixturesPath = Join-Path $PSScriptRoot "../fixtures"
 }
 
@@ -41,7 +41,7 @@ Describe "Get-ReadyIssues" {
         
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
-        $result | Should -BeOfType [array]
+        $result | Should -BeOfType [PSCustomObject]
     }
 }
 
@@ -80,7 +80,7 @@ Describe "Get-BlockedIssues" {
         
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
-        $result | Should -BeOfType [array]
+        $result | Should -BeOfType [PSCustomObject]
     }
 }
 
@@ -119,7 +119,7 @@ Describe "Get-OrphanedIssues" {
         
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
-        $result | Should -BeOfType [array]
+        $result | Should -BeOfType [PSCustomObject]
     }
 }
 
@@ -163,9 +163,9 @@ Describe "Get-StalledWork" {
         $cmd.Parameters['Repo'].Attributes.Mandatory | Should -Be $true
     }
 
-    It "Should have optional DaysSinceUpdate parameter" {
+    It "Should have optional ThresholdDays parameter" {
         $cmd = Get-Command $scriptPath
-        $cmd.Parameters.Keys | Should -Contain "DaysSinceUpdate"
+        $cmd.Parameters.Keys | Should -Contain "ThresholdDays"
     }
 
     It "Should query issues with timeline data" {
@@ -183,8 +183,8 @@ Describe "Get-StalledWork" {
             return $mockResponse 
         } -ParameterFilter { $args[0] -eq 'api' }
         
-        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -DaysSinceUpdate 30
+        $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -ThresholdDays 30
         
-        $result | Should -BeOfType [array]
+        $result | Should -BeOfType [PSCustomObject]
     }
 }
