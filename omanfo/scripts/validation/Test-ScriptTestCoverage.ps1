@@ -31,7 +31,7 @@ $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File |
 Write-Host "Found $($scriptFiles.Count) script(s) in $scriptsDir" -ForegroundColor Gray
 Write-Host ""
 
-# 2. Parse all Describe blocks in tests/omanfo/unit/*.Tests.ps1
+# 2. Parse all Describe blocks in tests/omanfo/unit/*.Unit.Tests.ps1
 $testsDir = Join-Path $repoRoot "tests/$PluginPath/unit"
 
 if (-not (Test-Path $testsDir)) {
@@ -39,14 +39,14 @@ if (-not (Test-Path $testsDir)) {
     exit 1
 }
 
-$testFiles = Get-ChildItem -Path $testsDir -Filter "*.Tests.ps1" -File
+$testFiles = Get-ChildItem -Path $testsDir -Filter "*.Unit.Tests.ps1" -File
 
 $describeBlocks = @()
 foreach ($testFile in $testFiles) {
     $content = Get-Content $testFile.FullName -Raw
     
     # Match Describe blocks with double or single quotes
-    $matches = [regex]::Matches($content, 'Describe\s+["\']([^"\']+)["\']')
+    $matches = [regex]::Matches($content, 'Describe\s+["'']([^"'']+)["'']')
     
     foreach ($match in $matches) {
         $describeBlocks += $match.Groups[1].Value
@@ -83,7 +83,7 @@ if ($missingTests.Count -eq 0) {
     
     Write-Host ""
     Write-Host "Action Required:" -ForegroundColor Yellow
-    Write-Host "  Add a Describe block for each missing script in tests/$PluginPath/unit/*.Tests.ps1" -ForegroundColor Gray
+    Write-Host "  Add a Describe block for each missing script in tests/$PluginPath/unit/*.Unit.Tests.ps1" -ForegroundColor Gray
     Write-Host "  Example:" -ForegroundColor Gray
     Write-Host "    Describe `"ScriptName`" {" -ForegroundColor Gray
     Write-Host "      # Test cases here" -ForegroundColor Gray

@@ -127,6 +127,12 @@ Describe "Resolve-ReviewThreads" {
         $cmd.Parameters.Keys | Should -Contain "ThreadIds"
     }
 
+    It "Should have required PullNumber parameter" {
+        $cmd = Get-Command $scriptPath
+        $cmd.Parameters.Keys | Should -Contain "PullNumber"
+        $cmd.Parameters['PullNumber'].Attributes.Mandatory | Should -Be $true
+    }
+
     It "Should accept array of thread IDs" {
         $cmd = Get-Command $scriptPath
         $cmd.Parameters['ThreadIds'].ParameterType.Name | Should -Match "String\[\]"
@@ -138,7 +144,7 @@ Describe "Resolve-ReviewThreads" {
             return $mockResponse 
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
         
-        { & $scriptPath -Owner "test-org" -Repo "test-repo" -ThreadIds @("PRRT_123") *>&1 } | Should -Not -Throw
+        { & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 -ThreadIds @("PRRT_123") *>&1 } | Should -Not -Throw
     }
 
     It "Should resolve multiple threads" {
@@ -147,6 +153,6 @@ Describe "Resolve-ReviewThreads" {
             return $mockResponse 
         } -ParameterFilter { $args[0] -eq 'api' }
         
-        { & $scriptPath -Owner "test-org" -Repo "test-repo" -ThreadIds @("PRRT_123", "PRRT_456", "PRRT_789") *>&1 } | Should -Not -Throw
+        { & $scriptPath -Owner "test-org" -Repo "test-repo" -PullNumber 42 -ThreadIds @("PRRT_123", "PRRT_456", "PRRT_789") *>&1 } | Should -Not -Throw
     }
 }
