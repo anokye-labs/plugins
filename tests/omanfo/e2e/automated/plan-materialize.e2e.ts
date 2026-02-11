@@ -134,6 +134,28 @@ Test plan for automated E2E testing
     return false;
   } finally {
     // Cleanup: Close all created issues
+    // Before closing tracked issues, search for any orphaned issues with our prefix
+    // This handles cases where test fails early and not all issues were tracked
+    try {
+      console.log(`\n🔍 Searching for any orphaned issues with prefix E2E-SDK-${runId}...`);
+      const searchResults = execSync(
+        `gh issue list --repo ${owner}/${repo} --search "E2E-SDK-${runId} in:title" --state open --json number --jq '.[].number'`,
+        { encoding: 'utf-8' }
+      ).trim();
+      
+      if (searchResults) {
+        const orphanedIssues = searchResults.split('\n').map(n => parseInt(n.trim())).filter(n => !isNaN(n));
+        orphanedIssues.forEach(num => {
+          if (!createdIssues.includes(num)) {
+            console.log(`  Found orphaned issue #${num}, adding to cleanup list`);
+            createdIssues.push(num);
+          }
+        });
+      }
+    } catch (error) {
+      console.log('  Search completed (or no additional issues found)');
+    }
+    
     for (const issueNumber of createdIssues) {
       try {
         console.log(`🧹 Closing issue #${issueNumber}...`);

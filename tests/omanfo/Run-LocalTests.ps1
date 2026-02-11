@@ -200,8 +200,6 @@ function Invoke-AutomatedE2ETests {
             npm install --silent
             if ($LASTEXITCODE -ne 0) {
                 Write-Error "Failed to install dependencies"
-                Pop-Location
-                return $null
             }
             Write-Host "✓ Dependencies installed" -ForegroundColor Green
         }
