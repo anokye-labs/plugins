@@ -258,7 +258,7 @@ Describe "Invoke-DagHealthCheck" {
         $result.PSObject.Properties.Name | Should -Contain "HealthScore"
     }
 
-    It "Should provide cycles as array" {
+    It "Should provide cycles property with correct count" {
         Mock gh { 
             $global:LASTEXITCODE = 0
             return $fixtureData 
@@ -266,6 +266,9 @@ Describe "Invoke-DagHealthCheck" {
         
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
         
-        $result.Cycles | Should -BeOfType [array]
+        # Cycles property should exist
+        $result.PSObject.Properties.Name | Should -Contain "Cycles"
+        # Cycles.Count should match CycleCount
+        $result.Cycles.Count | Should -Be $result.CycleCount
     }
 }
