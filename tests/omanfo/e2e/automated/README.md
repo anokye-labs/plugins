@@ -143,6 +143,8 @@ node --loader ts-node/esm plan-materialize.e2e.ts
 npm test
 ```
 
+This runs `run-tests.mjs` which executes all `*.e2e.ts` files sequentially and reports results.
+
 Or via the master test runner:
 
 ```bash
@@ -183,8 +185,29 @@ All tests that create issues:
 Shared test harness providing:
 - `CopilotTestHarness` class for client lifecycle
 - `runTest()` helper for simple scenarios
-- Tool call tracking and logging
+- Tool call tracking via SDK hooks (configured in `createSession`)
 - Skill directory auto-detection
+- Proper cleanup with `session.destroy()` before `client.stop()`
+
+**Hook Configuration:**
+```typescript
+hooks: {
+  onPreToolUse: (input, invocation) => {
+    // input.toolName contains the tool being called
+    this.toolCallLog.push(input.toolName);
+    return { permissionDecision: "allow" };
+  },
+  onPostToolUse: (input, invocation) => {
+    // Validation after tool execution
+  }
+}
+```
+
+**Response Access:**
+The SDK returns `AssistantMessageEvent` with content at `result.data.content`:
+```typescript
+const content = result?.data?.content || result?.content || '';
+```
 
 **Example usage:**
 ```typescript
