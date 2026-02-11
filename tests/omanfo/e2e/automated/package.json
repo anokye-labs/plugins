@@ -1,0 +1,20 @@
+{
+  "name": "omanfo-e2e-automated",
+  "version": "1.0.0",
+  "description": "Automated E2E tests for Omanfo plugin using Copilot SDK",
+  "type": "module",
+  "scripts": {
+    "test": "node --loader ts-node/esm --experimental-specifier-resolution=node *.e2e.ts"
+  },
+  "dependencies": {
+    "@github/copilot-sdk": "^0.1.23"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
