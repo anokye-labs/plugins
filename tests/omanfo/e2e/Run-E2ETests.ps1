@@ -86,6 +86,9 @@ if ($Provider -eq 'all') {
         exit 1
     }
     Write-Host "Providers available: $($providersToTest -join ', ')" -ForegroundColor Green
+    if ($providersToTest -contains 'claude') {
+        Write-Host "Note: Existing E2E suites still invoke 'copilot -p' directly; Claude runs may fail until suites are migrated to the shared harness." -ForegroundColor Yellow
+    }
 }
 else {
     $providerCmd = Get-Command $Provider -ErrorAction SilentlyContinue

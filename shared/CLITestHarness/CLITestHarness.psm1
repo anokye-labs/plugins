@@ -11,7 +11,7 @@ $script:ProviderConfig = @{
         InteractiveArgs = @()
         ReadyPattern    = '> '
         InstallUrl      = 'https://github.com/github/copilot-cli'
-        AuthCheck       = { copilot --version 2>&1; $LASTEXITCODE -eq 0 }
+        AuthCheck       = { copilot --version 2>&1 | Out-Null; $LASTEXITCODE -eq 0 }
     }
     claude = @{
         Command         = 'claude'
@@ -19,7 +19,7 @@ $script:ProviderConfig = @{
         InteractiveArgs = @()
         ReadyPattern    = '> '
         InstallUrl      = 'https://docs.anthropic.com/en/docs/claude-code'
-        AuthCheck       = { claude --version 2>&1; $LASTEXITCODE -eq 0 }
+        AuthCheck       = { claude --version 2>&1 | Out-Null; $LASTEXITCODE -eq 0 }
     }
 }
 
@@ -49,13 +49,13 @@ function Get-SupportedProviders {
     Tests whether a CLI provider is available on the current machine.
 
 .DESCRIPTION
-    Checks if the provider CLI binary is on PATH and optionally validates authentication.
+    Checks if the provider CLI binary is on PATH and optionally validates that it can run.
 
 .PARAMETER Provider
     The provider to check: copilot or claude.
 
 .PARAMETER SkipAuthCheck
-    If set, only checks for the binary on PATH without validating authentication.
+    If set, only checks for the binary on PATH without running the CLI version check.
 
 .EXAMPLE
     Test-ProviderAvailable -Provider copilot
@@ -95,7 +95,7 @@ function Test-ProviderAvailable {
                     Available   = $false
                     Provider    = $Provider
                     Command     = $config.Command
-                    Reason      = "Authentication check failed"
+                    Reason      = "CLI version check failed"
                     InstallUrl  = $config.InstallUrl
                 }
             }
@@ -125,10 +125,10 @@ function Test-ProviderAvailable {
     Returns a list of providers available on the current machine.
 
 .DESCRIPTION
-    Checks all supported providers and returns those that are installed and (optionally) authenticated.
+    Checks all supported providers and returns those that are installed and (optionally) verified to run.
 
 .PARAMETER SkipAuthCheck
-    If set, only checks for binaries without validating authentication.
+    If set, only checks for binaries without running the CLI version check.
 
 .EXAMPLE
     Get-AvailableProviders
@@ -224,9 +224,9 @@ function Invoke-CLIPrompt {
 
     $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $processInfo.FileName = $command
-    $processInfo.Arguments = ($cliArgs | ForEach-Object {
-        if ($_ -match '[\s"]') { "`"$($_ -replace '"', '\`"')`"" } else { $_ }
-    }) -join ' '
+    foreach ($arg in $cliArgs) {
+        [void]$processInfo.ArgumentList.Add($arg)
+    }
     $processInfo.RedirectStandardOutput = $true
     $processInfo.RedirectStandardError = $true
     $processInfo.UseShellExecute = $false

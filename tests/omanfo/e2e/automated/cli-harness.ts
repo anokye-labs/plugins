@@ -6,7 +6,7 @@
  * This harness works by spawning CLI processes directly.
  */
 
-import { spawn, execSync } from 'child_process';
+import { spawn, execFileSync } from 'child_process';
 
 export type Provider = 'copilot' | 'claude';
 
@@ -53,7 +53,7 @@ export function getSupportedProviders(): Provider[] {
 export function isProviderAvailable(provider: Provider): boolean {
   try {
     const cmd = process.platform === 'win32' ? 'where' : 'which';
-    execSync(`${cmd} ${PROVIDERS[provider].command}`, { stdio: 'pipe' });
+    execFileSync(cmd, [PROVIDERS[provider].command], { stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -170,10 +170,11 @@ export async function verifyIssue(
   }
 }`;
 
-    const raw = execSync(
-      `gh api graphql -H "GraphQL-Features: sub_issues" -f query='${query.replace(/'/g, "'\\''")}'`,
+    const raw = execFileSync(
+      'gh',
+      ['api', 'graphql', '-H', 'GraphQL-Features: sub_issues', '-f', `query=${query}`],
       { encoding: 'utf-8' }
-    );
+    ).toString();
     const result = JSON.parse(raw);
     const issue = result.data?.repository?.issue;
 
@@ -215,8 +216,9 @@ export async function closeTestIssues(
   let closed = 0;
   for (const num of issueNumbers) {
     try {
-      execSync(
-        `gh api repos/${owner}/${repo}/issues/${num} -X PATCH -f state=closed -f state_reason=not_planned`,
+      execFileSync(
+        'gh',
+        ['api', `repos/${owner}/${repo}/issues/${num}`, '-X', 'PATCH', '-f', 'state=closed', '-f', 'state_reason=not_planned'],
         { stdio: 'pipe' }
       );
       closed++;
