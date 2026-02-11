@@ -52,7 +52,8 @@ export function getSupportedProviders(): Provider[] {
 
 export function isProviderAvailable(provider: Provider): boolean {
   try {
-    execSync(`which ${PROVIDERS[provider].command}`, { stdio: 'pipe' });
+    const cmd = process.platform === 'win32' ? 'where' : 'which';
+    execSync(`${cmd} ${PROVIDERS[provider].command}`, { stdio: 'pipe' });
     return true;
   } catch {
     return false;
@@ -77,6 +78,7 @@ export function sendPrompt(
     let stdout = '';
     let stderr = '';
     let settled = false;
+    let exited = false;
 
     const child = spawn(spec.command, args, {
       cwd: config.workingDirectory,
@@ -97,7 +99,7 @@ export function sendPrompt(
         settled = true;
         child.kill('SIGTERM');
         setTimeout(() => {
-          if (!child.killed) child.kill('SIGKILL');
+          if (!exited) child.kill('SIGKILL');
         }, 2000);
         resolve({
           success: false,
@@ -112,6 +114,7 @@ export function sendPrompt(
     }, timeoutMs);
 
     child.on('close', (code) => {
+      exited = true;
       if (!settled) {
         settled = true;
         clearTimeout(timer);

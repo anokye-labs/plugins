@@ -19,7 +19,7 @@ $script:ProviderConfig = @{
         InteractiveArgs = @()
         ReadyPattern    = '> '
         InstallUrl      = 'https://docs.anthropic.com/en/docs/claude-code'
-        AuthCheck       = { claude -p "echo test" --output-format text 2>&1; $LASTEXITCODE -eq 0 }
+        AuthCheck       = { claude --version 2>&1; $LASTEXITCODE -eq 0 }
     }
 }
 
@@ -209,22 +209,22 @@ function Invoke-CLIPrompt {
     $config = $script:ProviderConfig[$Provider]
     $command = $config.Command
 
-    $args = @()
+    $cliArgs = @()
     foreach ($arg in $config.OneShotArgs) {
         if ($arg -eq '{prompt}') {
-            $args += $Prompt
+            $cliArgs += $Prompt
         }
         else {
-            $args += $arg
+            $cliArgs += $arg
         }
     }
-    $args += $AdditionalArgs
+    $cliArgs += $AdditionalArgs
 
     $startTime = Get-Date
 
     $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $processInfo.FileName = $command
-    $processInfo.Arguments = ($args | ForEach-Object {
+    $processInfo.Arguments = ($cliArgs | ForEach-Object {
         if ($_ -match '\s') { "`"$_`"" } else { $_ }
     }) -join ' '
     $processInfo.RedirectStandardOutput = $true
