@@ -1,11 +1,6 @@
 name: Validate Plugin
 
 on:
-  pull_request:
-    paths:
-      - 'omanfo/**'
-      - 'okyeame/**'
-      - '.github/workflows/validate-plugin.yml'
   push:
     branches-ignore:
       - main
