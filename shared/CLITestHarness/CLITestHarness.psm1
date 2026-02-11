@@ -225,7 +225,7 @@ function Invoke-CLIPrompt {
     $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $processInfo.FileName = $command
     $processInfo.Arguments = ($cliArgs | ForEach-Object {
-        if ($_ -match '\s') { "`"$_`"" } else { $_ }
+        if ($_ -match '[\s"]') { "`"$($_ -replace '"', '\`"')`"" } else { $_ }
     }) -join ' '
     $processInfo.RedirectStandardOutput = $true
     $processInfo.RedirectStandardError = $true

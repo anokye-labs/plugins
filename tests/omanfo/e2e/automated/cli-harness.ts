@@ -6,7 +6,7 @@
  * This harness works by spawning CLI processes directly.
  */
 
-import { spawn, execSync, ChildProcess } from 'child_process';
+import { spawn, execSync } from 'child_process';
 
 export type Provider = 'copilot' | 'claude';
 

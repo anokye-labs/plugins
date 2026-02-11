@@ -139,8 +139,7 @@ if ($Repository) {
 }
 $testRepo = $env:E2E_TEST_REPO ?? "anokye-labs/plugins"
 
-# Export provider to environment so test files can read it
-$env:E2E_CLI_PROVIDER = $Provider
+# E2E_CLI_PROVIDER is set per-provider inside the loop below
 
 Write-Host "Test Configuration:" -ForegroundColor Cyan
 Write-Host "   Repository: $testRepo" -ForegroundColor Gray
