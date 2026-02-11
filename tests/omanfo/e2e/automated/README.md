@@ -146,7 +146,11 @@ npm test
 Or via the master test runner:
 
 ```bash
-cd /home/runner/work/plugins/plugins/tests/omanfo
+# From repository root
+pwsh -File ./tests/omanfo/Run-LocalTests.ps1 -TestLevel E2E
+
+# Or from tests/omanfo directory
+cd tests/omanfo
 ./Run-LocalTests.ps1 -TestLevel E2E
 ```
 
