@@ -2,6 +2,14 @@
 
 This directory contains automated E2E tests that use the `@github/copilot-sdk` to programmatically drive Copilot sessions and validate the Omanfo plugin's capabilities.
 
+## ⚠️ Important Notice
+
+**These tests require a running Copilot backend service to function.** The `@github/copilot-sdk` needs to connect to GitHub Copilot's infrastructure. These tests are designed for environments where:
+
+1. The Copilot SDK can authenticate and connect to GitHub Copilot services
+2. The environment has proper GitHub credentials (via `GITHUB_TOKEN` or `gh auth`)
+3. Network access to GitHub APIs is available
+
 ## Overview
 
 Unlike the manual E2E tests (which require a human with the Copilot CLI), these tests use the Copilot SDK to:
@@ -16,8 +24,26 @@ Unlike the manual E2E tests (which require a human with the Copilot CLI), these 
 - **Node.js 20+** - Required for ES modules and modern TypeScript
 - **GitHub CLI (gh)** - Must be authenticated (`gh auth login`)
 - **GitHub Token** - Via `GITHUB_TOKEN` environment variable or gh auth
-- **Network access** - To GitHub API
+- **Copilot SDK Access** - Active Copilot subscription and SDK access
+- **Network access** - To GitHub API and Copilot services
 - **Write access** - To test repository (defaults to anokye-labs/plugins)
+
+## Validation
+
+Before running tests, validate your setup:
+
+```bash
+cd tests/omanfo/e2e/automated
+npm install
+npm run validate
+```
+
+This checks:
+- Node.js version (20+)
+- GitHub CLI availability
+- GitHub token presence
+- Copilot SDK import capability
+- Test file discovery
 
 ## Installation
 
