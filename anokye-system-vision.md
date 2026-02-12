@@ -33,10 +33,10 @@ The Anokye-System draws its organizational model from the Akan political structu
 
 | Akan Role | Meaning | System Role | Description |
 |-----------|---------|-------------|-------------|
-| **Ohene** | Chief/King | Strategic Director | The human (or group of humans) who sets direction, makes judgment calls, and holds ultimate authority. The Ohene does not do the work — the Ohene decides what work matters. |
+| **Ohene** | Chief/King | Strategic Director | The overarching leadership principle. In the Akan system, the Asantehene is the paramount Ohene. In the Anokye-System, the **Omanhene is the user** — the human who governs a domain of work, resolves stalemates between divisional chiefs, and holds ultimate authority. The Ohene does not do the work — the Ohene decides what work matters. |
 | **Ohemaa** | Queen Mother | Governance Daemon | A **persistent daemon agent** that operates its own OODA loop asynchronously, monitoring the system for drift, waste, ethical violations, and misalignment. Unlike encoded policies alone, the Ohemaa has a **persistent identity** — it reasons about governance, interacts directly with other agents, and can escalate or halt work. It is the balancing force with veto power. |
-| **Okyeame** | Linguist | Personal User-Agent | The user's **personal agent** — the interface through which each human communicates with the system. Each person's Okyeame is their own, shaped by their preferences, context, and working style. Today it lives in the CLI; tomorrow it may be a bespoke application. The Okyeame is a master of natural language, rich interactive visualization, and contextual awareness in a fluid multi-modal interface. |
-| **Okyerema** | Master Drummer | Automation & Rhythm Engine | The talking drummer who keeps the warriors in cadence. The Okyerema is the **automation backbone** — continuous integration, scheduled patrols, daemon processes, workflow orchestration. It is conceptually **one agent** but may have **multiple implementations** across environments (local, cloud, CI). When these implementations share a common tracking substrate, they are the same Okyerema. When the substrate differs, they are different Okyeremas. |
+| **Okyeame** | Linguist | Personal User-Agent | **The Okyeame is the equivalent of a browser** — everyone has their own. It is the user's personal agent, the interface through which each human communicates with the system. Each person's Okyeame is shaped by their preferences, context, and working style. Today it lives in the CLI; tomorrow it may be a bespoke application. The Okyeame is a master of natural language, rich interactive visualization, and contextual awareness in a fluid multi-modal interface. |
+| **Okyerema** | Master Drummer | Automation & Rhythm Engine | The talking drummer who keeps the warriors in cadence. The Okyerema is the **automation backbone** — responsible for **a domain of work** and ensuring the Asafo stay in rhythm within that domain. It is conceptually **one agent** but may have **multiple implementations** across environments (local, cloud, CI). When these implementations share a common tracking substrate, they are the same Okyerema. When the substrate differs, they are different Okyeremas. Cross-domain dependencies are handled by **inter-domain coordination agents** that pass work requests and messages between Okyeremas. |
 | **Ahene** | Sub-chiefs | Domain Coordinators | Specialized coordinating agents modeled on the Akan divisional chief structure. Each Ohene oversees a particular domain and commands their own company of Asafo. (See §2.1 for the full taxonomy of Ohene types.) |
 | **Asafo** | Warrior Companies | Implementation Agents | The agents that do the actual work — writing code, generating content, running analyses, producing artifacts. These can be cloud SWE agents (Devin, Copilot, Claude Code), local agents, or agents running on dedicated infrastructure. They are organized into **companies** with specialized capabilities. |
 | **Omanfo** | The People | The Plugin/System Package | The unified package that contains the entire system. When you deploy the Omanfo, you deploy the civilization — the roles, the rules, the scripts, the conventions. |
@@ -51,8 +51,8 @@ In the Akan/Ashanti political system, the Asantehene (paramount chief) governed 
 
 | Akan Title | Historical Role | Anokye-System Mapping |
 |------------|----------------|----------------------|
-| **Asantehene** | Paramount chief, supreme commander, apex authority | The Ohene — the human or primary strategic agent who holds ultimate authority over the project |
-| **Omanhene** | Paramount chief of a traditional area, governs a territory | A **project-level coordinator** — each major project or repository has its own Omanhene that understands the full scope |
+| **Asantehene** | Paramount chief, supreme commander, apex authority | The apex authority across all domains — in a single-domain system, the Asantehene and Omanhene are the same person (the user). In a multi-domain system, the Asantehene represents the human's unified identity across all their Okyeremas and projects. |
+| **Omanhene** | Paramount chief of a traditional area, governs a territory | **The user.** The Omanhene is the human who governs a domain of work, resolves stalemates between the Ahene council, and holds final authority. Each domain has its own Omanhene. |
 | **Krontihene** | Minister of War, Commander-in-Chief in the Asantehene's absence, right wing leader | The **release and deployment coordinator** — takes command of critical execution when the Ohene is unavailable, manages the merge queue and release pipeline |
 | **Adontenhene** | Commander of the main body/rear guard, strategic advisor | The **architecture and planning Ohene** — advises on strategy, manages technical debt, ensures structural integrity of the project |
 | **Nifahene** | Right wing commander | The **implementation Ohene** — coordinates the primary coding/building Asafo companies, manages feature delivery |
@@ -62,7 +62,7 @@ In the Akan/Ashanti political system, the Asantehene (paramount chief) governed 
 | **Gyaasehene** | Chief of the palace staff, manages administration | The **DevOps and infrastructure Ohene** — manages the palace (environments, CI/CD, deployment infrastructure, monitoring) |
 | **Sanaahene** | War treasury, logistics, and ceremonial protocol | The **resource and cost Ohene** — manages API budgets, compute costs, token spending, and resource allocation across agents |
 | **Ankobea Hene** | Palace guard, internal security | The **access control and secrets Ohene** — manages credentials, permissions, and internal security of the agent infrastructure |
-| **Nkwankwaahene** | Chief of the young men/commoners, voice of the people | The **community and feedback Ohene** — represents user feedback, manages external contributions, tracks community health and satisfaction |
+| **Nkwankwaahene** | Chief of the young men/commoners, voice of the people | The **feedback and interface Ohene** — represents the voice of anyone interfacing with the system. Provides a channel for the Omanhene to receive feedback from external users, community members, or (in a household) any family member interacting with the system. |
 
 Not every project needs every Ohene. A small project may have only the Ohene (human) and a couple of divisional coordinators. A large enterprise project may instantiate the full council. The architecture scales by **activating roles as complexity demands**.
 
@@ -86,7 +86,7 @@ The Akan political system was not a rigid hierarchy — it was a **distributed g
 
 ### 3.1 The Okyeame: Your Personal Agent
 
-The Okyeame is the most human-facing component. It is **your personal agent** — the user-agent through which you communicate with the entire system. Each person's Okyeame is their own, shaped by their preferences, context, and working style.
+**The Okyeame is the equivalent of a browser.** Everyone has their own. It is the most human-facing component — your personal agent, the user-agent through which you communicate with the entire system. Just as a browser is your window into the web, the Okyeame is your window into the Anokye-System. Each person's Okyeame is shaped by their preferences, context, and working style.
 
 **Current State** (as implemented in `anokye-labs/plugins`):
 - CLI-based conversational agent within the Copilot CLI tool
@@ -134,6 +134,14 @@ The critical architectural question is the **tracking substrate**:
 
 This distinction matters because it determines whether agents coordinated by one implementation can see work created by another. A unified substrate means unified rhythm.
 
+#### Domain Scope and Inter-Domain Coordination
+
+Each Okyerema is responsible for **a domain of work** — keeping the Asafo in rhythm within that domain. A software project has its own Okyerema. A family coordination system has its own Okyerema. These are separate drummers with separate rhythms.
+
+When there are **inter-domain dependencies** (e.g., a software deploy that needs to coordinate with a marketing launch, or a household project that requires a vendor booking), the Okyeremas do not merge. Instead, **inter-domain coordination agents** pass work requests and messages between domains. These agents act as messengers — they understand both domains well enough to translate requests and relay status, but they do not take ownership of either domain's rhythm.
+
+This preserves the clean boundary: each Okyerema owns its rhythm, and cross-domain coordination is explicit, not implicit.
+
 #### The Drum Patterns
 
 The Okyerema uses whatever technology best serves the rhythm:
@@ -177,10 +185,14 @@ The Asafo are the implementation agents — organized into **companies** with sp
 
 The Ohene and Ohemaa represent the human leadership layer and the governance layer respectively.
 
-**The Ohene** (Strategic Director):
+**The Omanhene** (The User):
+
+The Omanhene is the human who governs a domain of work. In most cases, this is **you** — the person who set up the system and defined the project.
+
 - Sets project vision and priorities
 - Makes judgment calls on ambiguous decisions
 - Reviews and approves major architectural choices
+- **Resolves stalemates** between the Ahene council when they cannot reach consensus
 - Shifts from "doing the work" to "directing the system that does the work"
 - Activates and deactivates divisional Ohene roles as project complexity demands
 
@@ -211,7 +223,7 @@ The divisional Ohene roles (§2.1) are activated as project complexity demands. 
 - The **Twafohene** scouts ahead, researching solutions before the main body commits
 - The **Sanaahene** tracks costs and resource allocation across all wings
 
-These Ohene agents form a **council** — they share information, resolve conflicts, and present a unified status view to the Ohene and Okyeame. Decisions flow through consensus where possible and escalation where necessary.
+These Ohene agents form a **council** — they share information, resolve conflicts, and present a unified status view to the Omanhene (user) via the Okyeame. Decisions flow through consensus where possible. **When the council reaches a stalemate, the Omanhene resolves it** — this is the irreducible human judgment that keeps the system aligned with intent.
 
 ## 4. The Landscape: Where the Anokye-System Sits
 
@@ -344,11 +356,11 @@ None of these systems fully address the Anokye-System's core concerns:
 ## 6. The Continuous Rhythm: How It All Flows
 
 ```
-    Ohene (Human)
+    Omanhene (The User)
         |
-        | sets direction, makes judgment calls
+        | sets direction, resolves stalemates
         v
-    Okyeame (Personal User-Agent)
+    Okyeame (Personal User-Agent / "Browser")
         |
         | translates intent into structured plans
         | surfaces status, asks clarifying questions
@@ -392,12 +404,14 @@ The key insight is the **circular flow**: Adwoma feeds information back to all p
 
 The Anokye-System is not limited to software. Consider a family coordination scenario:
 
-- **Ohene**: The family members who set priorities (vacation planning, school activities, household projects)
-- **Okyeame**: Each family member's personal agent — accessible via phone, voice assistant, or family dashboard
-- **Okyerema**: A daemon that maintains the family rhythm — syncing calendars, tracking recurring tasks, sending reminders, coordinating with external systems (school portals, healthcare providers, utility companies)
-- **Ohemaa**: Governance rules — budget constraints, scheduling conflict resolution, privacy policies for children's data
+- **Omanhene**: The primary family organizer — the person who sets priorities (vacation planning, school activities, household projects)
+- **Okyeame**: Each family member's personal agent — their browser into the family system, accessible via phone, voice assistant, or family dashboard. Everyone has their own.
+- **Okyerema**: A daemon that maintains the family rhythm — syncing calendars, tracking recurring tasks, sending reminders, coordinating with external systems (school portals, healthcare providers, utility companies). This is a **separate Okyerema** from any software project — different domain, likely different tracking substrate.
+- **Ohemaa**: A governance daemon — budget constraints, scheduling conflict resolution, privacy policies for children's data
+- **Nkwankwaahene**: The feedback channel — not just children, but **anyone interfacing with the system** (family members, babysitters, extended family, service providers) can surface needs and concerns back to the Omanhene
 - **Asafo**: Leaf-level agents that interface with outside systems — booking appointments, paying bills, ordering supplies, maintaining the family knowledge base
 - **Adwoma**: The family's shared task and knowledge system — not GitHub Issues, but perhaps a structured database, a shared calendar, or a custom tracking substrate
+- **Inter-domain agents**: If the family Okyerema needs to coordinate with a software project Okyerema (e.g., a parent who needs to block work time), messenger agents pass requests between domains
 
 The same architectural patterns apply: hierarchical task decomposition, dependency tracking, agent specialization, health patrols, and progressive autonomy. The Okyerema beats the rhythm. The Asafo execute. The Adwoma remembers everything.
 
@@ -500,11 +514,13 @@ The Akan organizational model is not decoration — it is a **design philosophy*
 | Term | Akan Meaning | System Meaning |
 |------|-------------|----------------|
 | **Anokye-System** | Named after Okomfo Anokye | The complete framework for AI-driven continuous project execution |
-| **Ohene** | Chief/King | Strategic director — the human who sets direction |
+| **Ohene** | Chief/King | The leadership principle — the Omanhene (user) is the primary Ohene |
+| **Omanhene** | Paramount chief of a territory | The user — governs a domain, resolves stalemates, holds final authority |
 | **Ahene** | Sub-chiefs (Krontihene, Nifahene, etc.) | Domain coordinators — specialized agents for implementation, testing, security, DevOps, etc. |
 | **Ohemaa** | Queen Mother | Governance daemon agent — persistent identity, asynchronous OODA loop, veto power |
-| **Okyeame** | Linguist | Personal user-agent — each person's own interface to the system |
-| **Okyerema** | Master Drummer | Automation and rhythm engine — one agent, multiple implementations, unified by tracking substrate |
+| **Okyeame** | Linguist | Personal user-agent — the equivalent of a browser; everyone has their own |
+| **Okyerema** | Master Drummer | Automation and rhythm engine — one agent per domain, multiple implementations, unified by tracking substrate |
+| **Nkwankwaahene** | Chief of the young men/commoners | Feedback and interface Ohene — voice of anyone interfacing with the system |
 | **Asafo** | Warrior Companies | Implementation agents organized into specialized companies |
 | **Omanfo** | The People | The unified plugin/system package |
 | **Adwoma** | Work | GitHub Issues as the single source of truth and external memory |
