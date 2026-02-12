@@ -35,7 +35,7 @@ The Anokye-System draws its organizational model from the Akan political structu
 |-----------|---------|-------------|-------------|
 | **Ohene** | Chief/King | Strategic Director | The overarching leadership principle. In the Akan system, the Asantehene is the paramount Ohene. In the Anokye-System, the **Omanhene is the user** — the human who governs a domain of work, resolves stalemates between divisional chiefs, and holds ultimate authority. The Ohene does not do the work — the Ohene decides what work matters. |
 | **Ohemaa** | Queen Mother | Governance Daemon | A **persistent daemon agent** that operates its own OODA loop asynchronously, monitoring the system for drift, waste, ethical violations, and misalignment. Unlike encoded policies alone, the Ohemaa has a **persistent identity** — it reasons about governance, interacts directly with other agents, and can escalate or halt work. It is the balancing force with veto power. |
-| **Okyeame** | Linguist | Personal User-Agent | **The Okyeame is the equivalent of a browser** — everyone has their own. It is the user's personal agent, the interface through which each human communicates with the system. Each person's Okyeame is shaped by their preferences, context, and working style. Today it lives in the CLI; tomorrow it may be a bespoke application. The Okyeame is a master of natural language, rich interactive visualization, and contextual awareness in a fluid multi-modal interface. |
+| **Okyeame** | Linguist | Personal User-Agent | **The Okyeame is the equivalent of a browser** — everyone has their own, and each person has exactly **one**. Your single Okyeame can communicate with the Okyeremas of different Oman (domains) — your software project, your family system, your research program. It is your unified personal interface to the entire Anokye-System. Today it lives in the CLI; tomorrow it may be a bespoke application. The Okyeame is a master of natural language, rich interactive visualization, and contextual awareness in a fluid multi-modal interface. |
 | **Okyerema** | Master Drummer | Automation & Rhythm Engine | The talking drummer who keeps the warriors in cadence. The Okyerema is the **automation backbone** — responsible for **a domain of work** and ensuring the Asafo stay in rhythm within that domain. It is conceptually **one agent** but may have **multiple implementations** across environments (local, cloud, CI). When these implementations share a common tracking substrate, they are the same Okyerema. When the substrate differs, they are different Okyeremas. Cross-domain dependencies are handled by **inter-domain coordination agents** that pass work requests and messages between Okyeremas. |
 | **Ahene** | Sub-chiefs | Domain Coordinators | Specialized coordinating agents modeled on the Akan divisional chief structure. Each Ohene oversees a particular domain and commands their own company of Asafo. (See §2.1 for the full taxonomy of Ohene types.) |
 | **Asafo** | Warrior Companies | Implementation Agents | The agents that do the actual work — writing code, generating content, running analyses, producing artifacts. These can be cloud SWE agents (Devin, Copilot, Claude Code), local agents, or agents running on dedicated infrastructure. They are organized into **companies** with specialized capabilities. |
@@ -47,12 +47,13 @@ The Anokye-System draws its organizational model from the Akan political structu
 
 ### 2.1 The Ahene: A Taxonomy of Domain Chiefs
 
-In the Akan/Ashanti political system, the Asantehene (paramount chief) governed through a sophisticated hierarchy of divisional chiefs, each commanding their own wing of the military and administering their own domain. The Anokye-System maps these historical roles to agent coordination domains:
+In the Akan/Ashanti political system, the Asantehene (paramount chief) governed through a sophisticated hierarchy of divisional chiefs, each commanding their own wing of the military and administering their own domain. The Anokye-System draws inspiration from this hierarchy while being respectful of the living cultural institution — the Asantehene remains a historical and conceptual reference point, not a system component.
+
+The system maps the divisional chief roles to agent coordination domains:
 
 | Akan Title | Historical Role | Anokye-System Mapping |
 |------------|----------------|----------------------|
-| **Asantehene** | Paramount chief, supreme commander, apex authority | The apex authority across all domains — in a single-domain system, the Asantehene and Omanhene are the same person (the user). In a multi-domain system, the Asantehene represents the human's unified identity across all their Okyeremas and projects. |
-| **Omanhene** | Paramount chief of a traditional area, governs a territory | **The user.** The Omanhene is the human who governs a domain of work, resolves stalemates between the Ahene council, and holds final authority. Each domain has its own Omanhene. |
+| **Omanhene** | Paramount chief of a traditional area, governs a territory | **The user.** The Omanhene is the human who governs a domain of work (an Oman), resolves stalemates between the Ahene council, and holds final authority. Each domain has its own Omanhene. |
 | **Krontihene** | Minister of War, Commander-in-Chief in the Asantehene's absence, right wing leader | The **release and deployment coordinator** — takes command of critical execution when the Ohene is unavailable, manages the merge queue and release pipeline |
 | **Adontenhene** | Commander of the main body/rear guard, strategic advisor | The **architecture and planning Ohene** — advises on strategy, manages technical debt, ensures structural integrity of the project |
 | **Nifahene** | Right wing commander | The **implementation Ohene** — coordinates the primary coding/building Asafo companies, manages feature delivery |
@@ -86,7 +87,9 @@ The Akan political system was not a rigid hierarchy — it was a **distributed g
 
 ### 3.1 The Okyeame: Your Personal Agent
 
-**The Okyeame is the equivalent of a browser.** Everyone has their own. It is the most human-facing component — your personal agent, the user-agent through which you communicate with the entire system. Just as a browser is your window into the web, the Okyeame is your window into the Anokye-System. Each person's Okyeame is shaped by their preferences, context, and working style.
+**The Okyeame is the equivalent of a browser.** Everyone has their own — and each person has exactly **one**. Just as a browser is your window into the web, the Okyeame is your window into the Anokye-System. But unlike a browser that shows you one site at a time, your Okyeame can communicate with the Okyeremas of **multiple Oman** (domains) simultaneously — your software project, your family coordination system, your research program.
+
+This is a critical architectural point: **the Okyeame is the cross-domain unifier for the human**. You don't need a separate interface for each domain. Your single Okyeame understands all your domains and can surface status, translate requests, and coordinate across them. Each person's Okyeame is shaped by their preferences, context, and working style.
 
 **Current State** (as implemented in `anokye-labs/plugins`):
 - CLI-based conversational agent within the Copilot CLI tool
@@ -138,9 +141,9 @@ This distinction matters because it determines whether agents coordinated by one
 
 Each Okyerema is responsible for **a domain of work** — keeping the Asafo in rhythm within that domain. A software project has its own Okyerema. A family coordination system has its own Okyerema. These are separate drummers with separate rhythms.
 
-When there are **inter-domain dependencies** (e.g., a software deploy that needs to coordinate with a marketing launch, or a household project that requires a vendor booking), the Okyeremas do not merge. Instead, **inter-domain coordination agents** pass work requests and messages between domains. These agents act as messengers — they understand both domains well enough to translate requests and relay status, but they do not take ownership of either domain's rhythm.
+When there are **inter-domain dependencies** (e.g., a software deploy that needs to coordinate with a marketing launch, or a household project that requires a vendor booking), the Okyeremas do not merge. Instead, **the user's Okyeame serves as the natural cross-domain bridge** — since each person has one Okyeame that communicates with all their Okyeremas, the Okyeame can relay requests and status between domains on the user's behalf. For automated cross-domain coordination (without human involvement), dedicated **inter-domain coordination agents** pass work requests and messages between Okyeremas.
 
-This preserves the clean boundary: each Okyerema owns its rhythm, and cross-domain coordination is explicit, not implicit.
+This preserves the clean boundary: each Okyerema owns its domain's rhythm, and cross-domain coordination flows either through the user's Okyeame (human-mediated) or through explicit inter-domain agents (automated).
 
 #### The Drum Patterns
 
@@ -515,7 +518,8 @@ The Akan organizational model is not decoration — it is a **design philosophy*
 |------|-------------|----------------|
 | **Anokye-System** | Named after Okomfo Anokye | The complete framework for AI-driven continuous project execution |
 | **Ohene** | Chief/King | The leadership principle — the Omanhene (user) is the primary Ohene |
-| **Omanhene** | Paramount chief of a territory | The user — governs a domain, resolves stalemates, holds final authority |
+| **Omanhene** | Paramount chief of a territory (Oman) | The user — governs a domain, resolves stalemates, holds final authority |
+| **Oman** | Territory/domain | A domain of work — each Oman has its own Omanhene (user), Okyerema (rhythm), and Adwoma (source of truth) |
 | **Ahene** | Sub-chiefs (Krontihene, Nifahene, etc.) | Domain coordinators — specialized agents for implementation, testing, security, DevOps, etc. |
 | **Ohemaa** | Queen Mother | Governance daemon agent — persistent identity, asynchronous OODA loop, veto power |
 | **Okyeame** | Linguist | Personal user-agent — the equivalent of a browser; everyone has their own |
