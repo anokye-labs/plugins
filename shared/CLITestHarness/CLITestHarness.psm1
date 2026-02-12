@@ -343,7 +343,9 @@ function Start-CLISession {
 
     $processInfo = [System.Diagnostics.ProcessStartInfo]::new()
     $processInfo.FileName = $command
-    $processInfo.Arguments = ($config.InteractiveArgs -join ' ')
+    foreach ($arg in $config.InteractiveArgs) {
+        [void]$processInfo.ArgumentList.Add($arg)
+    }
     $processInfo.RedirectStandardInput = $true
     $processInfo.RedirectStandardOutput = $true
     $processInfo.RedirectStandardError = $true

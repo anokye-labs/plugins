@@ -104,6 +104,9 @@ else {
     }
     $providersToTest += $Provider
     Write-Host "Provider: $Provider" -ForegroundColor Green
+    if ($Provider -eq 'claude') {
+        Write-Host "Note: Existing E2E suites still invoke 'copilot -p' directly; Claude runs may fail until suites are migrated to the shared harness." -ForegroundColor Yellow
+    }
 }
 
 $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
