@@ -265,7 +265,7 @@ function Invoke-CLIPrompt {
 
         if (-not $completed) {
             try { $process.Kill() } catch { }
-            Start-Sleep -Milliseconds 250
+            $process.WaitForExit()
             return [PSCustomObject]@{
                 Success      = $false
                 Provider     = $Provider
@@ -278,7 +278,7 @@ function Invoke-CLIPrompt {
             }
         }
 
-        Start-Sleep -Milliseconds 250
+        $process.WaitForExit()
 
         $stdout = $stdoutBuilder.ToString()
         $stderr = $stderrBuilder.ToString()
