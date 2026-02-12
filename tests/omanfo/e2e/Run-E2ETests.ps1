@@ -223,6 +223,7 @@ foreach ($currentProvider in $providersToTest) {
     catch {
         Write-Host "  [$currentProvider] Test execution failed: $_" -ForegroundColor Red
         $totalFailed++
+        $totalTests++
     }
 }
 
