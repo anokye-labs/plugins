@@ -265,6 +265,7 @@ function Invoke-CLIPrompt {
 
         if (-not $completed) {
             try { $process.Kill() } catch { }
+            Start-Sleep -Milliseconds 250
             return [PSCustomObject]@{
                 Success      = $false
                 Provider     = $Provider
@@ -371,9 +372,19 @@ function Start-CLISession {
         }
     } -MessageData $errorBuffer
 
-    $process.Start() | Out-Null
-    $process.BeginOutputReadLine()
-    $process.BeginErrorReadLine()
+    try {
+        $process.Start() | Out-Null
+        $process.BeginOutputReadLine()
+        $process.BeginErrorReadLine()
+    }
+    catch {
+        Unregister-Event -SourceIdentifier $stdoutEvent.Name -ErrorAction SilentlyContinue
+        Unregister-Event -SourceIdentifier $stderrEvent.Name -ErrorAction SilentlyContinue
+        Remove-Job -Id $stdoutEvent.Id -Force -ErrorAction SilentlyContinue
+        Remove-Job -Id $stderrEvent.Id -Force -ErrorAction SilentlyContinue
+        $process.Dispose()
+        throw
+    }
 
     return [PSCustomObject]@{
         Process       = $process
