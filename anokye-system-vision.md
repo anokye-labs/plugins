@@ -503,14 +503,15 @@ The Akan organizational model is not decoration — it is a **design philosophy*
 6. **Fleet dispatch for software**: Apply the media-agents fleet pattern to software development workflows
 7. **Agent marketplace**: Pluggable Asafo companies from different providers with standardized interfaces
 8. **Cost and efficiency tracking**: Monitor and optimize agent spending across providers
+9. **Okyeame cross-domain knowledge store**: A personal knowledge graph maintained by the Okyeame that understands relationships across Oman — e.g., "this software project is for client X" and "client X's deadline connects to this family scheduling constraint." Enables the Okyeame to surface cross-domain insights and coordinate more intelligently across the user's Oman.
 
 ### Long-Term (Level 3 → Level 5)
 
-9. **Self-directed work identification**: The system analyzes the project and proposes what should be done next
-10. **Cross-project learning**: Patterns and solutions from one project inform another
-11. **Predictive health**: Sankofa predicts problems before they manifest
-12. **Vision repository with interactive Okyeame**: A public-facing site where people can interact with an AI to learn about and adopt the Anokye-System
-13. **Beyond software**: Templates and patterns for non-software project domains
+10. **Self-directed work identification**:The system analyzes the project and proposes what should be done next
+11. **Cross-project learning**: Patterns and solutions from one project inform another
+12. **Predictive health**: Sankofa predicts problems before they manifest
+13. **Vision repository with interactive Okyeame**: A public-facing site where people can interact with an AI to learn about and adopt the Anokye-System
+14. **Beyond software**: Templates and patterns for non-software project domains
 
 ## 10. Glossary
 
