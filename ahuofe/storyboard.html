@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Copilot Media Plugins - Dependency Graph</title>
+<style>
+  :root {
+    --bg: #0d1117; --surface: #161b22; --border: #30363d;
+    --text: #e6edf3; --text-dim: #8b949e; --text-bright: #f0f6fc;
+    --epic: #da3633; --feature: #a371f7; --task: #58a6ff;
+    --done: #3fb950; --blocked-edge: #f85149; --dep-edge: #8b949e;
+    --wave-colors: #58a6ff, #a371f7, #3fb950, #f0883e, #da3633, #79c0ff, #d2a8ff, #56d364, #e3b341, #ff7b72;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; background: var(--bg); color: var(--text); overflow: hidden; height: 100vh; }
+
+  /* Header */
+  #header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 12px 20px; display: flex; align-items: center; gap: 16px; z-index: 100; position: relative; }
+  #header h1 { font-size: 16px; font-weight: 600; white-space: nowrap; }
+  #header .stats { font-size: 12px; color: var(--text-dim); display: flex; gap: 12px; }
+  #header .stat { display: flex; align-items: center; gap: 4px; }
+  #header .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  #search { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; font-size: 13px; width: 220px; }
+  #search:focus { outline: none; border-color: var(--task); }
+  .btn { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+  .btn:hover { border-color: var(--text-dim); }
+  .btn.active { border-color: var(--task); color: var(--task); }
+  .legend { display: flex; gap: 12px; margin-left: auto; font-size: 11px; color: var(--text-dim); align-items: center; }
+  .legend-item { display: flex; align-items: center; gap: 4px; }
+  .legend-line { width: 24px; height: 2px; }
+
+  /* Main layout */
+  #main { display: flex; height: calc(100vh - 49px); }
+
+  /* Sidebar */
+  #sidebar { width: 320px; min-width: 320px; background: var(--surface); border-right: 1px solid var(--border); overflow-y: auto; padding: 12px; transition: width 0.2s; }
+  #sidebar.collapsed { width: 0; min-width: 0; padding: 0; overflow: hidden; }
+  #sidebar h2 { font-size: 13px; font-weight: 600; margin-bottom: 8px; color: var(--text-bright); }
+  .wave-section { margin-bottom: 16px; }
+  .wave-header { font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 4px; margin-bottom: 4px; display: flex; justify-content: space-between; }
+  .wave-item { font-size: 11px; padding: 3px 8px 3px 16px; color: var(--text-dim); cursor: pointer; border-radius: 3px; display: flex; align-items: center; gap: 6px; line-height: 1.4; }
+  .wave-item:hover { background: var(--bg); color: var(--text); }
+  .wave-item .type-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Canvas */
+  #canvas-container { flex: 1; position: relative; overflow: hidden; }
+  #canvas { width: 100%; height: 100%; cursor: grab; }
+  #canvas:active { cursor: grabbing; }
+  #canvas .node { cursor: pointer; }
+  #canvas .node rect { rx: 8; ry: 8; stroke-width: 1.5; transition: opacity 0.2s; }
+  #canvas .node text { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif; fill: var(--text); }
+  #canvas .edge { fill: none; stroke-width: 1.5; opacity: 0.4; transition: opacity 0.2s, stroke-width 0.2s; }
+  #canvas .edge.blocked { stroke: var(--blocked-edge); stroke-dasharray: 6,3; }
+  #canvas .edge.parent-child { stroke: var(--dep-edge); }
+  #canvas .edge.highlighted { opacity: 1; stroke-width: 2.5; }
+  #canvas .node.dimmed rect { opacity: 0.15; }
+  #canvas .node.dimmed text { opacity: 0.15; }
+  #canvas .edge.dimmed { opacity: 0.05; }
+
+  /* Tooltip */
+  #tooltip { position: fixed; background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 12px; font-size: 12px; max-width: 320px; pointer-events: none; z-index: 200; display: none; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+  #tooltip .tt-title { font-weight: 600; margin-bottom: 4px; font-size: 13px; }
+  #tooltip .tt-type { font-size: 11px; padding: 2px 6px; border-radius: 3px; display: inline-block; margin-bottom: 6px; }
+  #tooltip .tt-deps { font-size: 11px; color: var(--text-dim); margin-top: 4px; }
+  #tooltip .tt-deps strong { color: var(--text); }
+
+  /* Detail panel */
+  #detail { position: fixed; right: 0; top: 49px; width: 380px; height: calc(100vh - 49px); background: var(--surface); border-left: 1px solid var(--border); z-index: 150; padding: 16px; overflow-y: auto; display: none; box-shadow: -4px 0 16px rgba(0,0,0,0.3); }
+  #detail .close-btn { position: absolute; top: 12px; right: 12px; background: none; border: none; color: var(--text-dim); cursor: pointer; font-size: 18px; }
+  #detail h3 { font-size: 15px; font-weight: 600; margin-bottom: 8px; padding-right: 24px; }
+  #detail .detail-type { font-size: 11px; padding: 2px 8px; border-radius: 4px; display: inline-block; margin-bottom: 12px; }
+  #detail .detail-section { margin-bottom: 12px; }
+  #detail .detail-section h4 { font-size: 12px; font-weight: 600; color: var(--text-dim); margin-bottom: 4px; text-transform: uppercase; letter-spacing: 0.5px; }
+  #detail .detail-link { color: var(--task); text-decoration: none; display: block; font-size: 12px; padding: 2px 0; }
+  #detail .detail-link:hover { text-decoration: underline; }
+  #detail .gh-link { display: inline-block; margin-top: 8px; color: var(--task); text-decoration: none; font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>&#128640; Copilot Media Plugins</h1>
+  <div class="stats">
+    <span class="stat"><span class="dot" style="background:var(--epic)"></span> Epics</span>
+    <span class="stat"><span class="dot" style="background:var(--feature)"></span> Features</span>
+    <span class="stat"><span class="dot" style="background:var(--task)"></span> Tasks</span>
+    <span class="stat" id="stat-total"></span>
+  </div>
+  <input type="text" id="search" placeholder="Search issues..." />
+  <button class="btn" id="toggle-edges" title="Toggle edge type">Blocked By</button>
+  <button class="btn" id="toggle-sidebar">Waves</button>
+  <button class="btn" id="btn-reset">Reset View</button>
+  <div class="legend">
+    <span class="legend-item"><span class="legend-line" style="background:var(--blocked-edge);border-top:2px dashed var(--blocked-edge);height:0"></span> Blocked By</span>
+    <span class="legend-item"><span class="legend-line" style="background:var(--dep-edge)"></span> Parent-Child</span>
+  </div>
+</div>
+
+<div id="main">
+  <div id="sidebar">
+    <h2>&#9889; Parallelization Waves</h2>
+    <div id="wave-list"></div>
+  </div>
+  <div id="canvas-container">
+    <svg id="canvas"></svg>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+<div id="detail">
+  <button class="close-btn" onclick="document.getElementById('detail').style.display='none'">&times;</button>
+  <div id="detail-content"></div>
+</div>
+
+<script>
+const ISSUES = [{"number": 1, "title": "Setup & Initial Structure", "state": "OPEN", "type": "Epic", "labels": ["phase-0-setup", "priority-critical"], "children": [2, 3, 4, 5, 6], "parents": [], "blockedBy": [], "bodyLen": 1016}, {"number": 2, "title": "Rename folder to copilot-media-plugins", "state": "CLOSED", "type": "Task", "labels": ["phase-0-setup", "priority-critical", "good-first-issue"], "children": [], "parents": [1], "blockedBy": [], "bodyLen": 630}, {"number": 3, "title": "Initialize git repository", "state": "CLOSED", "type": "Task", "labels": ["phase-0-setup", "priority-critical"], "children": [], "parents": [1], "blockedBy": [2], "bodyLen": 428}, {"number": 4, "title": "Create directory structure", "state": "CLOSED", "type": "Task", "labels": ["phase-0-setup", "priority-critical"], "children": [], "parents": [1], "blockedBy": [3], "bodyLen": 905}, {"number": 5, "title": "Create .gitignore", "state": "CLOSED", "type": "Task", "labels": ["phase-0-setup", "priority-high"], "children": [], "parents": [1], "blockedBy": [4], "bodyLen": 304}, {"number": 6, "title": "Document research insights", "state": "CLOSED", "type": "Task", "labels": ["documentation", "phase-0-setup", "priority-medium"], "children": [], "parents": [1], "blockedBy": [4], "bodyLen": 301}, {"number": 7, "title": "Core Plugin Infrastructure", "state": "OPEN", "type": "Epic", "labels": ["phase-1-infrastructure", "priority-critical"], "children": [8, 9, 10, 11, 12, 13], "parents": [], "blockedBy": [1], "bodyLen": 1073}, {"number": 8, "title": "Create .mcp.json for ImageSorcery MCP", "state": "OPEN", "type": "Task", "labels": ["phase-1-infrastructure", "priority-critical"], "children": [], "parents": [7], "blockedBy": [4], "bodyLen": 584}, {"number": 9, "title": "Draft README.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-1-infrastructure", "priority-high"], "children": [], "parents": [7], "blockedBy": [4], "bodyLen": 530}, {"number": 10, "title": "Create LICENSE (MIT)", "state": "OPEN", "type": "Task", "labels": ["phase-1-infrastructure", "priority-high"], "children": [], "parents": [7], "blockedBy": [4], "bodyLen": 275}, {"number": 11, "title": "Create CONTRIBUTING.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-1-infrastructure", "priority-medium"], "children": [], "parents": [7], "blockedBy": [4], "bodyLen": 352}, {"number": 12, "title": "Create .github/copilot-instructions.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-1-infrastructure", "priority-high"], "children": [], "parents": [7], "blockedBy": [4], "bodyLen": 369}, {"number": 13, "title": "Document Architecture in docs/ARCHITECTURE.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-1-infrastructure", "priority-high"], "children": [], "parents": [7], "blockedBy": [4], "bodyLen": 470}, {"number": 14, "title": "fal.ai Integration", "state": "OPEN", "type": "Epic", "labels": ["phase-2-fal-ai", "priority-critical", "research-backed"], "children": [], "parents": [], "blockedBy": [7], "bodyLen": 957}, {"number": 15, "title": "Analyze existing fal.ai bash scripts", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-critical"], "children": [], "parents": [106], "blockedBy": [], "bodyLen": 578}, {"number": 16, "title": "Create skills/fal-ai/SKILL.md (<500 lines)", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-critical", "research-backed"], "children": [], "parents": [106], "blockedBy": [15], "bodyLen": 1829}, {"number": 17, "title": "Create Invoke-FalGenerate.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-high"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 2070}, {"number": 18, "title": "Create Search-FalModels.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-high"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 1199}, {"number": 19, "title": "Create Get-ModelSchema.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-high"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 1120}, {"number": 20, "title": "Create Get-QueueStatus.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-high"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 1190}, {"number": 21, "title": "Create Upload-ToFalCDN.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-medium"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 1075}, {"number": 22, "title": "Create New-FalWorkflow.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-high"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 1230}, {"number": 23, "title": "Create Test-FalConnection.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-high"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 1140}, {"number": 24, "title": "Create Get-FalModel.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-medium"], "children": [], "parents": [107], "blockedBy": [15], "bodyLen": 1174}, {"number": 25, "title": "Create Invoke-FalInpainting.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-medium"], "children": [], "parents": [108], "blockedBy": [15], "bodyLen": 1421}, {"number": 26, "title": "Create Invoke-FalUpscale.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-medium"], "children": [], "parents": [108], "blockedBy": [15], "bodyLen": 1152}, {"number": 27, "title": "Create Invoke-FalVideoGen.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-medium"], "children": [], "parents": [108], "blockedBy": [15], "bodyLen": 1345}, {"number": 28, "title": "Create Invoke-FalImageToVideo.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-medium"], "children": [], "parents": [108], "blockedBy": [15], "bodyLen": 1238}, {"number": 29, "title": "Create Get-FalUsage.ps1", "state": "OPEN", "type": "Task", "labels": ["phase-2-fal-ai", "priority-low"], "children": [], "parents": [108], "blockedBy": [15], "bodyLen": 1132}, {"number": 30, "title": "Create references/MODELS.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-2-fal-ai", "priority-medium"], "children": [], "parents": [108], "blockedBy": [16], "bodyLen": 1522}, {"number": 31, "title": "Create references/WORKFLOWS.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-2-fal-ai", "priority-medium"], "children": [], "parents": [108], "blockedBy": [16], "bodyLen": 1517}, {"number": 32, "title": "Create references/ERROR_CODES.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-2-fal-ai", "priority-medium"], "children": [], "parents": [109], "blockedBy": [16], "bodyLen": 1527}, {"number": 33, "title": "Create references/EXAMPLES.md", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-2-fal-ai", "priority-high"], "children": [], "parents": [109], "blockedBy": [16], "bodyLen": 1558}, {"number": 34, "title": "Workflow Builder", "state": "OPEN", "type": "Epic", "labels": ["phase-3-workflow", "priority-high", "research-backed"], "children": [], "parents": [], "blockedBy": [], "bodyLen": 561}, {"number": 35, "title": "ImageSorcery Integration", "state": "OPEN", "type": "Epic", "labels": ["phase-4-imagesorcery", "priority-high", "research-backed"], "children": [], "parents": [], "blockedBy": [8], "bodyLen": 750}, {"number": 36, "title": "Agentic Workflows", "state": "OPEN", "type": "Epic", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [], "blockedBy": [], "bodyLen": 615}, {"number": 37, "title": "Testing & Validation", "state": "OPEN", "type": "Epic", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [], "blockedBy": [], "bodyLen": 650}, {"number": 38, "title": "Documentation", "state": "OPEN", "type": "Epic", "labels": ["documentation", "phase-7-documentation", "priority-medium"], "children": [83, 84, 85, 86, 87, 88], "parents": [], "blockedBy": [], "bodyLen": 618}, {"number": 39, "title": "GitHub Repository Setup", "state": "OPEN", "type": "Epic", "labels": ["phase-8-github-setup", "priority-medium"], "children": [89, 90, 91, 92, 93], "parents": [], "blockedBy": [], "bodyLen": 678}, {"number": 40, "title": "End-to-End Validation", "state": "OPEN", "type": "Epic", "labels": ["phase-9-validation", "priority-critical"], "children": [], "parents": [], "blockedBy": [], "bodyLen": 687}, {"number": 41, "title": "Adapt fal-workflow skill from fal-ai-community", "state": "OPEN", "type": "Task", "labels": ["phase-3-workflow", "priority-critical", "priority-high"], "children": [], "parents": [110], "blockedBy": [33], "bodyLen": 701}, {"number": 42, "title": "Create references/NODE_TYPES.md", "state": "OPEN", "type": "Task", "labels": ["phase-3-workflow", "priority-high"], "children": [], "parents": [111], "blockedBy": [41], "bodyLen": 471}, {"number": 43, "title": "Create references/PATTERNS.md", "state": "OPEN", "type": "Task", "labels": ["phase-3-workflow", "priority-high"], "children": [], "parents": [111], "blockedBy": [41], "bodyLen": 457}, {"number": 44, "title": "Create references/TROUBLESHOOTING.md", "state": "OPEN", "type": "Task", "labels": ["phase-3-workflow", "priority-high"], "children": [], "parents": [111], "blockedBy": [41], "bodyLen": 435}, {"number": 45, "title": "Create New-Workflow.ps1 validation script", "state": "OPEN", "type": "Task", "labels": ["phase-3-workflow", "priority-high"], "children": [], "parents": [111], "blockedBy": [41], "bodyLen": 473}, {"number": 46, "title": "Update .mcp.json for ImageSorcery MCP", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-critical", "priority-high"], "children": [], "parents": [112], "blockedBy": [8], "bodyLen": 377}, {"number": 47, "title": "Create skills/image-sorcery/SKILL.md", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-critical", "priority-high"], "children": [], "parents": [112], "blockedBy": [], "bodyLen": 628}, {"number": 48, "title": "Create references/TIER1_OPERATIONS.md", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-high"], "children": [], "parents": [113], "blockedBy": [47], "bodyLen": 498}, {"number": 49, "title": "Create references/TIER2_OPERATIONS.md", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-high"], "children": [], "parents": [113], "blockedBy": [47], "bodyLen": 508}, {"number": 50, "title": "Create references/TIER3_OPERATIONS.md", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-high"], "children": [], "parents": [113], "blockedBy": [47], "bodyLen": 497}, {"number": 51, "title": "Create references/TIER4_OPERATIONS.md", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-high"], "children": [], "parents": [113], "blockedBy": [47], "bodyLen": 496}, {"number": 52, "title": "Create references/WORKFLOWS.md", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-high"], "children": [], "parents": [113], "blockedBy": [47], "bodyLen": 492}, {"number": 53, "title": "Create references/EXAMPLES.md", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-high"], "children": [], "parents": [113], "blockedBy": [47], "bodyLen": 485}, {"number": 54, "title": "Create Test-ImageSorcery.ps1 validation script", "state": "OPEN", "type": "Task", "labels": ["phase-4-imagesorcery", "priority-critical", "priority-high"], "children": [], "parents": [113], "blockedBy": [47], "bodyLen": 516}, {"number": 55, "title": "Create skills/media-agents/SKILL.md", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-critical", "priority-high", "research-backed"], "children": [], "parents": [114], "blockedBy": [], "bodyLen": 652}, {"number": 56, "title": "Create references/AGENT_PATTERNS.md", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [114], "blockedBy": [55], "bodyLen": 560}, {"number": 57, "title": "Create references/ERROR_HANDLING.md", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [114], "blockedBy": [55], "bodyLen": 549}, {"number": 58, "title": "Create references/QUEUE_MANAGEMENT.md", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [114], "blockedBy": [55], "bodyLen": 548}, {"number": 59, "title": "Create references/MONITORING.md", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [114], "blockedBy": [55], "bodyLen": 544}, {"number": 60, "title": "Implement doc-sync agent (GitHub Action)", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [115], "blockedBy": [55], "bodyLen": 559}, {"number": 61, "title": "Implement test-plugin agent (GitHub Action)", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [115], "blockedBy": [55], "bodyLen": 552}, {"number": 62, "title": "Implement media-workflow agent (GitHub Action)", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-critical", "priority-high", "research-backed"], "children": [], "parents": [115], "blockedBy": [55], "bodyLen": 562}, {"number": 63, "title": "Implement performance-check agent (GitHub Action)", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [115], "blockedBy": [55], "bodyLen": 529}, {"number": 64, "title": "Create .github/workflows/doc-sync.yml", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [116], "blockedBy": [60], "bodyLen": 509}, {"number": 65, "title": "Create .github/workflows/test-plugin.yml", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-high", "research-backed"], "children": [], "parents": [116], "blockedBy": [61], "bodyLen": 515}, {"number": 66, "title": "Create .github/workflows/media-workflow.yml", "state": "OPEN", "type": "Task", "labels": ["phase-5-agents", "priority-critical", "priority-high", "research-backed"], "children": [], "parents": [116], "blockedBy": [62], "bodyLen": 546}, {"number": 67, "title": "Set up Pester testing framework", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-critical", "priority-high"], "children": [], "parents": [117], "blockedBy": [], "bodyLen": 607}, {"number": 68, "title": "Write unit tests for all PowerShell scripts", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-critical", "priority-high"], "children": [], "parents": [117], "blockedBy": [], "bodyLen": 404}, {"number": 69, "title": "Create integration tests for fal.ai skill", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [118], "blockedBy": [16], "bodyLen": 379}, {"number": 70, "title": "Create integration tests for workflow builder", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [118], "blockedBy": [41], "bodyLen": 358}, {"number": 71, "title": "Create integration tests for ImageSorcery MCP", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [118], "blockedBy": [47], "bodyLen": 355}, {"number": 72, "title": "Create E2E scenario: Text-to-image generation", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 69], "bodyLen": 761}, {"number": 73, "title": "Create E2E scenario: Image manipulation workflow", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 71], "bodyLen": 405}, {"number": 74, "title": "Create E2E scenario: Multi-step workflow", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 70], "bodyLen": 401}, {"number": 75, "title": "Create E2E scenario: fal.ai + ImageSorcery combined", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 69, 71], "bodyLen": 440}, {"number": 76, "title": "Create E2E scenario: Agent orchestration", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 70], "bodyLen": 403}, {"number": 77, "title": "Create E2E scenario: Error handling and retry", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 69, 70, 71], "bodyLen": 472}, {"number": 78, "title": "Create E2E scenario: Queue management", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 69], "bodyLen": 400}, {"number": 79, "title": "Create E2E scenario: Model discovery", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 69], "bodyLen": 400}, {"number": 80, "title": "Create E2E scenario: Workflow validation", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 70], "bodyLen": 402}, {"number": 81, "title": "Create E2E scenario: MCP connectivity", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-high"], "children": [], "parents": [119], "blockedBy": [67, 69, 70, 71], "bodyLen": 472}, {"number": 82, "title": "Set up GitHub Actions CI/CD pipeline", "state": "OPEN", "type": "Task", "labels": ["phase-6-testing", "priority-critical", "priority-high"], "children": [], "parents": [119], "blockedBy": [67], "bodyLen": 660}, {"number": 83, "title": "Finalize README.md with complete quick start", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-7-documentation", "priority-medium"], "children": [], "parents": [38], "blockedBy": [16, 41, 47, 55], "bodyLen": 356}, {"number": 84, "title": "Create user guides for all major features", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-7-documentation", "priority-medium"], "children": [], "parents": [38], "blockedBy": [], "bodyLen": 326}, {"number": 85, "title": "Create API reference documentation", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-7-documentation", "priority-medium"], "children": [], "parents": [38], "blockedBy": [], "bodyLen": 337}, {"number": 86, "title": "Update CONTRIBUTING.md with final standards", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-7-documentation", "priority-medium"], "children": [], "parents": [38], "blockedBy": [11, 13], "bodyLen": 362}, {"number": 87, "title": "Create troubleshooting guide", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-7-documentation", "priority-medium"], "children": [], "parents": [38], "blockedBy": [67, 81], "bodyLen": 343}, {"number": 88, "title": "Create examples gallery", "state": "OPEN", "type": "Task", "labels": ["documentation", "phase-7-documentation", "priority-medium"], "children": [], "parents": [38], "blockedBy": [], "bodyLen": 336}, {"number": 89, "title": "Configure repository settings and metadata", "state": "OPEN", "type": "Task", "labels": ["phase-8-github-setup", "priority-medium"], "children": [], "parents": [39], "blockedBy": [], "bodyLen": 263}, {"number": 90, "title": "Set up branch protection on main", "state": "OPEN", "type": "Task", "labels": ["phase-8-github-setup", "priority-medium"], "children": [], "parents": [39], "blockedBy": [82], "bodyLen": 391}, {"number": 91, "title": "Create issue templates (bug, feature, task)", "state": "OPEN", "type": "Task", "labels": ["phase-8-github-setup", "priority-medium"], "children": [], "parents": [39], "blockedBy": [], "bodyLen": 263}, {"number": 92, "title": "Create PR template with checklist", "state": "OPEN", "type": "Task", "labels": ["phase-8-github-setup", "priority-medium"], "children": [], "parents": [39], "blockedBy": [], "bodyLen": 263}, {"number": 93, "title": "Configure release automation workflow", "state": "OPEN", "type": "Task", "labels": ["phase-8-github-setup", "priority-medium"], "children": [], "parents": [39], "blockedBy": [82], "bodyLen": 394}, {"number": 94, "title": "Real-world validation: Text-to-image workflow", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-critical", "priority-high"], "children": [], "parents": [120], "blockedBy": [72], "bodyLen": 658}, {"number": 95, "title": "Real-world validation: Image-to-video workflow", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-critical", "priority-high"], "children": [], "parents": [120], "blockedBy": [75], "bodyLen": 350}, {"number": 96, "title": "Real-world validation: Multi-step manipulation", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-critical", "priority-high"], "children": [], "parents": [120], "blockedBy": [74], "bodyLen": 318}, {"number": 97, "title": "Real-world validation: Agent orchestration", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-high"], "children": [], "parents": [120], "blockedBy": [76], "bodyLen": 318}, {"number": 98, "title": "Real-world validation: Error recovery", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-high"], "children": [], "parents": [], "blockedBy": [77], "bodyLen": 323}, {"number": 99, "title": "Performance optimization: Token usage", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-high"], "children": [], "parents": [121], "blockedBy": [94, 95, 96], "bodyLen": 337}, {"number": 100, "title": "Performance optimization: API latency", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-high"], "children": [], "parents": [121], "blockedBy": [94, 95, 96], "bodyLen": 337}, {"number": 101, "title": "Performance optimization: Queue throughput", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-high"], "children": [], "parents": [121], "blockedBy": [94, 95, 96], "bodyLen": 337}, {"number": 102, "title": "Security review: API key management", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-high"], "children": [], "parents": [122], "blockedBy": [], "bodyLen": 343}, {"number": 103, "title": "Security review: Secret handling", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-high"], "children": [], "parents": [122], "blockedBy": [], "bodyLen": 344}, {"number": 104, "title": "Complete production readiness checklist", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-critical", "priority-high"], "children": [], "parents": [122], "blockedBy": [102, 103], "bodyLen": 328}, {"number": 105, "title": "Prepare v1.0.0 release", "state": "OPEN", "type": "Task", "labels": ["phase-9-validation", "priority-critical", "priority-high"], "children": [], "parents": [122], "blockedBy": [104], "bodyLen": 342}, {"number": 106, "title": "Core Skill Creation", "state": "OPEN", "type": "Feature", "labels": ["phase-2-fal-ai"], "children": [15, 16], "parents": [], "blockedBy": [], "bodyLen": 810}, {"number": 107, "title": "PowerShell Script Conversion", "state": "OPEN", "type": "Feature", "labels": ["phase-2-fal-ai"], "children": [17, 18, 19, 20, 21, 22, 23, 24], "parents": [], "blockedBy": [], "bodyLen": 972}, {"number": 108, "title": "Reference Documentation", "state": "OPEN", "type": "Feature", "labels": ["phase-2-fal-ai"], "children": [25, 26, 27, 28, 29, 30, 31], "parents": [], "blockedBy": [], "bodyLen": 994}, {"number": 109, "title": "Testing & Validation", "state": "OPEN", "type": "Feature", "labels": ["phase-2-fal-ai"], "children": [32, 33], "parents": [], "blockedBy": [16], "bodyLen": 180}, {"number": 110, "title": "Workflow Skill Core", "state": "OPEN", "type": "Feature", "labels": ["phase-3-workflow"], "children": [41], "parents": [], "blockedBy": [], "bodyLen": 781}, {"number": 111, "title": "Workflow References", "state": "OPEN", "type": "Feature", "labels": ["phase-3-workflow"], "children": [42, 43, 44, 45], "parents": [], "blockedBy": [], "bodyLen": 870}, {"number": 112, "title": "ImageSorcery Skill & Config", "state": "OPEN", "type": "Feature", "labels": ["phase-4-imagesorcery"], "children": [46, 47], "parents": [], "blockedBy": [], "bodyLen": 793}, {"number": 113, "title": "Operation Tier Documentation", "state": "OPEN", "type": "Feature", "labels": ["phase-4-imagesorcery"], "children": [48, 49, 50, 51, 52, 53, 54], "parents": [], "blockedBy": [], "bodyLen": 1034}, {"number": 114, "title": "Agent Skill & Patterns", "state": "OPEN", "type": "Feature", "labels": ["phase-5-agents"], "children": [55, 56, 57, 58, 59], "parents": [], "blockedBy": [], "bodyLen": 934}, {"number": 115, "title": "Agent Implementations", "state": "OPEN", "type": "Feature", "labels": ["phase-5-agents"], "children": [60, 61, 62, 63], "parents": [], "blockedBy": [], "bodyLen": 941}, {"number": 116, "title": "GitHub Actions Workflows", "state": "OPEN", "type": "Feature", "labels": ["phase-5-agents"], "children": [64, 65, 66], "parents": [], "blockedBy": [], "bodyLen": 833}, {"number": 117, "title": "Test Framework Setup", "state": "OPEN", "type": "Feature", "labels": ["phase-6-testing"], "children": [67, 68], "parents": [], "blockedBy": [], "bodyLen": 815}, {"number": 118, "title": "Integration Tests", "state": "OPEN", "type": "Feature", "labels": ["phase-6-testing"], "children": [69, 70, 71], "parents": [], "blockedBy": [], "bodyLen": 842}, {"number": 119, "title": "E2E Test Scenarios", "state": "OPEN", "type": "Feature", "labels": ["phase-6-testing"], "children": [72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82], "parents": [], "blockedBy": [], "bodyLen": 1049}, {"number": 120, "title": "Real-World Validation", "state": "OPEN", "type": "Feature", "labels": ["phase-9-validation"], "children": [94, 95, 96, 97], "parents": [], "blockedBy": [], "bodyLen": 887}, {"number": 121, "title": "Performance Optimization", "state": "OPEN", "type": "Feature", "labels": ["phase-9-validation"], "children": [99, 100, 101], "parents": [], "blockedBy": [], "bodyLen": 874}, {"number": 122, "title": "Security & Production Readiness", "state": "OPEN", "type": "Feature", "labels": ["phase-9-validation"], "children": [102, 103, 104, 105], "parents": [], "blockedBy": [], "bodyLen": 999}, {"number": 124, "title": "Create tests/evaluation/ framework directory structure", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [4], "bodyLen": 1156}, {"number": 123, "title": "GATE 1\u0393\u00e5\u00c62: Foundation Validated", "state": "OPEN", "type": "Feature", "labels": [], "children": [], "parents": [], "blockedBy": [1, 15, 37, 67], "bodyLen": 1314}, {"number": 125, "title": "Create Measure-ImageQuality.ps1 (CLIP score, SSIM, LPIPS)", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [67], "bodyLen": 1923}, {"number": 126, "title": "GATE 2\u0393\u00e5\u00c63: Scripts & Skills Validated", "state": "OPEN", "type": "Feature", "labels": [], "children": [], "parents": [], "blockedBy": [16, 17, 29, 47, 48, 51, 55, 56, 59, 67, 68, 125, 137], "bodyLen": 2388}, {"number": 127, "title": "Create Measure-VideoQuality.ps1 (temporal consistency, optical flow)", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [67], "bodyLen": 1751}, {"number": 128, "title": "GATE 3\u0393\u00e5\u00c64: References & Integration Validated", "state": "OPEN", "type": "Feature", "labels": [], "children": [], "parents": [], "blockedBy": [30, 33, 64, 66, 69, 71, 82, 90, 93, 134], "bodyLen": 1828}, {"number": 129, "title": "GATE 4\u0393\u00e5\u00c65: Core Structure & Workflows Validated", "state": "OPEN", "type": "Feature", "labels": [], "children": [], "parents": [], "blockedBy": [4, 13, 41, 72, 75, 78, 79], "bodyLen": 1487}, {"number": 130, "title": "Create Measure-ApiPerformance.ps1 (latency P50/P95/P99, queue wait)", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [23], "bodyLen": 1948}, {"number": 131, "title": "GATE 5\u0393\u00e5\u00c66: Operations & Performance Baselined", "state": "OPEN", "type": "Feature", "labels": [], "children": [], "parents": [], "blockedBy": [42, 45, 70, 83, 86, 94, 95, 130, 132], "bodyLen": 1995}, {"number": 132, "title": "Create Measure-ApiCost.ps1 (per-request cost tracking, budget alerts)", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [29], "bodyLen": 1389}, {"number": 133, "title": "GATE 6\u0393\u00e5\u00c67: E2E & Quality Regression Green", "state": "OPEN", "type": "Feature", "labels": [], "children": [], "parents": [], "blockedBy": [74, 76, 77, 80, 81, 125], "bodyLen": 1817}, {"number": 134, "title": "Create golden prompt dataset for quality regression testing", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [15], "bodyLen": 1886}, {"number": 135, "title": "GATE 7\u0393\u00e5\u00c68: Real-World & Troubleshooting Validated", "state": "OPEN", "type": "Feature", "labels": [], "children": [], "parents": [], "blockedBy": [87, 96, 97, 98, 132], "bodyLen": 2140}, {"number": 136, "title": "Create quality threshold configuration for CI/CD gates", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [15], "bodyLen": 1456}, {"number": 137, "title": "Create Measure-TokenBudget.ps1 (skill file token counting)", "state": "OPEN", "type": "Task", "labels": [], "children": [], "parents": [], "blockedBy": [67], "bodyLen": 1334}];
+
+const REPO_URL = 'https://github.com/anokye-labs/copilot-media-plugins/issues/';
+const typeColor = { Epic: '#da3633', Feature: '#a371f7', Task: '#58a6ff', Unknown: '#8b949e' };
+const waveColors = ['#58a6ff','#a371f7','#3fb950','#f0883e','#da3633','#79c0ff','#d2a8ff','#56d364','#e3b341','#ff7b72'];
+
+// Build lookup
+const issueMap = {};
+ISSUES.forEach(i => issueMap[i.number] = i);
+
+// Topological sort into waves (based on blockedBy only)
+function computeWaves() {
+  const waves = [];
+  const assigned = new Set();
+  const remaining = new Set(ISSUES.map(i => i.number));
+
+  while (remaining.size > 0) {
+    const wave = [];
+    for (const num of remaining) {
+      const issue = issueMap[num];
+      const deps = (issue.blockedBy || []).filter(d => remaining.has(d) && !assigned.has(d));
+      // Also check if this is blocked by things not yet assigned in prior waves
+      const unmetDeps = (issue.blockedBy || []).filter(d => issueMap[d] && !assigned.has(d));
+      if (unmetDeps.length === 0) {
+        wave.push(num);
+      }
+    }
+    if (wave.length === 0) {
+      // Cycle detected - just dump remaining
+      for (const num of remaining) wave.push(num);
+    }
+    wave.forEach(n => { assigned.add(n); remaining.delete(n); });
+    waves.push(wave);
+  }
+  return waves;
+}
+
+const waves = computeWaves();
+
+// Stats
+document.getElementById('stat-total').textContent = ISSUES.length + ' issues \u00B7 ' + waves.length + ' waves';
+
+// Sidebar
+const waveList = document.getElementById('wave-list');
+waves.forEach((wave, wi) => {
+  const section = document.createElement('div');
+  section.className = 'wave-section';
+  const color = waveColors[wi % waveColors.length];
+  section.innerHTML = `<div class="wave-header" style="background:${color}22;color:${color}">Wave ${wi+1} <span>${wave.length} items</span></div>`;
+  wave.forEach(num => {
+    const issue = issueMap[num];
+    if (!issue) return;
+    const item = document.createElement('div');
+    item.className = 'wave-item';
+    item.innerHTML = `<span class="type-dot" style="background:${typeColor[issue.type]||typeColor.Unknown}"></span>#${num} ${issue.title}`;
+    item.onclick = () => selectNode(num);
+    section.appendChild(item);
+  });
+  waveList.appendChild(section);
+});
+
+// Layout: assign x by wave, y by position within wave
+const NODE_W = 200, NODE_H = 40, PAD_X = 60, PAD_Y = 16;
+const nodePositions = {};
+const maxWaveSize = Math.max(...waves.map(w => w.length));
+
+waves.forEach((wave, wi) => {
+  // Sort wave: Epics first, then Features, then Tasks
+  const typeOrder = { Epic: 0, Feature: 1, Task: 2, Unknown: 3 };
+  wave.sort((a, b) => {
+    const ta = issueMap[a] ? typeOrder[issueMap[a].type] || 3 : 3;
+    const tb = issueMap[b] ? typeOrder[issueMap[b].type] || 3 : 3;
+    return ta - tb || a - b;
+  });
+  wave.forEach((num, yi) => {
+    nodePositions[num] = {
+      x: wi * (NODE_W + PAD_X) + 40,
+      y: yi * (NODE_H + PAD_Y) + 40
+    };
+  });
+});
+
+const svgWidth = waves.length * (NODE_W + PAD_X) + 80;
+const svgHeight = maxWaveSize * (NODE_H + PAD_Y) + 80;
+
+// SVG rendering
+const svg = document.getElementById('canvas');
+let viewBox = { x: 0, y: 0, w: Math.min(svgWidth, 2000), h: Math.min(svgHeight, 1200) };
+function updateViewBox() {
+  svg.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
+}
+svg.setAttribute('width', '100%');
+svg.setAttribute('height', '100%');
+updateViewBox();
+
+// Edges group (behind nodes)
+const edgesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+edgesG.id = 'edges';
+svg.appendChild(edgesG);
+
+// Nodes group
+const nodesG = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+nodesG.id = 'nodes';
+svg.appendChild(nodesG);
+
+// Draw edges
+const allEdges = [];
+
+// Blocked-by edges
+ISSUES.forEach(issue => {
+  (issue.blockedBy || []).forEach(dep => {
+    if (nodePositions[dep] && nodePositions[issue.number]) {
+      const from = nodePositions[dep];
+      const to = nodePositions[issue.number];
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const x1 = from.x + NODE_W, y1 = from.y + NODE_H/2;
+      const x2 = to.x, y2 = to.y + NODE_H/2;
+      const cx = (x1 + x2) / 2;
+      path.setAttribute('d', `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`);
+      path.classList.add('edge', 'blocked');
+      path.dataset.from = dep;
+      path.dataset.to = issue.number;
+      path.dataset.type = 'blocked';
+      edgesG.appendChild(path);
+      allEdges.push({ el: path, from: dep, to: issue.number, type: 'blocked' });
+    }
+  });
+});
+
+// Parent-child edges
+ISSUES.forEach(issue => {
+  (issue.children || []).forEach(child => {
+    if (nodePositions[child] && nodePositions[issue.number]) {
+      // Skip if there's already a blocked-by edge between these
+      const hasBlocked = allEdges.some(e => e.type === 'blocked' &&
+        ((e.from === issue.number && e.to === child) || (e.from === child && e.to === issue.number)));
+      if (hasBlocked) return;
+
+      const from = nodePositions[issue.number];
+      const to = nodePositions[child];
+      const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+      const x1 = from.x + NODE_W, y1 = from.y + NODE_H/2;
+      const x2 = to.x, y2 = to.y + NODE_H/2;
+      const cx = (x1 + x2) / 2;
+      path.setAttribute('d', `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`);
+      path.classList.add('edge', 'parent-child');
+      path.dataset.from = issue.number;
+      path.dataset.to = child;
+      path.dataset.type = 'parent-child';
+      edgesG.appendChild(path);
+      allEdges.push({ el: path, from: issue.number, to: child, type: 'parent-child' });
+    }
+  });
+});
+
+// Draw nodes
+const allNodes = {};
+ISSUES.forEach(issue => {
+  const pos = nodePositions[issue.number];
+  if (!pos) return;
+  const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  g.classList.add('node');
+  g.dataset.number = issue.number;
+
+  const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+  rect.setAttribute('x', pos.x);
+  rect.setAttribute('y', pos.y);
+  rect.setAttribute('width', NODE_W);
+  rect.setAttribute('height', NODE_H);
+  const color = typeColor[issue.type] || typeColor.Unknown;
+  rect.setAttribute('fill', color + '18');
+  rect.setAttribute('stroke', color);
+  g.appendChild(rect);
+
+  // Number
+  const numText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  numText.setAttribute('x', pos.x + 8);
+  numText.setAttribute('y', pos.y + 16);
+  numText.setAttribute('font-size', '10');
+  numText.setAttribute('fill', color);
+  numText.setAttribute('font-weight', '600');
+  numText.textContent = '#' + issue.number;
+  g.appendChild(numText);
+
+  // Title (truncated)
+  const titleText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  titleText.setAttribute('x', pos.x + 8);
+  titleText.setAttribute('y', pos.y + 30);
+  titleText.setAttribute('font-size', '10');
+  const maxChars = 28;
+  titleText.textContent = issue.title.length > maxChars ? issue.title.substring(0, maxChars) + '...' : issue.title;
+  g.appendChild(titleText);
+
+  // State indicator
+  if (issue.state === 'CLOSED') {
+    rect.setAttribute('fill', '#3fb95018');
+    rect.setAttribute('stroke', '#3fb950');
+  }
+
+  g.addEventListener('mouseenter', (e) => showTooltip(e, issue));
+  g.addEventListener('mouseleave', hideTooltip);
+  g.addEventListener('click', () => selectNode(issue.number));
+  g.addEventListener('dblclick', () => window.open(REPO_URL + issue.number, '_blank'));
+
+  nodesG.appendChild(g);
+  allNodes[issue.number] = g;
+});
+
+// Tooltip
+const tooltip = document.getElementById('tooltip');
+function showTooltip(e, issue) {
+  const blockers = (issue.blockedBy || []).map(n => issueMap[n] ? `#${n} ${issueMap[n].title}` : `#${n}`);
+  const children = (issue.children || []).map(n => issueMap[n] ? `#${n} ${issueMap[n].title}` : `#${n}`);
+  tooltip.innerHTML = `
+    <div class="tt-title">#${issue.number} ${issue.title}</div>
+    <span class="tt-type" style="background:${(typeColor[issue.type]||typeColor.Unknown)}33;color:${typeColor[issue.type]||typeColor.Unknown}">${issue.type}</span>
+    ${blockers.length ? `<div class="tt-deps"><strong>Blocked by:</strong> ${blockers.join(', ')}</div>` : ''}
+    ${children.length ? `<div class="tt-deps"><strong>Children:</strong> ${children.join(', ')}</div>` : ''}
+  `;
+  tooltip.style.display = 'block';
+  tooltip.style.left = (e.clientX + 12) + 'px';
+  tooltip.style.top = (e.clientY + 12) + 'px';
+}
+function hideTooltip() { tooltip.style.display = 'none'; }
+
+// Selection / highlighting
+let selectedNode = null;
+function selectNode(num) {
+  const issue = issueMap[num];
+  if (!issue) return;
+  selectedNode = num;
+
+  // Find upstream and downstream
+  const upstream = new Set();
+  const downstream = new Set();
+  function findUpstream(n) {
+    const iss = issueMap[n];
+    if (!iss) return;
+    (iss.blockedBy || []).forEach(d => { if (!upstream.has(d)) { upstream.add(d); findUpstream(d); }});
+    (iss.parents || []).forEach(d => { if (!upstream.has(d)) { upstream.add(d); findUpstream(d); }});
+  }
+  function findDownstream(n) {
+    ISSUES.forEach(i => {
+      if ((i.blockedBy || []).includes(n) || (issueMap[n] && (issueMap[n].children || []).includes(i.number))) {
+        if (!downstream.has(i.number)) { downstream.add(i.number); findDownstream(i.number); }
+      }
+    });
+  }
+  findUpstream(num);
+  findDownstream(num);
+
+  const connected = new Set([num, ...upstream, ...downstream]);
+
+  // Dim everything, highlight connected
+  Object.entries(allNodes).forEach(([n, el]) => {
+    el.classList.toggle('dimmed', !connected.has(parseInt(n)));
+  });
+  allEdges.forEach(e => {
+    const isConnected = connected.has(e.from) && connected.has(e.to);
+    e.el.classList.toggle('dimmed', !isConnected);
+    e.el.classList.toggle('highlighted', isConnected);
+  });
+
+  // Show detail panel
+  showDetail(issue, upstream, downstream);
+
+  // Scroll sidebar to highlight
+  document.querySelectorAll('.wave-item').forEach(el => el.style.background = '');
+}
+
+function showDetail(issue, upstream, downstream) {
+  const detail = document.getElementById('detail');
+  const content = document.getElementById('detail-content');
+  const upList = [...upstream].map(n => issueMap[n] ? `<a class="detail-link" href="${REPO_URL}${n}" target="_blank">#${n} ${issueMap[n].title}</a>` : `#${n}`).join('');
+  const downList = [...downstream].map(n => issueMap[n] ? `<a class="detail-link" href="${REPO_URL}${n}" target="_blank">#${n} ${issueMap[n].title}</a>` : `#${n}`).join('');
+  const childList = (issue.children||[]).map(n => issueMap[n] ? `<a class="detail-link" href="${REPO_URL}${n}" target="_blank">#${n} ${issueMap[n].title}</a>` : `#${n}`).join('');
+
+  content.innerHTML = `
+    <h3>#${issue.number} ${issue.title}</h3>
+    <span class="detail-type" style="background:${(typeColor[issue.type]||typeColor.Unknown)}33;color:${typeColor[issue.type]||typeColor.Unknown}">${issue.type}</span>
+    <span style="font-size:11px;color:${issue.state==='CLOSED'?'#3fb950':'var(--text-dim)'};margin-left:8px">${issue.state}</span>
+    ${upstream.size ? `<div class="detail-section"><h4>Upstream (${upstream.size})</h4>${upList}</div>` : ''}
+    ${downstream.size ? `<div class="detail-section"><h4>Downstream (${downstream.size})</h4>${downList}</div>` : ''}
+    ${issue.children && issue.children.length ? `<div class="detail-section"><h4>Children (${issue.children.length})</h4>${childList}</div>` : ''}
+    <a class="gh-link" href="${REPO_URL}${issue.number}" target="_blank">Open on GitHub &rarr;</a>
+  `;
+  detail.style.display = 'block';
+}
+
+// Pan & zoom
+let isPanning = false, panStart = { x: 0, y: 0 }, panStartView = { x: 0, y: 0 };
+const container = document.getElementById('canvas-container');
+
+container.addEventListener('mousedown', e => {
+  if (e.target === svg || e.target === container) {
+    isPanning = true;
+    panStart = { x: e.clientX, y: e.clientY };
+    panStartView = { x: viewBox.x, y: viewBox.y };
+  }
+});
+container.addEventListener('mousemove', e => {
+  if (!isPanning) return;
+  const scale = viewBox.w / container.clientWidth;
+  viewBox.x = panStartView.x - (e.clientX - panStart.x) * scale;
+  viewBox.y = panStartView.y - (e.clientY - panStart.y) * scale;
+  updateViewBox();
+});
+container.addEventListener('mouseup', () => isPanning = false);
+container.addEventListener('mouseleave', () => isPanning = false);
+container.addEventListener('wheel', e => {
+  e.preventDefault();
+  const factor = e.deltaY > 0 ? 1.1 : 0.9;
+  const rect = container.getBoundingClientRect();
+  const mx = (e.clientX - rect.left) / rect.width;
+  const my = (e.clientY - rect.top) / rect.height;
+  const newW = viewBox.w * factor;
+  const newH = viewBox.h * factor;
+  viewBox.x += (viewBox.w - newW) * mx;
+  viewBox.y += (viewBox.h - newH) * my;
+  viewBox.w = newW;
+  viewBox.h = newH;
+  updateViewBox();
+}, { passive: false });
+
+// Search
+document.getElementById('search').addEventListener('input', function() {
+  const q = this.value.toLowerCase();
+  if (!q) {
+    Object.values(allNodes).forEach(el => el.classList.remove('dimmed'));
+    allEdges.forEach(e => { e.el.classList.remove('dimmed'); e.el.classList.remove('highlighted'); });
+    return;
+  }
+  Object.entries(allNodes).forEach(([n, el]) => {
+    const issue = issueMap[parseInt(n)];
+    const match = issue && (issue.title.toLowerCase().includes(q) || ('#'+issue.number).includes(q));
+    el.classList.toggle('dimmed', !match);
+  });
+});
+
+// Toggle edge visibility
+let showEdgeType = 'all';
+document.getElementById('toggle-edges').addEventListener('click', function() {
+  if (showEdgeType === 'all') { showEdgeType = 'blocked'; this.textContent = 'Blocked Only'; }
+  else if (showEdgeType === 'blocked') { showEdgeType = 'parent'; this.textContent = 'Parent Only'; }
+  else { showEdgeType = 'all'; this.textContent = 'All Edges'; }
+  allEdges.forEach(e => {
+    if (showEdgeType === 'all') e.el.style.display = '';
+    else if (showEdgeType === 'blocked') e.el.style.display = e.type === 'blocked' ? '' : 'none';
+    else e.el.style.display = e.type === 'parent-child' ? '' : 'none';
+  });
+});
+
+// Toggle sidebar
+document.getElementById('toggle-sidebar').addEventListener('click', function() {
+  document.getElementById('sidebar').classList.toggle('collapsed');
+  this.classList.toggle('active');
+});
+
+// Reset view
+document.getElementById('btn-reset').addEventListener('click', () => {
+  viewBox = { x: 0, y: 0, w: Math.min(svgWidth, 2000), h: Math.min(svgHeight, 1200) };
+  updateViewBox();
+  Object.values(allNodes).forEach(el => el.classList.remove('dimmed'));
+  allEdges.forEach(e => { e.el.classList.remove('dimmed', 'highlighted'); });
+  document.getElementById('detail').style.display = 'none';
+  document.getElementById('search').value = '';
+  selectedNode = null;
+});
+
+// Click canvas to deselect
+svg.addEventListener('click', e => {
+  if (e.target === svg) {
+    Object.values(allNodes).forEach(el => el.classList.remove('dimmed'));
+    allEdges.forEach(e => { e.el.classList.remove('dimmed', 'highlighted'); });
+    document.getElementById('detail').style.display = 'none';
+    selectedNode = null;
+  }
+});
+</script>
+</body>
+</html>
