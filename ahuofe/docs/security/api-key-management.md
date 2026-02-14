@@ -2,13 +2,13 @@
 
 **Issue:** #102
 **Date:** 2025-07-17
-**Scope:** copilot-media-plugins GitHub Copilot Extension
+**Scope:** plugins/ahuofe GitHub Copilot Extension
 
 ---
 
 ## Overview
 
-This document reviews API key management practices for the copilot-media-plugins project. The project integrates with **fal.ai** (requires `FAL_KEY`) and **ImageSorcery MCP** (local, no authentication required).
+This document reviews API key management practices for the plugins/ahuofe project. The project integrates with **fal.ai** (requires `FAL_KEY`) and **ImageSorcery MCP** (local, no authentication required).
 
 ## Key Inventory
 

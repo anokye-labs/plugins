@@ -88,3 +88,33 @@ These rules ensure the Anokye System operates as designed:
 6. **Epics/Features are conversations** — Living plans, not static specs
 
 This workflow creates a clear, AI-orchestrated development environment where work flows naturally from planning to implementation to completion.
+
+## Ahuofe Media Plugin Conventions
+
+The Ahuofe plugin (`ahuofe/`) handles media generation and manipulation using fal.ai cloud APIs and ImageSorcery MCP for local image processing.
+
+### Shared Module
+
+All media scripts use `ahuofe/scripts/FalAi.psm1` as the shared module. When creating new scripts, import this module and use its functions (`Invoke-FalApi`, `Wait-FalJob`, `Send-FalFile`, `Get-FalApiKey`, `ConvertTo-FalError`) instead of reimplementing HTTP logic.
+
+### Skills
+
+Ahuofe skill definitions are in `ahuofe/skills/*/SKILL.md`:
+- `fal-ai` — AI generation (text-to-image, text-to-video, image-to-video)
+- `fal-workflow` — Multi-step fal.ai pipeline orchestration
+- `image-sorcery` — Local image processing (crop, resize, detect, OCR)
+- `media-agents` — Fleet-pattern agent coordination for multi-step workflows
+
+### PowerShell Conventions
+
+- Use `#Requires -Version 5.1` at the top of scripts
+- Include comment-based help (`.SYNOPSIS`, `.DESCRIPTION`, `.PARAMETER`, `.EXAMPLE`)
+- Use `[CmdletBinding()]` and typed `[Parameter()]` attributes
+- Return structured `[PSCustomObject]` results
+- Tests use **Pester 5** in `ahuofe/tests/` organized by tier: `unit/`, `integration/`, `e2e/`, `evaluation/`, `gates/`
+
+### Error Handling
+
+- Retry transient errors (429, 5xx) with exponential backoff (handled by `Invoke-FalApi`)
+- Fail fast on permanent errors (401, 400)
+- Use `ConvertTo-FalError` to parse fal.ai error responses
