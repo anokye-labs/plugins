@@ -1,6 +1,6 @@
 # Branch Protection Configuration
 
-Recommended branch protection settings for the `main` branch of `copilot-media-plugins`.
+Recommended branch protection settings for the `main` branch of `plugins/ahuofe`.
 
 ## Required Status Checks
 

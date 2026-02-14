@@ -4,7 +4,7 @@ Thank you for your interest in contributing! This document explains how to get s
 
 ## Reporting Issues
 
-- Use [GitHub Issues](https://github.com/anokye-labs/copilot-media-plugins/issues) to report bugs or request features.
+- Use [GitHub Issues](https://github.com/anokye-labs/plugins/issues) to report bugs or request features.
 - Check existing issues before creating a new one to avoid duplicates.
 - Use the provided issue templates (bug report, feature request) when available.
 - Include steps to reproduce, expected behavior, and actual behavior for bug reports.
@@ -54,8 +54,8 @@ Closes #25
 
 ```powershell
 # Clone the repository
-git clone https://github.com/anokye-labs/copilot-media-plugins.git
-cd copilot-media-plugins
+git clone https://github.com/anokye-labs/plugins.git
+cd plugins/ahuofe
 
 # Set your API key
 $env:FAL_KEY = "your-key-here"
@@ -70,7 +70,7 @@ Install-Module -Name Pester -MinimumVersion 5.0 -Scope CurrentUser -Force
 ### Project Structure
 
 ```
-copilot-media-plugins/
+plugins/ahuofe/
 ├── scripts/          # PowerShell scripts and shared module
 │   ├── FalAi.psm1   # Shared module (auth, HTTP, uploads, queue)
 │   └── *.ps1         # Individual command scripts
@@ -211,4 +211,4 @@ Invoke-Pester ./tests/evaluation/ -Output Detailed
 
 ## Questions?
 
-Open a [discussion](https://github.com/anokye-labs/copilot-media-plugins/discussions) or file an issue if you have questions about contributing.
+Open a [discussion](https://github.com/anokye-labs/plugins/discussions) or file an issue if you have questions about contributing.

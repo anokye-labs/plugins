@@ -44,7 +44,7 @@ preventing file conflicts and enabling true parallel execution.
 ### How It Works
 
 ```
-main repo: S:\anokye-labs\copilot-media-plugins
+main repo: S:\anokye-labs\plugins/ahuofe
   │
   ├── worktree: S:\anokye-labs\worktrees\agents     (branch: wave2/agents)
   ├── worktree: S:\anokye-labs\worktrees\docs        (branch: wave2/docs)
