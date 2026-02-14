@@ -1,0 +1,83 @@
+{
+  "version": "1.0.0",
+  "updated": "2026-02-06",
+  "description": "Baseline performance metrics for media generation workflows",
+  "baselines": {
+    "text_to_image_fast": {
+      "description": "Text-to-image with flux-dev (fast model)",
+      "model": "fal-ai/flux/dev",
+      "dimensions": "1024x1024",
+      "latency_ms": {
+        "p50": 3500,
+        "p90": 6000,
+        "p99": 12000
+      },
+      "cost_usd": 0.004
+    },
+    "text_to_image_quality": {
+      "description": "Text-to-image with flux-pro (quality model)",
+      "model": "fal-ai/flux-pro/v1.1",
+      "dimensions": "1920x1080",
+      "latency_ms": {
+        "p50": 8000,
+        "p90": 15000,
+        "p99": 30000
+      },
+      "cost_usd": 0.012
+    },
+    "image_resize": {
+      "description": "Resize image to 800x600 via ImageSorcery",
+      "operation": "resize",
+      "latency_ms": {
+        "p50": 200,
+        "p90": 500,
+        "p99": 1000
+      },
+      "cost_usd": 0.0
+    },
+    "image_enhance": {
+      "description": "Sharpen + color correct via ImageSorcery",
+      "operation": "enhance",
+      "latency_ms": {
+        "p50": 500,
+        "p90": 1200,
+        "p99": 2500
+      },
+      "cost_usd": 0.0
+    },
+    "quality_validation": {
+      "description": "Run detect + get_metainfo for quality check",
+      "operation": "validate",
+      "latency_ms": {
+        "p50": 800,
+        "p90": 1500,
+        "p99": 3000
+      },
+      "cost_usd": 0.0
+    },
+    "full_pipeline": {
+      "description": "Generate + enhance + resize (3 variants) + validate",
+      "latency_ms": {
+        "p50": 15000,
+        "p90": 25000,
+        "p99": 45000
+      },
+      "cost_usd": 0.012
+    },
+    "batch_social_kit": {
+      "description": "Generate 4 social media variants in parallel",
+      "latency_ms": {
+        "p50": 12000,
+        "p90": 20000,
+        "p99": 35000
+      },
+      "cost_usd": 0.048
+    }
+  },
+  "thresholds": {
+    "max_regression_percent": 20,
+    "min_quality_score": 0.85,
+    "max_error_rate_percent": 5,
+    "max_cost_per_image_usd": 0.05
+  }
+}

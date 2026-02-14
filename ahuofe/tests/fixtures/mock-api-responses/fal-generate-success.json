@@ -1,0 +1,5 @@
+{
+  "images": [{"url": "https://fal.ai/output/test.png", "width": 1024, "height": 1024}],
+  "seed": 42,
+  "prompt": "test prompt"
+}
