@@ -2,13 +2,13 @@
 
 **Issue:** #103
 **Date:** 2025-07-17
-**Scope:** copilot-media-plugins GitHub Copilot Extension
+**Scope:** plugins/ahuofe GitHub Copilot Extension
 
 ---
 
 ## Overview
 
-This document reviews how secrets and sensitive data are handled across the copilot-media-plugins project. It covers API keys, generated content, user input, transport security, and operational practices.
+This document reviews how secrets and sensitive data are handled across the plugins/ahuofe project. It covers API keys, generated content, user input, transport security, and operational practices.
 
 ## Secret Types
 

@@ -16,8 +16,8 @@ Set up the Copilot Media Plugins extension and generate your first image.
 ### 1. Clone the Repository
 
 ```powershell
-git clone https://github.com/anokye-labs/copilot-media-plugins.git
-cd copilot-media-plugins
+git clone https://github.com/anokye-labs/plugins.git
+cd plugins/ahuofe
 ```
 
 ### 2. Configure Your fal.ai API Key

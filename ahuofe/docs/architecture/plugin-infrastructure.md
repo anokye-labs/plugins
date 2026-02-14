@@ -52,7 +52,7 @@ and manipulation capabilities through a layered plugin architecture:
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│ Repository: copilot-media-plugins                               │
+│ Repository: plugins/ahuofe                               │
 │                                                                  │
 │  skills/                                                         │
 │  ├── fal-ai/SKILL.md          # fal.ai generation skill         │

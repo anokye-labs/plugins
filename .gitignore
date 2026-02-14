@@ -35,3 +35,26 @@ node_modules/
 
 ## Coverage reports
 scripts/coverage-report.json
+
+## Ahuofe / media plugin
+*.ps1xml
+*.psd1xml
+.env.*.local
+*.env
+dist/
+build/
+out/
+secrets/
+secrets.json
+*.key
+*.pem
+credentials.json
+coverage/
+.nyc_output/
+test-results/
+*.test.log
+output/
+temp/
+*.tmp
+*.temp
+.cache/
