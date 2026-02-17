@@ -43,7 +43,9 @@ jobs:
         working-directory: tests/omanfo/e2e/automated
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           E2E_TEST_REPO: ${{ github.repository }}
+          EVAL_MODEL: ${{ secrets.EVAL_MODEL }}
         run: |
           node --loader ts-node/esm sitrep.e2e.ts
       
@@ -51,6 +53,7 @@ jobs:
         working-directory: tests/omanfo/e2e/automated
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           E2E_TEST_REPO: ${{ github.repository }}
         run: |
           node --loader ts-node/esm health.e2e.ts
@@ -59,6 +62,7 @@ jobs:
         working-directory: tests/omanfo/e2e/automated
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           E2E_TEST_REPO: ${{ github.repository }}
         run: |
           node --loader ts-node/esm whatsleft.e2e.ts
@@ -67,6 +71,7 @@ jobs:
         working-directory: tests/omanfo/e2e/automated
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           E2E_TEST_REPO: ${{ github.repository }}
           E2E_TEST_PR: '107'
         run: |
@@ -77,6 +82,7 @@ jobs:
         working-directory: tests/omanfo/e2e/automated
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           E2E_TEST_REPO: ${{ github.repository }}
         run: |
           node --loader ts-node/esm issue-creation.e2e.ts
@@ -85,6 +91,7 @@ jobs:
         working-directory: tests/omanfo/e2e/automated
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_GITHUB_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
           E2E_TEST_REPO: ${{ github.repository }}
         run: |
           node --loader ts-node/esm plan-materialize.e2e.ts

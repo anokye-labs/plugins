@@ -100,23 +100,31 @@ If you prefer to configure branch protection manually via the GitHub UI:
 
 ## Validation Workflow
 
-The validation workflow (`.github/workflows/validate-plugin.yml`) runs on all pull requests that modify:
+The validation workflow (`.github/workflows/validate-plugin.yml`) runs on pull requests targeting `main` and pushes to feature branches that modify:
 - `omanfo/**`
 - `okyeame/**`
+- `ahuofe/**`
+- `tests/**`
 - `.github/workflows/validate-plugin.yml`
 
-The workflow performs the following checks:
+The workflow runs two required jobs:
 
-| Check | Script | Purpose |
-|-------|--------|---------|
-| Manifest Consistency | `Test-ManifestConsistency.ps1` | Verify manifest.json matches actual files |
-| File Structure | `Test-FileStructure.ps1` | Validate plugin directory structure |
-| PowerShell Syntax | `Test-PowerShellSyntax.ps1` | Check all .ps1 files for syntax errors |
-| SKILL.md Quality | `Test-SkillQuality.ps1` | Verify SKILL.md format and limits |
-| Evaluation Coverage | `Test-EvalCoverage.ps1` | Ensure evaluation scenarios exist |
-| Markdown Structure | `Test-MarkdownStructure.ps1` | Validate markdown file structure |
+| Job | Checks |
+|-----|--------|
+| **Static Validation** (`validate`) | File structure, PowerShell syntax, SKILL.md quality, eval coverage, markdown structure, script test coverage |
+| **Pester Unit Tests** (`unit-tests`) | 116+ unit tests for all Okyerema scripts |
 
-All checks must pass for the PR to be mergeable.
+Both jobs must pass for PRs to be mergeable.
+
+### Branch Protection Settings
+
+| Setting | Value |
+|---------|-------|
+| Required status checks | `validate`, `unit-tests` |
+| Require branches to be up to date | ✅ Yes |
+| Required approving reviews | 1 |
+| Dismiss stale reviews | ✅ Yes |
+| Require conversation resolution | ✅ Yes |
 
 ## Troubleshooting
 

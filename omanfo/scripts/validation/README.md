@@ -4,16 +4,11 @@ This directory contains validation scripts used by the GitHub Actions workflow `
 
 ## Scripts
 
-### Test-ManifestConsistency.ps1
-Validates that `manifest.json` matches actual files on disk:
-- Every file count in manifest matches actual count
-- File structure is consistent
-
 ### Test-FileStructure.ps1
-Verifies required file structure:
-- `SKILL.md` exists in skill directory
-- `references/` directory exists with at least one `.md` file (if manifest count > 0)
-- `scripts/` directory exists with at least one `.ps1` file (if manifest count > 0)
+Verifies required file structure by scanning `skills/` directories:
+- `SKILL.md` exists in each skill directory
+- `references/` directory has `.md` files (if present)
+- `scripts/` directory has `.ps1` files (if present)
 
 ### Test-PowerShellSyntax.ps1
 Parses all `.ps1` files to ensure they have valid PowerShell syntax.
@@ -28,7 +23,6 @@ Validates `SKILL.md` quality requirements:
 Verifies evaluation file coverage:
 - Every capability has a corresponding `.eval.md` file
 - Files follow naming pattern `NN-description.eval.md`
-- Count matches manifest
 
 ### Test-MarkdownStructure.ps1
 Validates markdown structure of evaluation files:
@@ -37,14 +31,16 @@ Validates markdown structure of evaluation files:
 - Has `## Objective` section
 - Has `## Test Steps` or `## Setup` section
 
+### Test-ScriptTestCoverage.ps1
+Validates that all PowerShell scripts in skill directories have corresponding unit tests.
+
 ## Usage
 
 All scripts accept a `-PluginPath` parameter (defaults to `omanfo`):
 
 ```powershell
 # From repository root
-pwsh -File ./omanfo/scripts/validation/Test-ManifestConsistency.ps1 -PluginPath omanfo
-pwsh -File ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath okyeame
+pwsh -File ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath omanfo
 ```
 
 Scripts exit with code 0 on success, non-zero on failure.

@@ -1,12 +1,22 @@
 name: Validate Plugin
 
 on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'omanfo/**'
+      - 'okyeame/**'
+      - 'ahuofe/**'
+      - 'tests/**'
+      - '.github/workflows/validate-plugin.yml'
   push:
     branches-ignore:
       - main
     paths:
       - 'omanfo/**'
       - 'okyeame/**'
+      - 'ahuofe/**'
       - '.github/workflows/validate-plugin.yml'
 
 jobs:
@@ -27,17 +37,20 @@ jobs:
         run: |
           echo "Detecting which plugins have changes..."
           
-          # Get list of changed files
+          # For pull_request events, diff against the base branch
           # For push events, diff against the SHA before the push
-          # Use github.event.before to capture all commits in multi-commit pushes
-          # For new branches (null SHA), compare against origin/main
-          BEFORE_SHA="${{ github.event.before }}"
-          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            echo "New branch detected, comparing against origin/main"
-            git fetch origin main
-            CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git fetch origin ${{ github.base_ref }}
+            CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           else
-            CHANGED_FILES=$(git diff --name-only $BEFORE_SHA...HEAD)
+            BEFORE_SHA="${{ github.event.before }}"
+            if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+              echo "New branch detected, comparing against origin/main"
+              git fetch origin main
+              CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+            else
+              CHANGED_FILES=$(git diff --name-only $BEFORE_SHA...HEAD)
+            fi
           fi
           
           # Check if omanfo has changes
@@ -68,12 +81,7 @@ jobs:
           
           $failures = 0
           
-          # Test 1: Manifest Consistency
-          Write-Host "`n▶ Running Test-ManifestConsistency..." -ForegroundColor Blue
-          & ./omanfo/scripts/validation/Test-ManifestConsistency.ps1 -PluginPath omanfo
-          if ($LASTEXITCODE -ne 0) { $failures++ }
-          
-          # Test 2: File Structure
+          # Test 1: File Structure
           Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
           & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath omanfo
           if ($LASTEXITCODE -ne 0) { $failures++ }
@@ -125,12 +133,7 @@ jobs:
           
           $failures = 0
           
-          # Test 1: Manifest Consistency
-          Write-Host "`n▶ Running Test-ManifestConsistency..." -ForegroundColor Blue
-          & ./omanfo/scripts/validation/Test-ManifestConsistency.ps1 -PluginPath okyeame
-          if ($LASTEXITCODE -ne 0) { $failures++ }
-          
-          # Test 2: File Structure
+          # Test 1: File Structure
           Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
           & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath okyeame
           if ($LASTEXITCODE -ne 0) { $failures++ }
@@ -171,3 +174,27 @@ jobs:
             Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
             exit 1
           }
+
+  unit-tests:
+    name: Pester Unit Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force
+
+      - name: Run omanfo unit tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests/omanfo/unit'
+          $config.Output.Verbosity = 'Detailed'
+          $config.Run.Exit = $true
+          Invoke-Pester -Configuration $config

@@ -116,7 +116,7 @@ Tests skill discovery and slash command recognition:
 - Validates slash command documentation
 - Verifies supporting scripts for commands
 - Validates skill metadata
-- Checks plugin manifest.json
+- Checks plugin.json metadata
 - Verifies agent configuration files
 
 ## Test Fixtures
@@ -259,6 +259,48 @@ When adding new tests:
 8. Use Pester 5.x syntax
 9. Add `-Skip` conditions for tests requiring specific tools
 10. Document test requirements in the test file
+
+## Automated E2E Tests (Copilot SDK)
+
+Located in `tests/omanfo/e2e/automated/`. These tests use the `@github/copilot-sdk` to drive the Copilot agent programmatically with skill directories loaded.
+
+### Running
+
+```powershell
+cd tests/omanfo/e2e/automated
+npm install
+npx ts-node --esm sitrep.e2e.ts
+```
+
+### Hybrid Evaluation Framework
+
+Tests use a two-layer evaluation system (`evaluator.ts`):
+
+| Layer | When it runs | What it checks |
+|-------|-------------|----------------|
+| **Tool-call assertions** | Always | Required/forbidden tool calls (deterministic, zero-cost) |
+| **LLM-as-judge** | When `EVAL_MODEL` is set | Semantic quality of the response against a rubric |
+
+When `EVAL_MODEL` is not set, only tool-call assertions gate pass/fail. This means CI works without any LLM judge credentials.
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `E2E_TEST_REPO` | No | Target repo for E2E tests (default: `anokye-labs/plugins`) |
+| `EVAL_MODEL` | No | Model for LLM-as-judge (e.g. `gpt-4o-mini`). When unset, judge layer is skipped. |
+
+### Writing Tests
+
+```typescript
+import { runTest } from './copilot-harness.js';
+
+await runTest('My Test', '/sitrep --owner org --repo name', {
+  shouldCallTools: ['powershell'],        // tier 1: always checked
+  rubric: 'Response should summarize...', // tier 2: checked when EVAL_MODEL is set
+  minScore: 3,                            // minimum judge score (1-5)
+});
+```
 
 ## CI Integration
 

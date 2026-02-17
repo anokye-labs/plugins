@@ -92,4 +92,4 @@ Invoke-Pester ahuofe/tests/
 
 ## Version
 
-See [manifest.json](manifest.json) for current version and compatibility information.
+See [.github/plugin/plugin.json](.github/plugin/plugin.json) for current version and compatibility information.

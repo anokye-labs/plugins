@@ -139,7 +139,7 @@ Where:
 
 ```
 ahuofe/
-├── manifest.json              # Plugin metadata
+├── .github/plugin/plugin.json # Copilot CLI plugin metadata
 ├── AGENTS.md                  # This file — agent operating model
 ├── README.md                  # Plugin overview and usage
 ├── scripts/

@@ -1,0 +1,79 @@
+{
+  "name": "omanfo",
+  "description": "The Omanfo plugin — Okyeame agent, Okyerema coordinator, and project management skills for the Anokye System.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Anokye Labs"
+  },
+  "repository": "https://github.com/anokye-labs/plugins",
+  "license": "MIT",
+  "tags": [
+    "project-management",
+    "github-issues",
+    "orchestration",
+    "graphql",
+    "agent-first"
+  ],
+  "items": [
+    {
+      "path": "okyeame.agent.md",
+      "kind": "agent",
+      "usage": "recommended\n\nThe Okyeame (linguist) is the voice of the Anokye System — giving status updates, reporting on blocked issues, asking for clarity when needed, and facilitating project management via GitHub Issues."
+    },
+    {
+      "path": "skills/okyerema/SKILL.md",
+      "kind": "skill",
+      "usage": "recommended\n\nThe Okyerema (talking drummer) skill teaches agents how to create issues with organization types, build parent-child hierarchies, manipulate GitHub Projects via GraphQL, and verify relationships."
+    },
+    {
+      "path": "skills/doc-coauthoring/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nDocument co-authoring skill for collaborative document creation."
+    },
+    {
+      "path": "skills/docx/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for generating and manipulating DOCX files."
+    },
+    {
+      "path": "skills/github-issue-creator/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for creating GitHub issues with proper structure."
+    },
+    {
+      "path": "skills/internal-comms/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for internal communications."
+    },
+    {
+      "path": "skills/pdf/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for generating and manipulating PDF files."
+    },
+    {
+      "path": "skills/pptx/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for generating and manipulating PPTX presentations."
+    },
+    {
+      "path": "skills/product-management/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for product management workflows."
+    },
+    {
+      "path": "skills/productivity/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for productivity workflows."
+    },
+    {
+      "path": "skills/skill-creator/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for creating new skills."
+    },
+    {
+      "path": "skills/xlsx/SKILL.md",
+      "kind": "skill",
+      "usage": "optional\n\nSkill for generating and manipulating XLSX spreadsheets."
+    }
+  ]
+}
