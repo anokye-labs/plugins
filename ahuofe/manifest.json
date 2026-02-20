@@ -33,6 +33,13 @@
       "entryPoint": "SKILL.md",
       "references": 4,
       "scripts": 0
+    },
+    {
+      "name": "fal-image-edit",
+      "path": "skills/fal-image-edit",
+      "entryPoint": "SKILL.md",
+      "references": 2,
+      "scripts": 1
     }
   ],
   "documentation": {
