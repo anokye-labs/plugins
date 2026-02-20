@@ -175,11 +175,13 @@ mutation {
     requiresStatusChecks: true
     requiredStatusCheckContexts: $(ConvertTo-JsonArray $RequiredStatusChecks)
     requiresStrictStatusChecks: false
+    isAdminEnforced: true
   }) {
     branchProtectionRule {
       id
       pattern
       requiredStatusCheckContexts
+      isAdminEnforced
     }
   }
 }
@@ -196,11 +198,13 @@ mutation {
     requiresStatusChecks: true
     requiredStatusCheckContexts: $(ConvertTo-JsonArray $RequiredStatusChecks)
     requiresStrictStatusChecks: false
+    isAdminEnforced: true
   }) {
     branchProtectionRule {
       id
       pattern
       requiredStatusCheckContexts
+      isAdminEnforced
     }
   }
 }
@@ -274,9 +278,10 @@ else {
 }
 
 # Define required status checks
-# The job ID in the workflow is "validate" (display name is "Static Validation")
-# GitHub status checks use the job ID, not the display name
-$requiredChecks = @("validate")
+# Job IDs from workflows (GitHub uses job ID as the status check context):
+#   validate           — validate-plugin.yml (Static Validation)
+#   check-linked-issue — require-linked-issue.yml
+$requiredChecks = @("validate", "check-linked-issue")
 
 Write-Host ""
 Write-ColorOutput "▶ Required status checks to configure:" -Color Blue
@@ -292,6 +297,7 @@ if ($DryRun) {
     Write-ColorOutput "Would configure:" -Color Cyan
     Write-Host "  Repository: $Owner/$Repo"
     Write-Host "  Branch: $Branch"
+    Write-Host "  Admin enforcement: enabled"
     Write-Host "  Required status checks:"
     foreach ($check in $requiredChecks) {
         Write-Host "    - $check"
@@ -314,6 +320,7 @@ else {
         Write-Host ""
         Write-Host "  Repository: $Owner/$Repo"
         Write-Host "  Branch: $Branch"
+        Write-Host "  Admin enforcement: enabled"
         Write-Host "  Required status checks:"
         foreach ($check in $requiredChecks) {
             Write-Host "    ✓ $check"
