@@ -7,7 +7,7 @@ on:
     paths:
       - 'omanfo/**'
       - 'okyeame/**'
-      - '.github/workflows/validate-plugin.yml'
+      - '.github/workflows/**'
 
 jobs:
   validate:
