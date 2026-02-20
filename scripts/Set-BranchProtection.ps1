@@ -272,7 +272,7 @@ function Set-MergeQueueRuleset {
     }
 }
 
-
+function ConvertTo-JsonArray {
     param([string[]]$Array)
     
     if (-not $Array -or $Array.Count -eq 0) {
