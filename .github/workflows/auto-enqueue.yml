@@ -24,12 +24,21 @@ jobs:
             const requiredChecks = ['Static Validation', 'Check Linked Issue'];
             const headSha = context.payload.check_run.head_sha;
 
-            // Find open PRs targeting main whose head matches this check run
-            const { data: prs } = await github.rest.pulls.list({
+            // Helper: get the latest check run conclusion for a given name
+            function latestConclusion(checkRuns, name) {
+              const matches = checkRuns
+                .filter(r => r.name === name && r.status === 'completed')
+                .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+              return matches.length > 0 ? matches[0].conclusion : null;
+            }
+
+            // Paginate all open PRs targeting main
+            const prs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
               state: 'open',
               base: 'main',
+              per_page: 100,
             });
 
             for (const pr of prs) {
@@ -39,7 +48,7 @@ jobs:
                 continue;
               }
 
-              // Verify all required checks have passed
+              // Verify latest run of each required check passed
               const { data: checkData } = await github.rest.checks.listForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
@@ -47,7 +56,7 @@ jobs:
                 per_page: 100,
               });
               const allPassed = requiredChecks.every(name =>
-                checkData.check_runs.some(r => r.name === name && r.conclusion === 'success')
+                latestConclusion(checkData.check_runs, name) === 'success'
               );
               if (!allPassed) {
                 core.info(`PR #${pr.number}: not all required checks passed yet.`);
@@ -65,18 +74,27 @@ jobs:
                 continue;
               }
 
-              // Verify no unresolved review threads
-              const threads = await github.graphql(`
-                query($owner:String!,$repo:String!,$pr:Int!) {
-                  repository(owner:$owner,name:$repo) {
-                    pullRequest(number:$pr) {
-                      reviewThreads(first:20) { nodes { isResolved } }
+              // Paginate review threads to check for unresolved conversations
+              let hasUnresolved = false;
+              let cursor = null;
+              do {
+                const threads = await github.graphql(`
+                  query($owner:String!,$repo:String!,$pr:Int!,$cursor:String) {
+                    repository(owner:$owner,name:$repo) {
+                      pullRequest(number:$pr) {
+                        reviewThreads(first:100,after:$cursor) {
+                          nodes { isResolved }
+                          pageInfo { hasNextPage endCursor }
+                        }
+                      }
                     }
                   }
-                }
-              `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number });
+                `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number, cursor });
+                const page = threads.repository.pullRequest.reviewThreads;
+                if (page.nodes.some(t => !t.isResolved)) { hasUnresolved = true; break; }
+                cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+              } while (cursor);
 
-              const hasUnresolved = threads.repository.pullRequest.reviewThreads.nodes.some(t => !t.isResolved);
               if (hasUnresolved) {
                 core.info(`PR #${pr.number}: has unresolved review threads, skipping.`);
                 continue;

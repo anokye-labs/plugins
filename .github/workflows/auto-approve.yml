@@ -81,25 +81,44 @@ jobs:
               ref: headSha,
               per_page: 100,
             });
+
+            // Use latest completed run per check name to avoid stale results
+            function latestConclusion(checkRuns, name) {
+              const matches = checkRuns
+                .filter(r => r.name === name && r.status === 'completed')
+                .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+              return matches.length > 0 ? matches[0].conclusion : null;
+            }
+
             const allPassed = requiredChecks.every(name =>
-              checkData.check_runs.some(r => r.name === name && r.conclusion === 'success')
+              latestConclusion(checkData.check_runs, name) === 'success'
             );
             if (!allPassed) {
               core.info('Not all required checks have passed yet; auto-enqueue.yml will handle enqueueing.');
               return;
             }
 
-            const threads = await github.graphql(`
-              query($owner:String!,$repo:String!,$pr:Int!) {
-                repository(owner:$owner,name:$repo) {
-                  pullRequest(number:$pr) {
-                    reviewThreads(first:20) { nodes { isResolved } }
+            // Paginate review threads to check for unresolved conversations
+            let hasUnresolved = false;
+            let cursor = null;
+            do {
+              const threads = await github.graphql(`
+                query($owner:String!,$repo:String!,$pr:Int!,$cursor:String) {
+                  repository(owner:$owner,name:$repo) {
+                    pullRequest(number:$pr) {
+                      reviewThreads(first:100,after:$cursor) {
+                        nodes { isResolved }
+                        pageInfo { hasNextPage endCursor }
+                      }
+                    }
                   }
                 }
-              }
-            `, { owner: context.repo.owner, repo: context.repo.repo, pr: prNumber });
+              `, { owner: context.repo.owner, repo: context.repo.repo, pr: prNumber, cursor });
+              const page = threads.repository.pullRequest.reviewThreads;
+              if (page.nodes.some(t => !t.isResolved)) { hasUnresolved = true; break; }
+              cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+            } while (cursor);
 
-            const hasUnresolved = threads.repository.pullRequest.reviewThreads.nodes.some(t => !t.isResolved);
             if (hasUnresolved) {
               core.info('PR has unresolved review threads; skipping enqueue.');
               return;
