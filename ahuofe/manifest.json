@@ -33,6 +33,13 @@
       "entryPoint": "SKILL.md",
       "references": 4,
       "scripts": 0
+    },
+    {
+      "name": "fal-audio",
+      "path": "skills/fal-audio",
+      "entryPoint": "SKILL.md",
+      "references": 2,
+      "scripts": 3
     }
   ],
   "documentation": {
