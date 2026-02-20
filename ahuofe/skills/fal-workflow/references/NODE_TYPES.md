@@ -217,6 +217,147 @@ handles the mapping automatically when chaining to the next step.
 
 ---
 
+## Text Nodes
+
+Nodes that generate or manipulate text. Use these to produce dynamic prompts
+or combine text values within a workflow.
+
+### LLM (Text Generation)
+
+| Property | Value |
+|----------|-------|
+| **Node Type** | Text |
+| **Mode** | Sync |
+| **Model Endpoint** | `openrouter/router` |
+
+**Required Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `prompt` | string | User-facing instruction or question |
+
+**Optional Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `system_prompt` | string | — | System-level instruction for the model |
+| `model` | string | `google/gemini-2.5-flash` | OpenRouter model identifier |
+| `temperature` | float | model default | Sampling temperature (0.0–2.0) |
+
+**Output Schema:**
+
+```json
+{ "output": "Generated text string" }
+```
+
+**Reference output path:** `$node.output`
+
+> **Note:** Text-only node. Cannot analyze images. Use Vision LLM when you
+> need to describe or interpret an image.
+
+---
+
+### Vision LLM (Image Analysis)
+
+| Property | Value |
+|----------|-------|
+| **Node Type** | Text |
+| **Mode** | Sync |
+| **Model Endpoint** | `openrouter/router/vision` |
+
+**Required Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `prompt` | string | Question or instruction about the image(s) |
+| `image_urls` | array | One or more image URLs to analyze |
+
+**Optional Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `system_prompt` | string | — | System-level instruction |
+| `model` | string | `google/gemini-3-pro-preview` | OpenRouter vision model identifier |
+| `temperature` | float | model default | Sampling temperature (0.0–2.0) |
+| `reasoning` | bool | `false` | Enable chain-of-thought reasoning |
+
+**Output Schema:**
+
+```json
+{ "output": "Analysis or description text" }
+```
+
+**Reference output path:** `$node.output`
+
+> **Warning:** ONLY use Vision LLM when you actually need to analyze an image.
+> For all text-only tasks (e.g., generating a scene description from a topic),
+> use the plain LLM node (`openrouter/router`) — it is faster and cheaper.
+
+---
+
+### Text Concat (2 texts)
+
+| Property | Value |
+|----------|-------|
+| **Node Type** | Text |
+| **Mode** | Sync |
+| **Model Endpoint** | `fal-ai/text-concat` |
+
+**Required Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `text1` | string | First text value (may be a static string or `$node.output` reference) |
+| `text2` | string | Second text value (typically a `$node.output` reference) |
+
+**Output Schema:**
+
+```json
+{ "results": "text1text2" }
+```
+
+**Reference output path:** `$node.results`
+
+**Use cases:**
+- Add a label or prefix to a dynamic value: `text1 = "Scene: "`, `text2 = $llm.output`
+- Combine a static suffix with generated text
+
+---
+
+### Merge Text (Multiple texts)
+
+| Property | Value |
+|----------|-------|
+| **Node Type** | Text |
+| **Mode** | Sync |
+| **Model Endpoint** | `fal-ai/workflow-utilities/merge-text` |
+
+**Required Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `texts` | array | Array of text values or `$node.output` references to merge |
+
+**Optional Parameters:**
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `separator` | string | `""` | String inserted between each text value |
+
+**Output Schema:**
+
+```json
+{ "text": "merged result" }
+```
+
+**Reference output path:** `$node.text`
+
+**Use cases:**
+- Combine three or more LLM outputs into a single prompt
+- Merge labeled expert responses with a newline separator
+
+---
+
 ## Utility Nodes
 
 Utility operations used around workflow steps. These are not invoked by the
@@ -270,11 +411,16 @@ outside the workflow engine for quality checkpoints.
 
 | Source Node | Output Type | Compatible Targets |
 |-------------|-------------|--------------------|
-| text-to-image | `images[0].url` | upscale, inpaint, edit, image-to-video |
+| text-to-image | `images[0].url` | upscale, inpaint, edit, image-to-video, vision-llm |
 | text-to-video | `video.url` | *(terminal)* |
 | image-to-video | `video.url` | *(terminal)* |
-| upscale | `image.url` | inpaint, edit, image-to-video |
-| inpaint | `images[0].url` | upscale, edit, image-to-video |
-| edit | `images[0].url` | upscale, inpaint, image-to-video |
+| upscale | `image.url` | inpaint, edit, image-to-video, vision-llm |
+| inpaint | `images[0].url` | upscale, edit, image-to-video, vision-llm |
+| edit | `images[0].url` | upscale, inpaint, image-to-video, vision-llm |
+| llm | `output` (text) | text-concat, merge-text, generate (as prompt), text-to-video (as prompt) |
+| vision-llm | `output` (text) | text-concat, merge-text, generate (as prompt), text-to-video (as prompt) |
+| text-concat | `results` (text) | merge-text, generate (as prompt), llm (as prompt) |
+| merge-text | `text` (text) | generate (as prompt), llm (as prompt), text-to-video (as prompt) |
 
 Video nodes produce `video.url` which cannot chain to image-based nodes.
+Text nodes produce string values which feed into prompt parameters of generator nodes.
