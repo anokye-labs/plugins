@@ -14,7 +14,12 @@ or `Get-ModelSchema.ps1` to fetch live schemas for any model.
 | FLUX Pro Ultra | `fal-ai/flux-pro/v1.1-ultra` | Text-to-Image | ⚡ Slow | 💰💰💰 High |
 | Kling Video (T2V) | `fal-ai/kling-video/v2.6/pro/text-to-video` | Text-to-Video | ⚡ Slow | 💰💰💰 High |
 | Kling Video (I2V) | `fal-ai/kling-video/v2.6/pro/image-to-video` | Image-to-Video | ⚡ Slow | 💰💰💰 High |
-| Aura SR | `fal-ai/aura-sr` | Upscale | ⚡⚡⚡ Fast | 💰 Low |
+| Aura SR | `fal-ai/aura-sr` | Upscale (Image) | ⚡⚡⚡ Fast | 💰 Low |
+| Clarity Upscaler | `fal-ai/clarity-upscaler` | Upscale (Image) | ⚡⚡ Medium | 💰💰 Medium |
+| Creative Upscaler | `fal-ai/creative-upscaler` | Upscale (Image) | ⚡⚡ Medium | 💰💰 Medium |
+| Video Upscaler | `fal-ai/video-upscaler` | Upscale (Video) | ⚡⚡ Medium | 💰💰 Medium |
+| Topaz Video | `fal-ai/topaz/upscale/video` | Upscale (Video) | ⚡ Slow | 💰💰💰 High |
+| Bria Video | `fal-ai/bria/video/increase-resolution` | Upscale (Video) | ⚡⚡⚡ Fast | 💰💰 Medium |
 | Whisper | `fal-ai/whisper` | Speech-to-Text | ⚡⚡ Medium | 💰 Low |
 | MiniMax TTS | `fal-ai/minimax-tts` | Text-to-Speech | ⚡⚡ Medium | 💰💰 Medium |
 | Inpainting | `fal-ai/inpainting` | Image Editing | ⚡⚡ Medium | 💰 Low |
@@ -212,6 +217,293 @@ Upscale images using AI super-resolution.
 
 ---
 
+### Clarity Upscaler
+
+Upscale images 2–4× with strong detail preservation. Best for photorealistic content.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/clarity-upscaler` |
+| **Mode** | Sync or Queue |
+| **Speed** | ~5–10 seconds |
+| **Cost Tier** | Medium |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `image_url` | string | ✅ | — | URL of image to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+| `creativity` | number | | `0.35` | Creativity level (0.0–1.0) |
+| `resemblance` | number | | `0.6` | Resemblance to original (0.0–1.0) |
+| `detail` | number | | `1.0` | Detail enhancement (0.0–5.0) |
+
+**Output Format:**
+
+```json
+{
+  "image": {
+    "url": "https://v3.fal.media/files/...",
+    "width": 2048,
+    "height": 1536
+  }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1`
+
+---
+
+### Creative Upscaler
+
+Upscale images 2–4× with artistic enhancement and hallucinated detail. Best for stylized content.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/creative-upscaler` |
+| **Mode** | Sync or Queue |
+| **Speed** | ~5–10 seconds |
+| **Cost Tier** | Medium |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `image_url` | string | ✅ | — | URL of image to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+| `creativity` | number | | `0.5` | Creativity level (0.0–1.0) |
+| `resemblance` | number | | `0.5` | Resemblance to original (0.0–1.0) |
+
+**Output Format:**
+
+```json
+{
+  "image": {
+    "url": "https://v3.fal.media/files/...",
+    "width": 2048,
+    "height": 1536
+  }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1`
+
+---
+
+## Video Upscale Models
+
+### Video Upscaler (General Purpose)
+
+General-purpose video upscaling. **Default video upscale model.**
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/video-upscaler` |
+| **Mode** | Queue (recommended) |
+| **Speed** | ~30–60 seconds |
+| **Cost Tier** | Medium |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | — | URL of video to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+
+**Output Format:**
+
+```json
+{
+  "video": { "url": "https://v3.fal.media/files/.../video.mp4" }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1 -VideoUrl "..." -UpscaleType video`
+
+---
+
+### Topaz Video Upscaler
+
+**Premium quality** video upscaling using Topaz Labs AI.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/topaz/upscale/video` |
+| **Mode** | Queue (recommended) |
+| **Speed** | ~60–120 seconds |
+| **Cost Tier** | High |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | — | URL of video to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+
+**Output Format:**
+
+```json
+{
+  "video": { "url": "https://v3.fal.media/files/.../video.mp4" }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1 -VideoUrl "..." -UpscaleType video -Model "fal-ai/topaz/upscale/video"`
+
+---
+
+### Bria Video Upscaler
+
+Fast video resolution enhancement.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/bria/video/increase-resolution` |
+| **Mode** | Queue (recommended) |
+| **Speed** | ~15–30 seconds |
+| **Cost Tier** | Medium |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | — | URL of video to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+
+**Output Format:**
+
+```json
+{
+  "video": { "url": "https://v3.fal.media/files/.../video.mp4" }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1 -VideoUrl "..." -UpscaleType video -Model "fal-ai/bria/video/increase-resolution"`
+
+---
+
+### FlashVSR
+
+Real-time video super-resolution.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/flashvsr` |
+| **Mode** | Sync or Queue |
+| **Speed** | ~10–20 seconds |
+| **Cost Tier** | Medium |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | — | URL of video to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+
+**Output Format:**
+
+```json
+{
+  "video": { "url": "https://v3.fal.media/files/.../video.mp4" }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1 -VideoUrl "..." -UpscaleType video -Model "fal-ai/flashvsr"`
+
+---
+
+### SeedVR
+
+High-fidelity video upscaling with strong detail reconstruction.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/seedvr/upscale/video` |
+| **Mode** | Queue (recommended) |
+| **Speed** | ~60–120 seconds |
+| **Cost Tier** | High |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | — | URL of video to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+
+**Output Format:**
+
+```json
+{
+  "video": { "url": "https://v3.fal.media/files/.../video.mp4" }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1 -VideoUrl "..." -UpscaleType video -Model "fal-ai/seedvr/upscale/video"`
+
+---
+
+### ByteDance Upscaler
+
+Well-balanced video upscaling from ByteDance.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/bytedance-upscaler` |
+| **Mode** | Queue (recommended) |
+| **Speed** | ~30–60 seconds |
+| **Cost Tier** | Medium |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | — | URL of video to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+
+**Output Format:**
+
+```json
+{
+  "video": { "url": "https://v3.fal.media/files/.../video.mp4" }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1 -VideoUrl "..." -UpscaleType video -Model "fal-ai/bytedance-upscaler"`
+
+---
+
+### Sima Lite
+
+Lightweight video upscaling for efficient processing.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/simalabs/sima-video-upscaler-lite` |
+| **Mode** | Sync or Queue |
+| **Speed** | ~15–30 seconds |
+| **Cost Tier** | Low |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | — | URL of video to upscale |
+| `scale` | integer | | `2` | Upscale factor (2 or 4) |
+
+**Output Format:**
+
+```json
+{
+  "video": { "url": "https://v3.fal.media/files/.../video.mp4" }
+}
+```
+
+**Script:** `Invoke-FalUpscale.ps1 -VideoUrl "..." -UpscaleType video -Model "fal-ai/simalabs/sima-video-upscaler-lite"`
+
+---
+
+## Other Enhancement Models
+
 ### Inpainting
 
 Edit specific regions of an image using a mask and text prompt.
@@ -324,6 +616,11 @@ Convert text to natural-sounding speech.
 | Create a video from text | `fal-ai/kling-video/v2.6/pro/text-to-video` | Best text-to-video quality |
 | Animate a photo | `fal-ai/kling-video/v2.6/pro/image-to-video` | Best image-to-video |
 | Upscale a low-res image | `fal-ai/aura-sr` | Fast, reliable upscaling |
+| Upscale with detail preservation | `fal-ai/clarity-upscaler` | 2–4×, photorealistic detail |
+| Upscale with artistic enhancement | `fal-ai/creative-upscaler` | 2–4×, stylized/creative content |
+| Upscale a video (general) | `fal-ai/video-upscaler` | Good balance, default video model |
+| Upscale a video (premium) | `fal-ai/topaz/upscale/video` | Highest quality video upscaling |
+| Upscale a video (fast) | `fal-ai/bria/video/increase-resolution` | Fastest video upscaler |
 | Edit part of an image | `fal-ai/inpainting` | Mask-based regional editing |
 | Transcribe audio | `fal-ai/whisper` | Industry-standard STT |
 | Generate speech | `fal-ai/minimax-tts` | Natural-sounding TTS |
