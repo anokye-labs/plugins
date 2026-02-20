@@ -8,6 +8,8 @@ on:
       - 'omanfo/**'
       - 'okyeame/**'
       - '.github/workflows/**'
+  pull_request:
+    branches: [main]
   merge_group:
 
 jobs:
