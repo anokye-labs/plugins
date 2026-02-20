@@ -106,11 +106,19 @@ $env:FAL_KEY = "your-key-here"
 ### Upload Then Generate
 
 ```powershell
-Import-Module .\scripts\FalAi.psm1
-$url = Send-FalFile -FilePath ".\photo.jpg"
+# With auto-upload (new -FilePath parameter)
 .\scripts\Invoke-FalGenerate.ps1 -Prompt "Animate this" `
     -Model "fal-ai/kling-video/v2.6/pro/image-to-video" `
-    -ImageUrl $url -Queue
+    -FilePath ".\photo.jpg" -Queue
+```
+
+### Async (Non-Blocking) Submission
+
+```powershell
+$requestId = .\scripts\Invoke-FalGenerate.ps1 -Prompt "Epic battle" -Model "fal-ai/veo3.1" -Async
+# Returns immediately: "abc123-def456"
+# Check later:
+.\scripts\Get-QueueStatus.ps1 -RequestId $requestId -Model "fal-ai/veo3.1"
 ```
 
 ### Get Model Schema
@@ -234,11 +242,14 @@ with exponential backoff, up to 3 attempts.
 | `-NumImages` | int | 1 | Number of images |
 | `-Seed` | int | — | Reproducibility seed |
 | `-ImageUrl` | string | — | Input image URL |
+| `-FilePath` | string | — | Local file auto-uploaded to fal CDN; sets ImageUrl internally |
 | `-Strength` | double | — | img2img strength |
 | `-NumInferenceSteps` | int | — | Inference steps |
 | `-GuidanceScale` | double | — | CFG scale |
 | `-EnableSafetyChecker` | switch | — | Safety filter |
 | `-Queue` | switch | — | Use queue mode |
+| `-Async` | switch | — | Submit to queue and return RequestId immediately (non-blocking) |
+| `-Lifecycle` | int | — | Generated file expiration in seconds on fal CDN |
 
 ### Get-FalModel.ps1
 

@@ -88,4 +88,62 @@ Describe 'Invoke-FalGenerate' {
             }
         }
     }
+
+    Context '-FilePath auto-upload' {
+        It 'Calls Send-FalFile and uses the returned URL as ImageUrl' {
+            $tmpFile = Join-Path ([System.IO.Path]::GetTempPath()) 'test-upload.png'
+            New-MockImageFile -Path $tmpFile | Out-Null
+            try {
+                Mock Send-FalFile { return 'https://cdn.fal.ai/uploaded.png' }
+                Mock Invoke-RestMethod {
+                    return [PSCustomObject]@{
+                        images = @([PSCustomObject]@{ url = 'https://fal.ai/out.png'; width = 1024; height = 768 })
+                        seed   = 1
+                    }
+                } -ModuleName FalAi
+
+                $result = & $script:generateScript -Prompt 'animate' -FilePath $tmpFile
+                $result.Images[0].Url | Should -Be 'https://fal.ai/out.png'
+
+                Should -Invoke Send-FalFile -Times 1 -ParameterFilter {
+                    $FilePath -eq $tmpFile
+                }
+            }
+            finally {
+                if (Test-Path $tmpFile) { Remove-Item $tmpFile -Force }
+            }
+        }
+    }
+
+    Context '-Async non-blocking queue submission' {
+        It 'Returns the RequestId string immediately without polling' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{ request_id = 'async-req-001' }
+            } -ModuleName FalAi
+
+            $requestId = & $script:generateScript -Prompt 'async job' -Async
+            $requestId | Should -Be 'async-req-001'
+
+            Should -Invoke Invoke-RestMethod -ModuleName FalAi -Times 1 -ParameterFilter {
+                $Uri -match 'queue\.fal\.run' -and $Method -eq 'POST'
+            }
+        }
+    }
+
+    Context '-Lifecycle CDN expiration' {
+        It 'Includes x_fal_lifecycle in the request body' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{
+                    images = @([PSCustomObject]@{ url = 'https://fal.ai/ttl.png'; width = 512; height = 512 })
+                    seed   = 5
+                }
+            } -ModuleName FalAi
+
+            & $script:generateScript -Prompt 'expiring image' -Lifecycle 3600 | Out-Null
+
+            Should -Invoke Invoke-RestMethod -ModuleName FalAi -Times 1 -ParameterFilter {
+                $Body -and ($Body | ConvertFrom-Json).x_fal_lifecycle -eq 3600
+            }
+        }
+    }
 }
