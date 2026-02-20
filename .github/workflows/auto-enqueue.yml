@@ -1,0 +1,99 @@
+name: Auto Enqueue
+
+on:
+  check_run:
+    types: [completed]
+
+jobs:
+  auto-enqueue:
+    name: Auto Enqueue
+    # Only run when a required check succeeds — avoids unnecessary runs
+    if: |
+      github.event.check_run.conclusion == 'success' &&
+      (github.event.check_run.name == 'Static Validation' ||
+       github.event.check_run.name == 'Check Linked Issue')
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Enqueue ready PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const requiredChecks = ['Static Validation', 'Check Linked Issue'];
+            const headSha = context.payload.check_run.head_sha;
+
+            // Find open PRs targeting main whose head matches this check run
+            const { data: prs } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: 'main',
+            });
+
+            for (const pr of prs) {
+              if (pr.head.sha !== headSha) continue;
+              if (!pr.auto_merge) {
+                core.info(`PR #${pr.number}: auto-merge not enabled, skipping.`);
+                continue;
+              }
+
+              // Verify all required checks have passed
+              const { data: checkData } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: headSha,
+                per_page: 100,
+              });
+              const allPassed = requiredChecks.every(name =>
+                checkData.check_runs.some(r => r.name === name && r.conclusion === 'success')
+              );
+              if (!allPassed) {
+                core.info(`PR #${pr.number}: not all required checks passed yet.`);
+                continue;
+              }
+
+              // Verify approval
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+              });
+              if (!reviews.some(r => r.state === 'APPROVED')) {
+                core.info(`PR #${pr.number}: no approval yet.`);
+                continue;
+              }
+
+              // Verify no unresolved review threads
+              const threads = await github.graphql(`
+                query($owner:String!,$repo:String!,$pr:Int!) {
+                  repository(owner:$owner,name:$repo) {
+                    pullRequest(number:$pr) {
+                      reviewThreads(first:20) { nodes { isResolved } }
+                    }
+                  }
+                }
+              `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number });
+
+              const hasUnresolved = threads.repository.pullRequest.reviewThreads.nodes.some(t => !t.isResolved);
+              if (hasUnresolved) {
+                core.info(`PR #${pr.number}: has unresolved review threads, skipping.`);
+                continue;
+              }
+
+              // All conditions met — enqueue
+              try {
+                const result = await github.graphql(`
+                  mutation($prId:ID!) {
+                    enqueuePullRequest(input:{ pullRequestId:$prId }) {
+                      mergeQueueEntry { position state }
+                    }
+                  }
+                `, { prId: pr.node_id });
+                const entry = result.enqueuePullRequest.mergeQueueEntry;
+                core.info(`PR #${pr.number} added to merge queue at position ${entry.position} (${entry.state}).`);
+              } catch (e) {
+                core.info(`Could not enqueue PR #${pr.number} (may already be queued): ${e.message}`);
+              }
+            }
