@@ -32,8 +32,8 @@ jobs:
           # Use github.event.before to capture all commits in multi-commit pushes
           # For new branches (null SHA), compare against origin/main
           BEFORE_SHA="${{ github.event.before }}"
-          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
-            echo "New branch detected, comparing against origin/main"
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
+            echo "New branch or force-push detected, comparing against origin/main"
             git fetch origin main
             CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
           else
