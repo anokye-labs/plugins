@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
+      contents: write
     steps:
       - name: Auto approve for trusted authors
         uses: actions/github-script@v7
@@ -51,9 +52,6 @@ jobs:
             }
 
             // Enable auto-merge so PR enters the merge queue once requirements are satisfied
-            try {
-              await github.rest.pulls.updateBranch({});
-            } catch (_) {}
             await github.graphql(`
               mutation($pullRequestId: ID!) {
                 enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: MERGE }) {
