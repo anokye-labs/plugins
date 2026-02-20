@@ -203,8 +203,11 @@ with exponential backoff, up to 3 attempts.
 |-------|-------|
 | `fal-ai/flux/dev` | Good balance (default) |
 | `fal-ai/flux/schnell` | Fast (~1 second) |
-| `fal-ai/nano-banana-pro` | Best overall |
+| `fal-ai/nano-banana-pro` | Best overall (community default) |
+| `fal-ai/nano-banana-pro/edit` | Image editing with prompts |
 | `fal-ai/ideogram/v3` | Best for text rendering |
+| `fal-ai/recraft-v3` | Design-focused generation |
+| `fal-ai/bytedance/seedream/v4/edit` | Advanced image editing |
 
 ### Text-to-Video
 
@@ -217,8 +220,50 @@ with exponential backoff, up to 3 attempts.
 
 | Model | Notes |
 |-------|-------|
+| `fal-ai/bytedance/seedance/v1.5/pro/image-to-video` | Community default, includes audio |
 | `fal-ai/kling-video/v2.6/pro/image-to-video` | Best overall |
-| `fal-ai/veo3/fast` | Fast, high quality |
+| `fal-ai/kling-video/o1/image-to-video` | First/last frame support |
+| `fal-ai/veo3.1/fast/image-to-video` | High quality, fast |
+
+### Upscale
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/seedvr/upscale/image` | High-quality upscaling |
+| `fal-ai/aura-sr` | Fast super-resolution |
+
+### Audio / Music
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/elevenlabs/music` | Music generation from prompt |
+| `fal-ai/mmaudio` | Video-to-audio synthesis |
+| `fal-ai/stable-audio` | General audio generation |
+| `fal-ai/minimax-music/v2` | Music generation |
+
+### Text-to-Speech
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/elevenlabs/tts/eleven-v3` | High quality TTS |
+| `fal-ai/minimax/speech-2.6-hd` | Best quality TTS |
+| `fal-ai/minimax/speech-2.6-turbo` | Fast TTS |
+| `fal-ai/minimax/voice-clone` | Voice cloning |
+| `fal-ai/chatterbox/multilingual` | Multi-language TTS |
+
+### 3D Generation
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/hunyuan3d-v3/image-to-3d` | Image to 3D mesh |
+| `fal-ai/hyper3d/rodin/v2` | Multi-view 3D generation |
+
+### Image Processing
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/bria/background/remove` | Remove image backgrounds |
+| `fal-ai/workflow-utilities/crop-image` | Percentage-based cropping |
 
 ---
 
