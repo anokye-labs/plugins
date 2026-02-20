@@ -125,15 +125,12 @@ You need admin permissions on the repository to configure branch protection. Con
 
 ### "PR is missing a linked issue"
 
-Add a closing keyword to your PR description:
+Link an issue using either method:
 
-```
-Closes #123
-```
+1. **Development sidebar** (recommended) — click "Link an issue" in the PR sidebar
+2. **PR description** — add `Closes #N`, `Fixes #N`, or `Resolves #N`
 
-Supported keywords: `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`.
-
-The check re-runs automatically when you edit the PR description. Bot PRs (dependabot, github-actions) are exempt.
+The check queries GitHub's `closingIssuesReferences` API, so both methods are equally valid. It re-runs automatically when the PR is updated. Bot PRs (dependabot, github-actions) are exempt.
 
 ### "Failed to query branch protection rules"
 
