@@ -386,3 +386,4 @@ $seed = $genOutput.Output.seed
 |----------|---------|
 | [PIPELINE_TEMPLATES.md](references/PIPELINE_TEMPLATES.md) | Ready-to-use workflow templates |
 | [STEP_REFERENCE.md](references/STEP_REFERENCE.md) | All step types, inputs/outputs, chaining rules |
+| [EXAMPLE_WORKFLOWS.md](references/EXAMPLE_WORKFLOWS.md) | Complete production-ready example workflows |
