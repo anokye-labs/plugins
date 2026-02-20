@@ -9,8 +9,8 @@ Branch protection on `main` enforces the following rules:
 - **No direct pushes** — all changes must go through a PR, including for admins and org owners (`enforce_admins: true`)
 - **Linked issue required** — every PR must reference a GitHub issue using a closing keyword (`Closes #N`, `Fixes #N`, or `Resolves #N`)
 - **Required status checks** — the following checks must pass before a PR can merge:
-  - `validate` (Static Validation — plugin quality checks)
-  - `check-linked-issue` (linked issue enforcement)
+  - `Static Validation` (from `validate-plugin.yml`)
+  - `Check Linked Issue` (from `require-linked-issue.yml`)
 - **Required review** — at least 1 approving review; stale reviews are dismissed
 - **Conversation resolution** — all review comments must be resolved
 
@@ -73,8 +73,8 @@ The script will:
   ✓ Branch protection rule exists
 
 ▶ Required status checks to configure:
-    - validate
-    - check-linked-issue
+    - Static Validation
+    - Check Linked Issue
 
 ▶ Configuring branch protection...
 
@@ -84,8 +84,8 @@ The script will:
   Branch: main
   Admin enforcement: enabled
   Required status checks:
-    ✓ validate
-    ✓ check-linked-issue
+    ✓ Static Validation
+    ✓ Check Linked Issue
 
 PRs targeting main now require the validation workflow to pass before merging.
 
@@ -101,8 +101,8 @@ If you prefer to configure branch protection manually via the GitHub UI:
 3. Enable **Do not allow bypassing the above settings** (enforces rules for admins)
 4. Enable **Require status checks to pass before merging**
 5. Search for and select:
-   - **validate** (displays as "Static Validation")
-   - **check-linked-issue** (displays as "Check Linked Issue")
+   - **Static Validation** (from `validate-plugin.yml`)
+   - **Check Linked Issue** (from `require-linked-issue.yml`)
 6. Save the rule
 
 ## Workflows

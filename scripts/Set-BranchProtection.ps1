@@ -278,10 +278,11 @@ else {
 }
 
 # Define required status checks
-# Job IDs from workflows (GitHub uses job ID as the status check context):
-#   validate           — validate-plugin.yml (Static Validation)
-#   check-linked-issue — require-linked-issue.yml
-$requiredChecks = @("validate", "check-linked-issue")
+# GitHub matches these contexts against the job DISPLAY NAME (the `name:` field in the workflow),
+# not the job ID. Use the display name exactly as it appears in the workflow file.
+#   "Static Validation"  — validate-plugin.yml (job: validate, name: Static Validation)
+#   "Check Linked Issue" — require-linked-issue.yml (job: check-linked-issue, name: Check Linked Issue)
+$requiredChecks = @("Static Validation", "Check Linked Issue")
 
 Write-Host ""
 Write-ColorOutput "▶ Required status checks to configure:" -Color Blue

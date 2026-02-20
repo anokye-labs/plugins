@@ -1,0 +1,50 @@
+name: Auto Approve
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  auto-approve:
+    name: Auto Approve
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+    steps:
+      - name: Auto approve for trusted authors
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const trustedActors = [
+              'hoopsomuah',
+              'dependabot[bot]',
+              'renovate[bot]',
+            ];
+
+            const actor = context.payload.pull_request.user.login;
+
+            if (!trustedActors.includes(actor)) {
+              core.info(`Skipping auto-approve for untrusted actor: ${actor}`);
+              return;
+            }
+
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+            });
+
+            const alreadyApproved = reviews.some(r => r.state === 'APPROVED');
+            if (alreadyApproved) {
+              core.info('PR already has an approval, skipping.');
+              return;
+            }
+
+            await github.rest.pulls.createReview({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: context.payload.pull_request.number,
+              event: 'APPROVE',
+            });
+
+            core.info(`Auto-approved PR #${context.payload.pull_request.number} for trusted actor: ${actor}`);
