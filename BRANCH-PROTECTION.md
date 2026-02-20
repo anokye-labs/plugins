@@ -1,22 +1,22 @@
 # Branch Protection Configuration
 
-This document explains how to configure required status checks for pull requests in this repository.
+This document explains how branch protection is configured for this repository.
 
 ## Overview
 
-After the static validation workflow is stable (see [#57](https://github.com/anokye-labs/plugins/issues/57)), branch protection should be configured to require the validation workflow to pass before PRs can be merged.
+Branch protection on `main` enforces the following rules:
 
-This ensures:
-- All PRs are validated against plugin quality standards
-- Manifest consistency is verified
-- PowerShell syntax is validated
-- SKILL.md quality requirements are met
-- Evaluation coverage is complete
-- Markdown structure is correct
+- **No direct pushes** — all changes must go through a PR, including for admins and org owners (`enforce_admins: true`)
+- **Linked issue required** — every PR must reference a GitHub issue using a closing keyword (`Closes #N`, `Fixes #N`, or `Resolves #N`)
+- **Required status checks** — the following checks must pass before a PR can merge:
+  - `validate` (Static Validation — plugin quality checks)
+  - `check-linked-issue` (linked issue enforcement)
+- **Required review** — at least 1 approving review; stale reviews are dismissed
+- **Conversation resolution** — all review comments must be resolved
 
 ## Automated Configuration
 
-A PowerShell script is provided to automate the branch protection configuration via the GitHub API.
+A PowerShell script is provided to configure branch protection via the GitHub GraphQL API.
 
 ### Prerequisites
 
@@ -24,10 +24,10 @@ A PowerShell script is provided to automate the branch protection configuration 
    ```bash
    # macOS
    brew install gh
-   
+
    # Windows
    winget install --id GitHub.cli
-   
+
    # Linux
    # See https://github.com/cli/cli/blob/trunk/docs/install_linux.md
    ```
@@ -54,7 +54,8 @@ A PowerShell script is provided to automate the branch protection configuration 
 The script will:
 - ✓ Verify GitHub CLI is installed and authenticated
 - ✓ Check current branch protection status
-- ✓ Configure "Static Validation" as a required status check
+- ✓ Configure all required status checks
+- ✓ Enable admin enforcement
 - ✓ Display the applied configuration
 
 ### Example Output
@@ -69,10 +70,11 @@ The script will:
   ✓ GitHub CLI authenticated
 
 ▶ Checking current branch protection on anokye-labs/plugins (main)...
-  ℹ No branch protection rule exists
+  ✓ Branch protection rule exists
 
 ▶ Required status checks to configure:
     - validate
+    - check-linked-issue
 
 ▶ Configuring branch protection...
 
@@ -80,8 +82,10 @@ The script will:
 
   Repository: anokye-labs/plugins
   Branch: main
+  Admin enforcement: enabled
   Required status checks:
     ✓ validate
+    ✓ check-linked-issue
 
 PRs targeting main now require the validation workflow to pass before merging.
 
@@ -94,29 +98,20 @@ If you prefer to configure branch protection manually via the GitHub UI:
 
 1. Go to **Settings** → **Branches** in the repository
 2. Add or edit the branch protection rule for `main`
-3. Enable **Require status checks to pass before merging**
-4. Search for and select: **validate** (it will display as "Static Validation")
-5. Save the rule
+3. Enable **Do not allow bypassing the above settings** (enforces rules for admins)
+4. Enable **Require status checks to pass before merging**
+5. Search for and select:
+   - **validate** (displays as "Static Validation")
+   - **check-linked-issue** (displays as "Check Linked Issue")
+6. Save the rule
 
-## Validation Workflow
+## Workflows
 
-The validation workflow (`.github/workflows/validate-plugin.yml`) runs on all pull requests that modify:
-- `omanfo/**`
-- `okyeame/**`
-- `.github/workflows/validate-plugin.yml`
-
-The workflow performs the following checks:
-
-| Check | Script | Purpose |
-|-------|--------|---------|
-| Manifest Consistency | `Test-ManifestConsistency.ps1` | Verify manifest.json matches actual files |
-| File Structure | `Test-FileStructure.ps1` | Validate plugin directory structure |
-| PowerShell Syntax | `Test-PowerShellSyntax.ps1` | Check all .ps1 files for syntax errors |
-| SKILL.md Quality | `Test-SkillQuality.ps1` | Verify SKILL.md format and limits |
-| Evaluation Coverage | `Test-EvalCoverage.ps1` | Ensure evaluation scenarios exist |
-| Markdown Structure | `Test-MarkdownStructure.ps1` | Validate markdown file structure |
-
-All checks must pass for the PR to be mergeable.
+| Workflow | Trigger | Job ID | Purpose |
+|----------|---------|--------|---------|
+| `validate-plugin.yml` | Push to non-main branches | `validate` | Plugin quality checks (manifest, syntax, SKILL.md, eval coverage) |
+| `e2e-automated.yml` | Push to main | `e2e-automated` | End-to-end tests |
+| `require-linked-issue.yml` | PR targeting main | `check-linked-issue` | Verifies PR body contains `Closes/Fixes/Resolves #N` |
 
 ## Troubleshooting
 
@@ -127,6 +122,18 @@ Run `gh auth login` and follow the prompts to authenticate.
 ### "Permission denied"
 
 You need admin permissions on the repository to configure branch protection. Contact a repository administrator.
+
+### "PR is missing a linked issue"
+
+Add a closing keyword to your PR description:
+
+```
+Closes #123
+```
+
+Supported keywords: `close`, `closes`, `closed`, `fix`, `fixes`, `fixed`, `resolve`, `resolves`, `resolved`.
+
+The check re-runs automatically when you edit the PR description. Bot PRs (dependabot, github-actions) are exempt.
 
 ### "Failed to query branch protection rules"
 
@@ -139,14 +146,18 @@ Check that:
 
 After configuration, verify the setup:
 
-1. Create a test PR with an intentional validation error
-2. Confirm the "validate" check runs and fails (displays as "Static Validation")
-3. Verify the PR shows "Merging is blocked" with the failed check listed
-4. Fix the error and confirm the check passes
-5. Verify the PR becomes mergeable
+1. Create a test PR without an issue reference — confirm `check-linked-issue` fails
+2. Edit the PR body to add `Closes #N` — confirm the check re-runs and passes
+3. Confirm `enforce_admins.enabled` is `true`:
+   ```bash
+   gh api /repos/anokye-labs/plugins/branches/main/protection | jq .enforce_admins.enabled
+   ```
 
 ## Related Issues
 
+- [#170](https://github.com/anokye-labs/plugins/issues/170) - Harden main branch protection
+- [#171](https://github.com/anokye-labs/plugins/issues/171) - Enable enforce_admins on branch protection
+- [#172](https://github.com/anokye-labs/plugins/issues/172) - Add linked-issue requirement for PRs
 - [#57](https://github.com/anokye-labs/plugins/issues/57) - Add static validation workflow
 - [#53](https://github.com/anokye-labs/plugins/issues/53) - Parent issue for validation infrastructure
 
@@ -155,3 +166,4 @@ After configuration, verify the setup:
 - [GitHub Branch Protection Rules](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches)
 - [GitHub Required Status Checks](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/defining-the-mergeability-of-pull-requests/about-protected-branches#require-status-checks-before-merging)
 - [Validation Scripts Documentation](scripts/README.md#set-branchprotectionps1)
+
