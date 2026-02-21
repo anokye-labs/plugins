@@ -91,6 +91,89 @@ You can override this by explicitly setting `image_url` in the step's `params`.
 
 ---
 
+## ⚠️ Critical Guardrails
+
+These rules prevent the most common workflow construction errors.
+
+### 1. No String Interpolation in Variable References
+
+Variable references must be the **entire value** — never mix text with variables.
+
+```powershell
+# WRONG — mixing literal text with variable references will break
+params = @{ prompt = "Create image of ${input.subject} in ${input.style}" }
+
+# CORRECT — variable reference is the entire value
+params = @{ prompt = '${input.prompt}' }
+```
+
+To combine multiple values into one string, use `fal-ai/text-concat` or
+`fal-ai/workflow-utilities/merge-text` as an explicit step before the step
+that needs the combined text.
+
+---
+
+### 2. Output Reference Cheat Sheet
+
+Use this table to find the correct field path when referencing a prior step's output.
+
+| Model Type | Output Reference | Auto-injected as `image_url`? |
+|------------|-----------------|-------------------------------|
+| LLM | `$node.output` | No |
+| Text Concat | `$node.results` | No |
+| Merge Text | `$node.text` | No |
+| Image Gen (array) | `$node.images.0.url` | ✅ Yes |
+| Image Process (single) | `$node.image.url` | ✅ Yes |
+| Video | `$node.video.url` | No |
+| Music | `$node.audio_file.url` | No |
+| Frame Extract | `$node.frame.url` | No |
+
+When the engine auto-injects `image_url`, dependent steps receive it automatically.
+For all other fields, reference the prior step's output explicitly in `params`.
+
+---
+
+### 3. Pre-Output Checklist
+
+Before constructing workflow steps, verify each of the following:
+
+- [ ] Every `dependsOn` entry matches a step name that actually exists in the workflow
+- [ ] Step names match exactly (case-sensitive)
+- [ ] No circular dependencies (A → B → A will throw at validation)
+- [ ] Correct LLM type selected (`router` vs `router/vision`) for the task
+- [ ] Video steps will use queue mode (handled automatically by the engine)
+- [ ] All `image_url` values are publicly hosted URLs, not local file paths
+
+---
+
+### 4. Dependency Must Match References
+
+If a step uses output from another step, it **MUST** declare that step in
+`dependsOn`. The engine does **not** auto-detect references from `params`.
+
+```powershell
+# WRONG — 'upscale' reads from 'generate' but never declares the dependency
+@{
+    name      = 'upscale'
+    model     = 'fal-ai/aura-sr'
+    params    = @{ image_url = '${generate.images.0.url}' }
+    dependsOn = @()   # ← missing 'generate'!
+}
+
+# CORRECT — dependency is declared so the engine orders execution correctly
+@{
+    name      = 'upscale'
+    model     = 'fal-ai/aura-sr'
+    params    = @{}   # image_url auto-injected from 'generate' output
+    dependsOn = @('generate')
+}
+```
+
+Missing a `dependsOn` entry causes the engine to run the step before its
+input is available, resulting in a missing-parameter error.
+
+---
+
 ## Workflow Templates
 
 ### 1. Text-to-Image + Upscale
@@ -386,3 +469,4 @@ $seed = $genOutput.Output.seed
 |----------|---------|
 | [PIPELINE_TEMPLATES.md](references/PIPELINE_TEMPLATES.md) | Ready-to-use workflow templates |
 | [STEP_REFERENCE.md](references/STEP_REFERENCE.md) | All step types, inputs/outputs, chaining rules |
+| [EXAMPLE_WORKFLOWS.md](references/EXAMPLE_WORKFLOWS.md) | Complete production-ready example workflows |

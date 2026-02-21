@@ -141,7 +141,7 @@ The Omanfo plugin contains multiple skills and follows this structure:
 ```
 omanfo/
 ├── README.md                          # Plugin docs and usage
-├── manifest.json                      # Plugin metadata with skills array
+├── .github/plugin/plugin.json         # Copilot CLI plugin metadata
 ├── okyeame.agent.md                   # Okyeame agent persona file
 ├── .github/skills/
 │   ├── okyeame/                       # Okyeame skill

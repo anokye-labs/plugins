@@ -141,7 +141,10 @@ export class CopilotTestHarness {
 }
 
 /**
- * Helper function to run a simple test scenario
+ * Helper function to run a simple test scenario with hybrid evaluation.
+ *
+ * Tool-call assertions always run. LLM-as-judge runs when EVAL_MODEL is set.
+ * Legacy shouldContain/shouldCallTools still work for backward compat.
  */
 export async function runTest(
   testName: string,
@@ -150,10 +153,16 @@ export async function runTest(
     shouldContain?: string[];
     shouldCallTools?: string[];
     shouldNotBeEmpty?: boolean;
+    /** Semantic rubric for LLM judge (requires EVAL_MODEL env var) */
+    rubric?: string;
+    /** Minimum judge score (1-5). Default: 3 */
+    minScore?: number;
   } = {}
 ): Promise<boolean> {
+  // Dynamic import to keep evaluator optional
+  const { evaluateTestResult, reportEvalResult } = await import('./evaluator.js');
+
   const harness = new CopilotTestHarness();
-  let success = true;
 
   try {
     console.log(`\n${'='.repeat(60)}`);
@@ -171,41 +180,34 @@ export async function runTest(
     // Validate response is not empty
     if (validations.shouldNotBeEmpty !== false && !result.content) {
       console.error('❌ Validation failed: Response content is empty');
-      success = false;
+      return false;
     }
 
-    // Validate content contains expected strings
+    // Legacy shouldContain checks (deterministic)
     if (validations.shouldContain) {
       for (const expected of validations.shouldContain) {
         if (!result.content.includes(expected)) {
           console.error(`❌ Validation failed: Content does not contain "${expected}"`);
-          success = false;
-        } else {
-          console.log(`✓ Content contains "${expected}"`);
+          return false;
         }
+        console.log(`✓ Content contains "${expected}"`);
       }
     }
 
-    // Validate expected tools were called
-    if (validations.shouldCallTools) {
-      for (const toolName of validations.shouldCallTools) {
-        if (!result.toolCalls.includes(toolName)) {
-          console.error(`❌ Validation failed: Tool "${toolName}" was not called`);
-          console.error(`   Tools called: ${result.toolCalls.join(', ') || 'none'}`);
-          success = false;
-        } else {
-          console.log(`✓ Tool "${toolName}" was called`);
-        }
+    // Hybrid evaluation: tool calls + optional LLM judge
+    const evalResult = await evaluateTestResult(
+      prompt,
+      result.content,
+      result.toolCalls,
+      {
+        requiredTools: validations.shouldCallTools,
+        rubric: validations.rubric,
+        minScore: validations.minScore,
       }
-    }
+    );
 
-    if (success) {
-      console.log(`\n✅ Test "${testName}" PASSED`);
-    } else {
-      console.log(`\n❌ Test "${testName}" FAILED`);
-    }
-
-    return success;
+    reportEvalResult(testName, evalResult);
+    return evalResult.passed;
   } catch (error) {
     console.error(`❌ Test "${testName}" threw exception:`, error);
     return false;

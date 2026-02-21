@@ -125,9 +125,20 @@ If you prefer to configure branch protection manually via the GitHub UI:
 | Workflow | Trigger | Job display name | Purpose |
 |----------|---------|--------|---------|
 | `validate-plugin.yml` | Push to non-main branches; `merge_group` | `Static Validation` | Plugin quality checks (manifest, syntax, SKILL.md, eval coverage) |
+| `validate-plugin.yml` | Push to non-main branches; `merge_group` | `Pester Unit Tests` | 116+ unit tests for all Okyerema scripts |
 | `e2e-automated.yml` | Push to main | `e2e-automated` | End-to-end tests |
 | `require-linked-issue.yml` | PR targeting main | `Check Linked Issue` | Verifies PR has a linked GitHub issue |
 | `auto-approve.yml` | PR targeting main | `Auto Approve` | Approves PRs from trusted actors and enables auto-merge |
+
+### Branch Protection Settings
+
+| Setting | Value |
+|---------|-------|
+| Required status checks | `Static Validation`, `Check Linked Issue` |
+| Require branches to be up to date | ✅ Yes |
+| Required approving reviews | 1 |
+| Dismiss stale reviews | ✅ Yes |
+| Require conversation resolution | ✅ Yes |
 
 ## Troubleshooting
 

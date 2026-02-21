@@ -45,6 +45,51 @@ Describe 'Invoke-FalUpscale' {
         }
     }
 
+    Context 'Video upscale' {
+        It 'Returns output with Video.Url for video input' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{
+                    video = [PSCustomObject]@{ url = 'https://fal.ai/upscaled.mp4' }
+                }
+            } -ModuleName FalAi
+
+            $result = & $script:upscaleScript -VideoUrl 'https://fal.media/input.mp4' -UpscaleType video
+            $result | Should -BeOfType 'PSCustomObject'
+            $result.Video.Url | Should -Be 'https://fal.ai/upscaled.mp4'
+            $result.Image | Should -BeNullOrEmpty
+        }
+
+        It 'Uses video-upscaler as default model for video' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{
+                    video = [PSCustomObject]@{ url = 'https://fal.ai/upscaled.mp4' }
+                }
+            } -ModuleName FalAi
+
+            & $script:upscaleScript -VideoUrl 'https://fal.media/clip.mp4' -UpscaleType video
+
+            Should -Invoke Invoke-RestMethod -ModuleName FalAi -Times 1 -ParameterFilter {
+                $Uri -match 'fal-ai/video-upscaler' -and $Body -match '"video_url"'
+            }
+        }
+
+        It 'Accepts custom video model' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{
+                    video = [PSCustomObject]@{ url = 'https://fal.ai/topaz.mp4' }
+                }
+            } -ModuleName FalAi
+
+            $result = & $script:upscaleScript -VideoUrl 'https://fal.media/clip.mp4' `
+                -UpscaleType video -Model 'fal-ai/topaz/upscale/video'
+
+            Should -Invoke Invoke-RestMethod -ModuleName FalAi -Times 1 -ParameterFilter {
+                $Uri -match 'fal-ai/topaz/upscale/video'
+            }
+            $result.Video.Url | Should -Be 'https://fal.ai/topaz.mp4'
+        }
+    }
+
     Context 'Missing parameters' {
         It 'Has ImageUrl marked as mandatory' {
             $cmd = Get-Command $script:upscaleScript

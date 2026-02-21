@@ -47,37 +47,25 @@ $pluginDir = if ([System.IO.Path]::IsPathRooted($PluginPath)) {
 
 Write-Host "`n🔍 Validating SKILL.md quality for: $pluginDir`n" -ForegroundColor Cyan
 
-# Load manifest to get skill path
-$manifestPath = Join-Path $pluginDir "manifest.json"
-if (-not (Test-Path $manifestPath)) {
-    Write-ValidationError "manifest.json not found at: $manifestPath"
+# Discover skills by scanning skills/ directory
+$skillsDir = Join-Path $pluginDir "skills"
+if (-not (Test-Path $skillsDir)) {
+    Write-ValidationError "skills/ directory not found at: $skillsDir"
     exit 1
 }
 
-$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-
-# Support both old format (skill) and new format (skills array)
-$skillsToValidate = @()
-if ($manifest.PSObject.Properties['skills']) {
-    # New format: array of skills
-    $skillsToValidate = $manifest.skills
-} elseif ($manifest.PSObject.Properties['skill']) {
-    # Old format: single skill object
-    $skillsToValidate = @($manifest.skill)
-} else {
-    Write-ValidationError "No 'skill' or 'skills' property found in manifest"
-    exit 1
-}
+$skillDirs = @(Get-ChildItem $skillsDir -Directory)
 
 # Validate each skill
-foreach ($skill in $skillsToValidate) {
-    Write-Host "`nValidating skill: $($skill.name)" -ForegroundColor Cyan
+foreach ($dir in $skillDirs) {
+    $skillName = $dir.Name
+    $skillPath = $dir.FullName
+    Write-Host "`nValidating skill: $skillName" -ForegroundColor Cyan
     
-    $skillPath = Join-Path $pluginDir $skill.path
     $skillMd = Join-Path $skillPath "SKILL.md"
     
     if (-not (Test-Path $skillMd)) {
-        Write-ValidationError "[$($skill.name)] SKILL.md not found at: $skillMd"
+        Write-ValidationError "[$skillName] SKILL.md not found at: $skillMd"
         continue
     }
     
@@ -86,9 +74,9 @@ foreach ($skill in $skillsToValidate) {
     $lineCount = $lines.Count
     
     if ($lineCount -le 500) {
-        Write-ValidationSuccess "[$($skill.name)] SKILL.md has $lineCount lines (under 500 line limit)"
+        Write-ValidationSuccess "[$skillName] SKILL.md has $lineCount lines (under 500 line limit)"
     } else {
-        Write-ValidationError "[$($skill.name)] SKILL.md has $lineCount lines (exceeds 500 line limit)"
+        Write-ValidationError "[$skillName] SKILL.md has $lineCount lines (exceeds 500 line limit)"
     }
     
     # Check for YAML frontmatter
@@ -96,32 +84,32 @@ foreach ($skill in $skillsToValidate) {
     
     # Check if file starts with ---
     if (-not $content.StartsWith('---')) {
-        Write-ValidationError "[$($skill.name)] SKILL.md does not start with YAML frontmatter (---)"
+        Write-ValidationError "[$skillName] SKILL.md does not start with YAML frontmatter (---)"
         continue
     }
     
     # Extract frontmatter
     $frontmatterMatch = [regex]::Match($content, '(?s)^---\s*\n(.*?)\n---')
     if (-not $frontmatterMatch.Success) {
-        Write-ValidationError "[$($skill.name)] SKILL.md has invalid YAML frontmatter structure"
+        Write-ValidationError "[$skillName] SKILL.md has invalid YAML frontmatter structure"
         continue
     }
     
-    Write-ValidationSuccess "[$($skill.name)] SKILL.md has valid YAML frontmatter structure"
+    Write-ValidationSuccess "[$skillName] SKILL.md has valid YAML frontmatter structure"
     
     $frontmatter = $frontmatterMatch.Groups[1].Value
     
     # Check for required fields
     if ($frontmatter -match '^\s*name:\s*\S' -or $frontmatter -match '\n\s*name:\s*\S') {
-        Write-ValidationSuccess "[$($skill.name)] YAML frontmatter contains 'name' field"
+        Write-ValidationSuccess "[$skillName] YAML frontmatter contains 'name' field"
     } else {
-        Write-ValidationError "[$($skill.name)] YAML frontmatter missing 'name' field"
+        Write-ValidationError "[$skillName] YAML frontmatter missing 'name' field"
     }
     
     if ($frontmatter -match '^\s*description:\s*\S' -or $frontmatter -match '\n\s*description:\s*\S') {
-        Write-ValidationSuccess "[$($skill.name)] YAML frontmatter contains 'description' field"
+        Write-ValidationSuccess "[$skillName] YAML frontmatter contains 'description' field"
     } else {
-        Write-ValidationError "[$($skill.name)] YAML frontmatter missing 'description' field"
+        Write-ValidationError "[$skillName] YAML frontmatter missing 'description' field"
     }
 }
 

@@ -3,7 +3,7 @@ name: fal-ai
 description: >
   Generate images, videos, and audio using fal.ai AI models. Use when the user
   requests "generate image", "create video", "text to image", "image to video",
-  "upscale image", "edit image", "search fal models", "get model schema", or
+  "upscale image", "upscale video", "edit image", "search fal models", "get model schema", or
   similar AI generation tasks. Also covers file uploads to fal CDN and queue
   management for long-running jobs.
 metadata:
@@ -43,7 +43,7 @@ Scripts import the module automatically. No manual setup needed.
 | Script                        | Purpose                                  |
 |-------------------------------|------------------------------------------|
 | `Invoke-FalGenerate.ps1`      | Generate images from text prompts        |
-| `Invoke-FalUpscale.ps1`       | AI-powered image upscaling               |
+| `Invoke-FalUpscale.ps1`       | AI-powered image and video upscaling     |
 | `Invoke-FalInpainting.ps1`    | Image inpainting with masks              |
 | `Invoke-FalVideoGen.ps1`      | Text-to-video generation                 |
 | `Invoke-FalImageToVideo.ps1`  | Animate still images to video            |
@@ -51,6 +51,8 @@ Scripts import the module automatically. No manual setup needed.
 | `Get-FalModel.ps1`            | Get model info and OpenAPI schema        |
 | `Get-ModelSchema.ps1`         | Get model input/output schema            |
 | `Get-FalUsage.ps1`            | Check account usage and costs            |
+| `Get-FalPricing.ps1`          | Query live model pricing                 |
+| `Get-FalRequests.ps1`         | List and manage inference requests       |
 | `Get-QueueStatus.ps1`         | Check async request queue status         |
 | `Upload-ToFalCDN.ps1`         | Upload files to fal.ai CDN              |
 | `New-FalWorkflow.ps1`         | Define multi-step media workflows        |
@@ -103,14 +105,43 @@ $env:FAL_KEY = "your-key-here"
     -Queue
 ```
 
+### Image Upscaling
+
+```powershell
+# Default (Aura SR)
+.\scripts\Invoke-FalUpscale.ps1 -ImageUrl "https://example.com/photo.jpg"
+
+# With detail preservation
+.\scripts\Invoke-FalUpscale.ps1 -ImageUrl "https://..." -Model "fal-ai/clarity-upscaler" -Scale 4
+```
+
+### Video Upscaling
+
+```powershell
+# Default (general purpose)
+.\scripts\Invoke-FalUpscale.ps1 -VideoUrl "https://example.com/clip.mp4" -UpscaleType video -Queue
+
+# Premium quality with Topaz
+.\scripts\Invoke-FalUpscale.ps1 -VideoUrl "https://..." -UpscaleType video `
+    -Model "fal-ai/topaz/upscale/video" -Queue
+```
+
 ### Upload Then Generate
 
 ```powershell
-Import-Module .\scripts\FalAi.psm1
-$url = Send-FalFile -FilePath ".\photo.jpg"
+# With auto-upload (new -FilePath parameter)
 .\scripts\Invoke-FalGenerate.ps1 -Prompt "Animate this" `
     -Model "fal-ai/kling-video/v2.6/pro/image-to-video" `
-    -ImageUrl $url -Queue
+    -FilePath ".\photo.jpg" -Queue
+```
+
+### Async (Non-Blocking) Submission
+
+```powershell
+$requestId = .\scripts\Invoke-FalGenerate.ps1 -Prompt "Epic battle" -Model "fal-ai/veo3.1" -Async
+# Returns immediately: "abc123-def456"
+# Check later:
+.\scripts\Get-QueueStatus.ps1 -RequestId $requestId -Model "fal-ai/veo3.1"
 ```
 
 ### Get Model Schema
@@ -126,6 +157,56 @@ $url = Send-FalFile -FilePath ".\photo.jpg"
 .\scripts\Test-FalConnection.ps1
 # [PASS] FAL_KEY found (fal-xxxx...)
 # [PASS] API reachable (response: 245ms)
+```
+
+---
+
+## Platform Management
+
+### Query Pricing
+
+```powershell
+# List all model prices
+.\scripts\Get-FalPricing.ps1
+
+# Get pricing for a specific model
+.\scripts\Get-FalPricing.ps1 -ModelId "fal-ai/flux/dev"
+# Returns: PSCustomObject[] with .ModelId, .Price, .Unit, .Category, .PriceFormatted
+
+# Filter by category
+.\scripts\Get-FalPricing.ps1 -Category "video"
+```
+
+### Estimate Pre-Execution Cost
+
+```powershell
+# Estimate cost before running a job
+.\scripts\Measure-ApiCost.ps1 -ModelId "fal-ai/flux/dev" -Quantity 100
+# Returns: PSCustomObject with .ModelId, .Quantity, .PricePerUnit, .EstimatedCost
+
+# Estimate with unit override
+.\scripts\Measure-ApiCost.ps1 -ModelId "fal-ai/flux/dev" -Quantity 10 -Unit "image"
+```
+
+### Analyze Post-Hoc Costs
+
+```powershell
+$usage = .\scripts\Get-FalUsage.ps1 -Days 30
+.\scripts\Measure-ApiCost.ps1 -UsageData $usage -BudgetLimit 50
+# Returns cost analysis with projection, breakdown, and budget alerts
+```
+
+### Manage Requests
+
+```powershell
+# List recent requests
+.\scripts\Get-FalRequests.ps1
+
+# Filter by model with limit
+.\scripts\Get-FalRequests.ps1 -ModelId "fal-ai/flux/dev" -Limit 10
+
+# Delete payloads for a request (cleanup storage)
+.\scripts\Get-FalRequests.ps1 -Delete "req-abc123"
 ```
 
 ---
@@ -203,8 +284,11 @@ with exponential backoff, up to 3 attempts.
 |-------|-------|
 | `fal-ai/flux/dev` | Good balance (default) |
 | `fal-ai/flux/schnell` | Fast (~1 second) |
-| `fal-ai/nano-banana-pro` | Best overall |
+| `fal-ai/nano-banana-pro` | Best overall (community default) |
+| `fal-ai/nano-banana-pro/edit` | Image editing with prompts |
 | `fal-ai/ideogram/v3` | Best for text rendering |
+| `fal-ai/recraft-v3` | Design-focused generation |
+| `fal-ai/bytedance/seedream/v4/edit` | Advanced image editing |
 
 ### Text-to-Video
 
@@ -217,8 +301,74 @@ with exponential backoff, up to 3 attempts.
 
 | Model | Notes |
 |-------|-------|
+| `fal-ai/bytedance/seedance/v1.5/pro/image-to-video` | Community default, includes audio |
 | `fal-ai/kling-video/v2.6/pro/image-to-video` | Best overall |
-| `fal-ai/veo3/fast` | Fast, high quality |
+| `fal-ai/kling-video/o1/image-to-video` | First/last frame support |
+| `fal-ai/veo3.1/fast/image-to-video` | High quality, fast |
+
+### Upscale
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/aura-sr` | Fast upscaling |
+| `fal-ai/seedvr/upscale/image` | Higher quality |
+
+### Music Generation
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/ace-step` | Text-to-music, full tracks |
+| `fal-ai/stable-audio` | General audio generation |
+| `fal-ai/elevenlabs/music` | Music generation from prompt |
+| `fal-ai/mmaudio` | Video-to-audio synthesis |
+| `fal-ai/minimax-music/v2` | Music generation |
+
+### TTS (Text-to-Speech)
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/kokoro/american-english` | Natural American English voice |
+| `fal-ai/kokoro/british-english` | Natural British English voice |
+| `fal-ai/playai-tts` | Multi-voice, expressive |
+| `fal-ai/elevenlabs/tts/eleven-v3` | High quality TTS |
+| `fal-ai/minimax/speech-2.6-hd` | Best quality TTS |
+| `fal-ai/minimax/speech-2.6-turbo` | Fast TTS |
+| `fal-ai/minimax/voice-clone` | Voice cloning |
+| `fal-ai/chatterbox/multilingual` | Multi-language TTS |
+
+### 3D Generation
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/hunyuan3d-v3/image-to-3d` | Image to 3D mesh |
+| `fal-ai/hyper3d/rodin/v2` | Multi-view 3D generation |
+
+### Image Processing
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/bria/background/remove` | Remove image backgrounds |
+| `fal-ai/workflow-utilities/crop-image` | Percentage-based cropping |
+
+### Image Upscale
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/aura-sr` | Fast (default) |
+| `fal-ai/clarity-upscaler` | Detail preservation, 2–4× |
+| `fal-ai/creative-upscaler` | Artistic enhancement, 2–4× |
+
+### Video Upscale
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/video-upscaler` | General purpose (default) |
+| `fal-ai/topaz/upscale/video` | **Premium quality** |
+| `fal-ai/bria/video/increase-resolution` | Fast |
+| `fal-ai/flashvsr` | Real-time |
+| `fal-ai/seedvr/upscale/video` | High fidelity |
+| `fal-ai/bytedance-upscaler` | Good balance |
+| `fal-ai/simalabs/sima-video-upscaler-lite` | Lightweight |
 
 ---
 
@@ -234,10 +384,24 @@ with exponential backoff, up to 3 attempts.
 | `-NumImages` | int | 1 | Number of images |
 | `-Seed` | int | — | Reproducibility seed |
 | `-ImageUrl` | string | — | Input image URL |
+| `-FilePath` | string | — | Local file auto-uploaded to fal CDN; sets ImageUrl internally |
 | `-Strength` | double | — | img2img strength |
 | `-NumInferenceSteps` | int | — | Inference steps |
 | `-GuidanceScale` | double | — | CFG scale |
 | `-EnableSafetyChecker` | switch | — | Safety filter |
+| `-Queue` | switch | — | Use queue mode |
+| `-Async` | switch | — | Submit to queue and return RequestId immediately (non-blocking) |
+| `-Lifecycle` | int | — | Generated file expiration in seconds on fal CDN |
+
+### Invoke-FalUpscale.ps1
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ImageUrl` | string | *(required for image)* | URL of image to upscale |
+| `-VideoUrl` | string | *(required for video)* | URL of video to upscale |
+| `-UpscaleType` | string | `image` | Media type: `image` or `video` |
+| `-Scale` | int | `2` | Upscale factor (2 or 4) |
+| `-Model` | string | `fal-ai/aura-sr` (image) / `fal-ai/video-upscaler` (video) | Model endpoint |
 | `-Queue` | switch | — | Use queue mode |
 
 ### Get-FalModel.ps1

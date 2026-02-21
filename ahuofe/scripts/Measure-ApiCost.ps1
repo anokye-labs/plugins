@@ -1,12 +1,21 @@
 <#
 .SYNOPSIS
-    Analyze fal.ai API costs and project monthly spending.
+    Analyze fal.ai API costs and project monthly spending, or estimate pre-execution costs.
 .DESCRIPTION
-    Parses usage data (from Get-FalUsage output), calculates per-request
-    costs, projects monthly cost, and raises budget alerts.
+    Two operating modes:
+    1. Post-hoc analysis: pass -UsageData (from Get-FalUsage.ps1) to calculate
+       per-request costs, project monthly cost, and raise budget alerts.
+    2. Pre-execution estimation: pass -ModelId and -Quantity to estimate cost
+       before running a job, using live pricing from Get-FalPricing.ps1.
 .PARAMETER UsageData
     A PSCustomObject from Get-FalUsage.ps1 containing TotalCost,
     TotalRequests, ByEndpoint, StartDate, and EndDate.
+.PARAMETER ModelId
+    Model endpoint for pre-execution estimation, e.g. "fal-ai/flux/dev".
+.PARAMETER Quantity
+    Number of requests to estimate cost for (pre-execution mode).
+.PARAMETER Unit
+    Pricing unit override for estimation. Defaults to the unit from the pricing API.
 .PARAMETER BudgetLimit
     Optional monthly budget limit in USD. Warns if projected cost exceeds it.
 .PARAMETER OutputPath
@@ -16,11 +25,22 @@
     .\Measure-ApiCost.ps1 -UsageData $usage -BudgetLimit 50
 .EXAMPLE
     .\Measure-ApiCost.ps1 -UsageData $usage -OutputPath cost-report.json
+.EXAMPLE
+    .\Measure-ApiCost.ps1 -ModelId "fal-ai/flux/dev" -Quantity 100
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName = 'PostHoc')]
 param(
-    [Parameter(Mandatory)]
+    [Parameter(Mandatory, ParameterSetName = 'PostHoc')]
     [PSCustomObject]$UsageData,
+
+    [Parameter(Mandatory, ParameterSetName = 'Estimate')]
+    [string]$ModelId,
+
+    [Parameter(Mandatory, ParameterSetName = 'Estimate')]
+    [int]$Quantity,
+
+    [Parameter(ParameterSetName = 'Estimate')]
+    [string]$Unit,
 
     [double]$BudgetLimit,
 
@@ -28,6 +48,68 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+
+# Load shared module (needed for estimation mode)
+$modulePath = Join-Path $PSScriptRoot 'FalAi.psm1'
+Import-Module $modulePath -Force
+
+# ─── Pre-execution estimation mode ──────────────────────────────────────────
+if ($PSCmdlet.ParameterSetName -eq 'Estimate') {
+    Write-Host "Estimating cost for $Quantity request(s) to '$ModelId'..." -ForegroundColor Cyan
+
+    # Fetch live pricing directly via the API
+    $pricingResponse = Invoke-FalApi -Method GET -Endpoint 'https://api.fal.ai/v1/models/pricing' -RawUrl
+
+    $pricingItems = if ($pricingResponse -is [array]) {
+        $pricingResponse
+    } elseif ($pricingResponse.models) {
+        $pricingResponse.models
+    } elseif ($pricingResponse.data) {
+        $pricingResponse.data
+    } elseif ($pricingResponse.pricing) {
+        $pricingResponse.pricing
+    } else {
+        @($pricingResponse)
+    }
+
+    $match = $pricingItems | Where-Object {
+        ($_.model_id -or $_.id -or $_.endpoint_id) -and
+        ($_.model_id -eq $ModelId -or $_.id -eq $ModelId -or $_.endpoint_id -eq $ModelId)
+    } | Select-Object -First 1
+
+    $pricePerUnit = 0
+    $resolvedUnit = if ($Unit) { $Unit } else { 'request' }
+
+    if ($match) {
+        $pricePerUnit  = [double]($match.price ?? $match.cost ?? 0)
+        if (-not $Unit -and $match.unit) { $resolvedUnit = $match.unit }
+    } else {
+        Write-Warning "No pricing found for '$ModelId'. EstimatedCost will be 0."
+    }
+
+    $estimatedCost = [math]::Round($pricePerUnit * $Quantity, 6)
+
+    $output = [PSCustomObject]@{
+        ModelId       = $ModelId
+        Quantity      = $Quantity
+        Unit          = $resolvedUnit
+        PricePerUnit  = $pricePerUnit
+        EstimatedCost = $estimatedCost
+    }
+
+    Write-Host "`nCost Estimate:" -ForegroundColor Green
+    Write-Host "  Model:          $ModelId" -ForegroundColor White
+    Write-Host "  Quantity:       $Quantity" -ForegroundColor White
+    Write-Host "  Price Per Unit: `$$pricePerUnit per $resolvedUnit" -ForegroundColor White
+    Write-Host "  Estimated Cost: `$$estimatedCost" -ForegroundColor White
+
+    if ($OutputPath) {
+        $output | ConvertTo-Json -Depth 5 | Set-Content -Path $OutputPath -Encoding UTF8
+        Write-Host "Results written to $OutputPath" -ForegroundColor Green
+    }
+
+    return $output
+}
 
 # ─── Validate required fields ───────────────────────────────────────────────
 $requiredFields = @('StartDate', 'EndDate', 'TotalCost', 'TotalRequests')

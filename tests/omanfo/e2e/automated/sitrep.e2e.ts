@@ -15,8 +15,9 @@ async function main() {
     `/sitrep --owner ${owner} --repo ${repo}`,
     {
       shouldNotBeEmpty: true,
-      shouldContain: ['TotalOpen', 'GitStatus'],
-      shouldCallTools: ['Get-Sitrep']
+      shouldCallTools: ['powershell'],
+      rubric: `The response should be a project status report for ${testRepo}. It should include information about open issues, git status, or repository health. It should feel like a useful summary a developer would want to see.`,
+      minScore: 3,
     }
   );
 

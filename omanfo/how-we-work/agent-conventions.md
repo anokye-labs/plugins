@@ -316,7 +316,7 @@ gh api graphql `
 None
 
 **Next Steps:**
-Update manifest.json and verify installation
+Verify installation with `copilot plugin list`
 ```
 
 **Why:** Progress updates provide visibility and enable collaboration.

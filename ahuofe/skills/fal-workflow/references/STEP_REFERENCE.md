@@ -203,7 +203,273 @@ Generate a video directly from a text prompt (no source image).
 ```
 
 **Chains from:** Typically the first step (no image input needed).
-**Chains to:** Cannot chain to image-based steps.
+**Chains to:** extract-frame, merge-videos, merge-audio-video, *(terminal)*.
+
+---
+
+### extract-frame
+
+Extract the first or last frame from a video as a static image. Bridges video
+output into image-based steps (upscale, edit, animate).
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/ffmpeg-api/extract-frame` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 1–3s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | *auto from prior video step* | Source video |
+| `frame_type` | string | ✅ | — | `"first"` or `"last"` |
+
+**Output:**
+
+```json
+{ "frame": { "url": "https://v3.fal.media/files/.../frame.jpg" } }
+```
+
+**Chains from:** animate, video-gen — any step producing `video.url`.
+**Chains to:** upscale, edit, restyle, animate — any step accepting `image_url`.
+
+**Example:**
+
+```powershell
+@{
+    name       = "last-frame"
+    model      = "fal-ai/ffmpeg-api/extract-frame"
+    params     = @{ frame_type = "last" }
+    dependsOn  = @("scene1")
+}
+```
+
+---
+
+### merge-videos
+
+Concatenate multiple video clips into a single video in the order supplied.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/ffmpeg-api/merge-videos` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 2–10s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_urls` | string[] | ✅ | — | Ordered array of video URLs to concatenate |
+
+**Output:**
+
+```json
+{ "video": { "url": "https://v3.fal.media/files/.../merged.mp4" } }
+```
+
+**Chains from:** animate, video-gen — depends on multiple video-producing steps.
+**Chains to:** merge-audio-video, or terminal.
+
+**Example:**
+
+```powershell
+@{
+    name       = "final-cut"
+    model      = "fal-ai/ffmpeg-api/merge-videos"
+    params     = @{
+        video_urls = @("$($steps['scene1'].video.url)", "$($steps['scene2'].video.url)")
+    }
+    dependsOn  = @("scene1", "scene2")
+}
+```
+
+---
+
+### merge-audio-video
+
+Overlay an audio track onto a video. Audio loops if shorter than the video and
+is trimmed if longer.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/ffmpeg-api/merge-audio-video` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 2–10s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | *auto from prior video step* | Source video |
+| `audio_url` | string | ✅ | — | Audio track URL to overlay |
+
+**Output:**
+
+```json
+{ "video": { "url": "https://v3.fal.media/files/.../output.mp4" } }
+```
+
+**Chains from:** animate, video-gen, merge-videos — any step producing `video.url`.
+**Chains to:** *(terminal)*
+
+**Example:**
+
+```powershell
+@{
+    name       = "with-soundtrack"
+    model      = "fal-ai/ffmpeg-api/merge-audio-video"
+    params     = @{ audio_url = "https://cdn.example.com/music.mp3" }
+    dependsOn  = @("final-cut")
+}
+```
+
+---
+
+### llm (Text Generation)
+
+Generate text from a prompt using a language model.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `openrouter/router` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 1–5s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prompt` | string | ✅ | — | User instruction or question |
+| `system_prompt` | string | | — | System-level instruction |
+| `model` | string | | `google/gemini-2.5-flash` | OpenRouter model identifier |
+| `temperature` | float | | model default | Sampling temperature (0.0–2.0) |
+
+**Output:**
+
+```json
+{ "output": "Generated text string" }
+```
+
+**Reference output path:** `$node.output`
+
+**Chains from:** Any step — `llm` typically starts a workflow or follows another text node.
+**Chains to:** text-concat, merge-text, generate (passes output as `prompt`).
+
+> **Note:** Text-only. Use `vision-llm` when you need to analyze an image.
+
+---
+
+### vision-llm (Image Analysis)
+
+Analyze one or more images and produce a text description or answer.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `openrouter/router/vision` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 2–8s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prompt` | string | ✅ | — | Question or instruction about the image(s) |
+| `image_urls` | array | ✅ | — | Image URLs to analyze |
+| `system_prompt` | string | | — | System-level instruction |
+| `model` | string | | `google/gemini-3-pro-preview` | OpenRouter vision model identifier |
+| `temperature` | float | | model default | Sampling temperature (0.0–2.0) |
+| `reasoning` | bool | | `false` | Enable chain-of-thought reasoning |
+
+**Output:**
+
+```json
+{ "output": "Analysis or description text" }
+```
+
+**Reference output path:** `$node.output`
+
+**Chains from:** generate, upscale, edit — any step producing an image URL.
+**Chains to:** text-concat, merge-text, generate (passes output as `prompt`).
+
+> **Warning:** ONLY use `vision-llm` when you need to analyze an image. For
+> all text-only tasks use the plain `llm` step — it is faster and cheaper.
+
+---
+
+### text-concat (Concatenate 2 texts)
+
+Concatenate exactly two text values into one.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/text-concat` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | <1s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text1` | string | ✅ | — | First text (static string or `$node.output` reference) |
+| `text2` | string | ✅ | — | Second text (typically a `$node.output` reference) |
+
+**Output:**
+
+```json
+{ "results": "text1text2" }
+```
+
+**Reference output path:** `$node.results`
+
+**Chains from:** llm, vision-llm — receives `$node.output` as `text1` or `text2`.
+**Chains to:** merge-text, generate (passes `results` as `prompt`).
+
+**Common pattern — Label + dynamic value:**
+
+```json
+{ "text1": "Cinematic scene: ", "text2": "$llm_step.output" }
+```
+
+---
+
+### merge-text (Merge 3+ texts)
+
+Merge an array of text values using a separator.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/workflow-utilities/merge-text` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | <1s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `texts` | array | ✅ | — | Array of text values or `$node.output` references |
+| `separator` | string | | `""` | String inserted between each value |
+
+**Output:**
+
+```json
+{ "text": "merged result" }
+```
+
+**Reference output path:** `$node.text`
+
+**Chains from:** llm, vision-llm, text-concat — receives output references in the `texts` array.
+**Chains to:** generate (passes `text` as `prompt`), llm (passes `text` as `prompt`).
+
+**Common pattern — Combine labeled expert outputs:**
+
+```json
+{
+  "texts": ["$expert1.results", "$expert2.results", "$expert3.results"],
+  "separator": "\n\n"
+}
+```
 
 ---
 
@@ -215,12 +481,19 @@ Source output → Target input compatibility:
 
 | Source Step | Output Format | Compatible Targets |
 |------------|---------------|--------------------|
-| generate | `images[0].url` | upscale, edit, animate, restyle |
-| upscale | `image.url` | animate, edit, restyle |
-| edit | `images[0].url` | upscale, animate, restyle |
-| restyle | `images[0].url` | upscale, animate |
-| animate | `video.url` | *(terminal — no image output)* |
-| video-gen | `video.url` | *(terminal — no image output)* |
+| generate | `images[0].url` | upscale, edit, animate, restyle, vision-llm |
+| upscale | `image.url` | animate, edit, restyle, vision-llm |
+| edit | `images[0].url` | upscale, animate, restyle, vision-llm |
+| restyle | `images[0].url` | upscale, animate, vision-llm |
+| animate | `video.url` | extract-frame, merge-videos, merge-audio-video |
+| video-gen | `video.url` | extract-frame, merge-videos, merge-audio-video |
+| extract-frame | `frame.url` (image) | upscale, edit, restyle, animate |
+| merge-videos | `video.url` | merge-audio-video, *(terminal)* |
+| merge-audio-video | `video.url` | *(terminal)* |
+| llm | `output` (text) | text-concat, merge-text, generate, video-gen |
+| vision-llm | `output` (text) | text-concat, merge-text, generate, video-gen |
+| text-concat | `results` (text) | merge-text, generate, llm |
+| merge-text | `text` (text) | generate, llm, video-gen |
 
 ### Auto-Injection Rules
 
@@ -228,8 +501,12 @@ The workflow engine in `New-FalWorkflow.ps1` auto-injects output from
 the **last dependency** into the dependent step:
 
 1. If prior step has `images[]` → injects `images[0].url` as `image_url`
-2. If prior step has `video.url` → injects `video.url` as `image_url`
-3. Explicit `image_url` in step `params` overrides auto-injection
+2. If prior step has `image.url` → injects `image.url` as `image_url`
+3. If prior step has `frame.url` → injects `frame.url` as `image_url`
+4. If prior step has `video.url` → injects `video.url` as `video_url`
+5. Explicit parameters in step `params` override auto-injection
+
+Each step produces exactly one output type, so rules 1–4 are mutually exclusive.
 
 ### Invalid Chains
 
@@ -237,10 +514,13 @@ These combinations will fail:
 
 | Chain | Why It Fails |
 |-------|-------------|
-| animate → upscale | Animate outputs video, upscale expects image |
-| animate → edit | Animate outputs video, edit expects image |
-| video-gen → upscale | Video output, image input expected |
+| animate → upscale | Animate outputs video, upscale expects image — use extract-frame first |
+| animate → edit | Animate outputs video, edit expects image — use extract-frame first |
+| video-gen → upscale | Video output, image input expected — use extract-frame first |
 | edit without mask_url | Inpainting requires both image and mask |
+| merge-videos with single URL | Provide at least two URLs in `video_urls` |
+| vision-llm without image_urls | Vision LLM requires at least one image URL |
+| llm → vision-llm (no image) | llm output is text, vision-llm needs image URLs |
 
 ### Dependency Rules
 
@@ -300,8 +580,19 @@ Note the singular `image` vs. plural `images`.
 
 | Parameter | Used By | Description |
 |-----------|---------|-------------|
-| `prompt` | All except upscale | Text description or guidance |
+| `prompt` | All except upscale, extract-frame, merge-videos, merge-audio-video, text-concat, merge-text | Text description or guidance |
+| `system_prompt` | llm, vision-llm | System-level instruction for the model |
+| `model` | llm, vision-llm | OpenRouter model identifier |
+| `temperature` | llm, vision-llm | Sampling temperature (0.0–2.0) |
 | `image_url` | upscale, edit, animate, restyle | Source image (auto-injected) |
+| `image_urls` | vision-llm | Images to analyze (array) |
+| `text1`, `text2` | text-concat | Text values to concatenate |
+| `texts` | merge-text | Array of text values to merge |
+| `separator` | merge-text | Delimiter between merged values |
+| `video_url` | extract-frame, merge-audio-video | Source video (auto-injected from video step) |
+| `video_urls` | merge-videos | Ordered array of video URLs to concatenate |
+| `audio_url` | merge-audio-video | Audio track to overlay |
+| `frame_type` | extract-frame | `"first"` or `"last"` frame to extract |
 | `image_size` | generate | Output dimensions preset |
 | `seed` | generate, edit, restyle | Reproducibility |
 | `strength` | edit, restyle | Transform intensity |
@@ -320,7 +611,11 @@ Note the singular `image` vs. plural `images`.
 | `Circular dependency detected` | Any | `dependsOn` forms a loop | Remove the circular reference |
 | `depends on unknown step` | Any | Typo in `dependsOn` name | Check step names match exactly |
 | `image_url is required` | upscale, edit, animate | No prior step output or empty result | Verify prior step produces images |
+| `image_urls is required` | vision-llm | No image URLs provided | Add `image_urls` array to step params |
+| `video_url is required` | extract-frame, merge-audio-video | No prior video step or empty result | Verify prior step produces a video |
+| `video_urls is required` | merge-videos | Missing or empty `video_urls` array | Provide at least two video URLs |
 | `mask_url is required` | edit | Missing mask parameter | Add `mask_url` to edit step params |
+| `audio_url is required` | merge-audio-video | Missing audio parameter | Add `audio_url` to merge-audio-video step params |
 | `Job timed out` | animate, video-gen | Video generation exceeded timeout | Retry — video gen can be slow |
 | `HTTP 422` | Any | Invalid parameters for model | Check model schema with `Get-FalModel.ps1` |
 | `HTTP 429` | Any | Rate limited | Auto-retried; reduce request frequency |
