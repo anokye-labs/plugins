@@ -77,9 +77,10 @@ Describe 'Invoke-FalGenerate' {
     Context 'Error handling' {
         It 'Throws when FAL_KEY is not set' {
             $env:FAL_KEY = $null
-            Push-Location $env:TEMP
+            $tempRoot = [System.IO.Path]::GetTempPath()
+            Push-Location $tempRoot
             try {
-                $envFile = Join-Path $env:TEMP '.env'
+                $envFile = Join-Path $tempRoot '.env'
                 if (Test-Path $envFile) { Remove-Item $envFile -Force }
                 { & $script:generateScript -Prompt 'should fail' } | Should -Throw '*FAL_KEY*'
             }
