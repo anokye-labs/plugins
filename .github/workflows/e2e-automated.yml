@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'omanfo/skills/**'
+      - '.github/skills/**'
       - 'tests/omanfo/e2e/automated/**'
       - '.github/workflows/e2e-automated.yml'
   workflow_dispatch:

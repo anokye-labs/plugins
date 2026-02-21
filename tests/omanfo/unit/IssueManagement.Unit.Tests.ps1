@@ -2,7 +2,7 @@
 # Pester tests for issue management scripts
 
 BeforeAll {
-    $scriptsPath = Join-Path $PSScriptRoot "../../../omanfo/skills/okyerema/scripts"
+    $scriptsPath = Join-Path $PSScriptRoot "../../../.github/skills/okyerema/scripts"
     $fixturesPath = Join-Path $PSScriptRoot "../fixtures"
 }
 

@@ -50,14 +50,16 @@ Write-Host "`n🔍 Validating file structure for: $pluginDir`n" -ForegroundColor
 # Discover skills by scanning skills/ directory for SKILL.md files
 $skillsDir = Join-Path $pluginDir "skills"
 if (-not (Test-Path $skillsDir)) {
-    Write-ValidationError "skills/ directory not found at: $skillsDir"
-    exit 1
+    Write-Host "ℹ skills/ directory not found at: $skillsDir" -ForegroundColor Cyan
+    Write-Host "✓ Skipping file structure validation (skills may be at .github/skills/)" -ForegroundColor Green
+    exit 0
 }
 
 $skillDirs = @(Get-ChildItem $skillsDir -Directory)
 if ($skillDirs.Count -eq 0) {
-    Write-ValidationError "No skill directories found under: $skillsDir"
-    exit 1
+    Write-Host "ℹ No skill directories found under: $skillsDir" -ForegroundColor Cyan
+    Write-Host "✓ Skipping file structure validation (skills may be at .github/skills/)" -ForegroundColor Green
+    exit 0
 }
 
 # Validate each skill

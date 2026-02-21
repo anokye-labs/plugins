@@ -4,10 +4,11 @@
 
 BeforeAll {
     # Get the plugin root directory
-    # From tests/omanfo/ we need to go up to repo root, then to omanfo/
+    # From tests/omanfo/ we need to go up to repo root
     $repoRoot = Split-Path -Parent (Split-Path -Parent $PSScriptRoot)
     $script:PluginRoot = Join-Path $repoRoot "omanfo"
-    $script:SkillsPath = Join-Path $script:PluginRoot "skills"
+    $script:SkillsPath = Join-Path $repoRoot ".github/skills"
+    $script:AgentsPath = Join-Path $repoRoot ".github/agents"
     
     # Expected skills from marketplace.json
     $script:ExpectedSkills = @(
@@ -39,7 +40,7 @@ BeforeAll {
 }
 
 Describe "Plugin Directory Structure" {
-    It "Should have skills directory" {
+    It "Should have .github/skills directory" {
         Test-Path $script:SkillsPath | Should -Be $true
     }
     
@@ -219,13 +220,13 @@ Describe "Plugin Metadata Validation" {
 
 Describe "Agent Configuration Files" {
     Context "Agent Markdown Files" {
-        It "Should have okyeame.agent.md in plugin root" {
-            $agentMd = Join-Path $script:PluginRoot "okyeame.agent.md"
+        It "Should have okyeame.agent.md in .github/agents/" {
+            $agentMd = Join-Path $script:AgentsPath "okyeame.agent.md"
             Test-Path $agentMd | Should -Be $true
         }
         
-        It "Should have okyerema agent.md in skill directory" {
-            $agentMd = Join-Path $script:SkillsPath "okyerema/okyerema.agent.md"
+        It "Should have okyerema.agent.md in .github/agents/" {
+            $agentMd = Join-Path $script:AgentsPath "okyerema.agent.md"
             Test-Path $agentMd | Should -Be $true
         }
     }

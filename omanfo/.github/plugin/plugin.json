@@ -16,62 +16,67 @@
   ],
   "items": [
     {
-      "path": "okyeame.agent.md",
+      "path": ".github/agents/okyeame.agent.md",
       "kind": "agent",
       "usage": "recommended\n\nThe Okyeame (linguist) is the voice of the Anokye System — giving status updates, reporting on blocked issues, asking for clarity when needed, and facilitating project management via GitHub Issues."
     },
     {
-      "path": "skills/okyerema/SKILL.md",
+      "path": ".github/agents/okyerema.agent.md",
+      "kind": "agent",
+      "usage": "optional\n\nThe Okyerema (master drummer) sets the rhythm — configuring agentic workflows, CI/CD pipelines, patrol schedules, and automation scaffolding."
+    },
+    {
+      "path": ".github/skills/okyerema/SKILL.md",
       "kind": "skill",
       "usage": "recommended\n\nThe Okyerema (talking drummer) skill teaches agents how to create issues with organization types, build parent-child hierarchies, manipulate GitHub Projects via GraphQL, and verify relationships."
     },
     {
-      "path": "skills/doc-coauthoring/SKILL.md",
+      "path": ".github/skills/doc-coauthoring/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nDocument co-authoring skill for collaborative document creation."
     },
     {
-      "path": "skills/docx/SKILL.md",
+      "path": ".github/skills/docx/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for generating and manipulating DOCX files."
     },
     {
-      "path": "skills/github-issue-creator/SKILL.md",
+      "path": ".github/skills/github-issue-creator/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for creating GitHub issues with proper structure."
     },
     {
-      "path": "skills/internal-comms/SKILL.md",
+      "path": ".github/skills/internal-comms/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for internal communications."
     },
     {
-      "path": "skills/pdf/SKILL.md",
+      "path": ".github/skills/pdf/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for generating and manipulating PDF files."
     },
     {
-      "path": "skills/pptx/SKILL.md",
+      "path": ".github/skills/pptx/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for generating and manipulating PPTX presentations."
     },
     {
-      "path": "skills/product-management/SKILL.md",
+      "path": ".github/skills/product-management/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for product management workflows."
     },
     {
-      "path": "skills/productivity/SKILL.md",
+      "path": ".github/skills/productivity/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for productivity workflows."
     },
     {
-      "path": "skills/skill-creator/SKILL.md",
+      "path": ".github/skills/skill-creator/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for creating new skills."
     },
     {
-      "path": "skills/xlsx/SKILL.md",
+      "path": ".github/skills/xlsx/SKILL.md",
       "kind": "skill",
       "usage": "optional\n\nSkill for generating and manipulating XLSX spreadsheets."
     }
