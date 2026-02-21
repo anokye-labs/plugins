@@ -1,0 +1,12 @@
+{
+  "servers": {
+    "image-sorcery": {
+      "type": "stdio",
+      "command": "python",
+      "args": ["-m", "image_sorcery.server"],
+      "env": {
+        "MODELS_DIR": "${workspaceFolder}/models"
+      }
+    }
+  }
+}

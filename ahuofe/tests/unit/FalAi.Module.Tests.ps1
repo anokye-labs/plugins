@@ -33,9 +33,10 @@ Describe 'FalAi Module' {
         It 'Throws when FAL_KEY is not set and no .env file exists' {
             $env:FAL_KEY = $null
             # Run in a temp directory with no .env
-            Push-Location $env:TEMP
+            $tempRoot = [System.IO.Path]::GetTempPath()
+            Push-Location $tempRoot
             try {
-                $envFile = Join-Path $env:TEMP '.env'
+                $envFile = Join-Path $tempRoot '.env'
                 if (Test-Path $envFile) { Remove-Item $envFile -Force }
                 { Get-FalApiKey } | Should -Throw '*FAL_KEY not found*'
             }
@@ -46,7 +47,7 @@ Describe 'FalAi Module' {
 
         It 'Reads from .env file when $env:FAL_KEY is not set' {
             $env:FAL_KEY = $null
-            $tempDir = Join-Path $env:TEMP "fal-test-$([guid]::NewGuid().ToString('N').Substring(0,8))"
+            $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "fal-test-$([guid]::NewGuid().ToString('N').Substring(0,8))"
             New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
             'FAL_KEY=env-file-key-999' | Set-Content (Join-Path $tempDir '.env')
             Push-Location $tempDir
@@ -62,7 +63,7 @@ Describe 'FalAi Module' {
 
         It 'Strips quotes from .env value' {
             $env:FAL_KEY = $null
-            $tempDir = Join-Path $env:TEMP "fal-test-$([guid]::NewGuid().ToString('N').Substring(0,8))"
+            $tempDir = Join-Path ([System.IO.Path]::GetTempPath()) "fal-test-$([guid]::NewGuid().ToString('N').Substring(0,8))"
             New-Item -ItemType Directory -Path $tempDir -Force | Out-Null
             'FAL_KEY="quoted-key-value"' | Set-Content (Join-Path $tempDir '.env')
             Push-Location $tempDir
@@ -190,7 +191,7 @@ Describe 'FalAi Module' {
                 }
             } -ModuleName FalAi
 
-            $testFile = Join-Path $env:TEMP "fal-test-upload-$([guid]::NewGuid().ToString('N').Substring(0,8)).png"
+            $testFile = Join-Path ([System.IO.Path]::GetTempPath()) "fal-test-upload-$([guid]::NewGuid().ToString('N').Substring(0,8)).png"
             New-MockImageFile -Path $testFile
 
             try {
