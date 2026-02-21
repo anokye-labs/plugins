@@ -118,10 +118,9 @@ for ($i = 0; $i -lt $scenes.Count; $i++) {
 # ── Step 3: Merge all scene videos ────────────────────────────────────────────
 Write-Host "Merging $($sceneVideos.Count) scenes..."
 
-$mergeResult = Invoke-FalApi `
-    -Endpoint 'fal-ai/ffmpeg-api/merge-videos' `
-    -Body @{ video_urls = $sceneVideos } `
-    -Queue
+$mergeResult = Wait-FalJob `
+    -Model 'fal-ai/ffmpeg-api/merge-videos' `
+    -Body @{ video_urls = $sceneVideos }
 
 $finalUrl = $mergeResult.video.url
 Write-Host "✅ Final film: $finalUrl"
@@ -253,10 +252,9 @@ foreach ($destination in $Destinations) {
 # ── Step 3: Merge all destination videos ──────────────────────────────────────
 Write-Host "Compiling campaign video..."
 
-$mergeResult = Invoke-FalApi `
-    -Endpoint 'fal-ai/ffmpeg-api/merge-videos' `
-    -Body @{ video_urls = $destVideos } `
-    -Queue
+$mergeResult = Wait-FalJob `
+    -Model 'fal-ai/ffmpeg-api/merge-videos' `
+    -Body @{ video_urls = $destVideos }
 
 $finalUrl = $mergeResult.video.url
 Write-Host "✅ Campaign video: $finalUrl"
@@ -368,10 +366,9 @@ $rodinBody = @{
     output_format = 'glb'
 }
 
-$meshResult = Invoke-FalApi `
-    -Endpoint 'fal-ai/hyper3d/rodin/v2' `
-    -Body $rodinBody `
-    -Queue
+$meshResult = Wait-FalJob `
+    -Model 'fal-ai/hyper3d/rodin/v2' `
+    -Body $rodinBody
 
 $glbUrl = $meshResult.model_file.url
 Write-Host "✅ 3D asset (.glb): $glbUrl"
