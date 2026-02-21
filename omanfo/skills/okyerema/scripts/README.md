@@ -215,6 +215,32 @@ Build parent-child relationships using GitHub's sub-issues API.
 ### Test-Hierarchy.ps1
 Validate issue hierarchy structure and relationships.
 
+### Get-DagCompletionReport.ps1
+
+Generate a DAG progress completion report for issue hierarchies.
+
+**Usage:**
+```powershell
+# Report on all roots
+./Get-DagCompletionReport.ps1 -Owner "anokye-labs" -Repo "plugins"
+
+# Focus on a specific root
+./Get-DagCompletionReport.ps1 -Owner "anokye-labs" -Repo "plugins" -RootNumber 10 -Brief
+```
+
+**Parameters:**
+- `Owner` (required) - Repository owner
+- `Repo` (required) - Repository name
+- `RootNumber` (optional) - Focus on a specific root issue number; defaults to all roots
+- `Brief` (optional switch) - Compact single-line output
+
+**Returns:**
+PSCustomObject with `TotalIssues`, `OpenCount`, `ClosedCount`, `PercentComplete`,
+`RootCount`, `RootReports` (per-root stats), `BlockedPaths` (all-open dependency chains),
+`BlockedPathCount`, `CriticalPath` (longest all-open chain), and `CriticalPathLength`.
+
+---
+
 ### Get-HierarchyHealth.ps1
 Analyze health of issue hierarchies in a repository.
 
