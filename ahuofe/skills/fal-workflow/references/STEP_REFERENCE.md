@@ -203,7 +203,127 @@ Generate a video directly from a text prompt (no source image).
 ```
 
 **Chains from:** Typically the first step (no image input needed).
-**Chains to:** Cannot chain to image-based steps.
+**Chains to:** extract-frame, merge-videos, merge-audio-video, *(terminal)*.
+
+---
+
+### extract-frame
+
+Extract the first or last frame from a video as a static image. Bridges video
+output into image-based steps (upscale, edit, animate).
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/ffmpeg-api/extract-frame` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 1–3s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | *auto from prior video step* | Source video |
+| `frame_type` | string | ✅ | — | `"first"` or `"last"` |
+
+**Output:**
+
+```json
+{ "frame": { "url": "https://v3.fal.media/files/.../frame.jpg" } }
+```
+
+**Chains from:** animate, video-gen — any step producing `video.url`.
+**Chains to:** upscale, edit, restyle, animate — any step accepting `image_url`.
+
+**Example:**
+
+```powershell
+@{
+    name       = "last-frame"
+    model      = "fal-ai/ffmpeg-api/extract-frame"
+    params     = @{ frame_type = "last" }
+    dependsOn  = @("scene1")
+}
+```
+
+---
+
+### merge-videos
+
+Concatenate multiple video clips into a single video in the order supplied.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/ffmpeg-api/merge-videos` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 2–10s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_urls` | string[] | ✅ | — | Ordered array of video URLs to concatenate |
+
+**Output:**
+
+```json
+{ "video": { "url": "https://v3.fal.media/files/.../merged.mp4" } }
+```
+
+**Chains from:** animate, video-gen — depends on multiple video-producing steps.
+**Chains to:** merge-audio-video, or terminal.
+
+**Example:**
+
+```powershell
+@{
+    name       = "final-cut"
+    model      = "fal-ai/ffmpeg-api/merge-videos"
+    params     = @{
+        video_urls = @("$($steps['scene1'].video.url)", "$($steps['scene2'].video.url)")
+    }
+    dependsOn  = @("scene1", "scene2")
+}
+```
+
+---
+
+### merge-audio-video
+
+Overlay an audio track onto a video. Audio loops if shorter than the video and
+is trimmed if longer.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/ffmpeg-api/merge-audio-video` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 2–10s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `video_url` | string | ✅ | *auto from prior video step* | Source video |
+| `audio_url` | string | ✅ | — | Audio track URL to overlay |
+
+**Output:**
+
+```json
+{ "video": { "url": "https://v3.fal.media/files/.../output.mp4" } }
+```
+
+**Chains from:** animate, video-gen, merge-videos — any step producing `video.url`.
+**Chains to:** *(terminal)*
+
+**Example:**
+
+```powershell
+@{
+    name       = "with-soundtrack"
+    model      = "fal-ai/ffmpeg-api/merge-audio-video"
+    params     = @{ audio_url = "https://cdn.example.com/music.mp3" }
+    dependsOn  = @("final-cut")
+}
+```
 
 ---
 
@@ -219,8 +339,11 @@ Source output → Target input compatibility:
 | upscale | `image.url` | animate, edit, restyle |
 | edit | `images[0].url` | upscale, animate, restyle |
 | restyle | `images[0].url` | upscale, animate |
-| animate | `video.url` | *(terminal — no image output)* |
-| video-gen | `video.url` | *(terminal — no image output)* |
+| animate | `video.url` | extract-frame, merge-videos, merge-audio-video |
+| video-gen | `video.url` | extract-frame, merge-videos, merge-audio-video |
+| extract-frame | `frame.url` (image) | upscale, edit, restyle, animate |
+| merge-videos | `video.url` | merge-audio-video, *(terminal)* |
+| merge-audio-video | `video.url` | *(terminal)* |
 
 ### Auto-Injection Rules
 
@@ -228,8 +351,12 @@ The workflow engine in `New-FalWorkflow.ps1` auto-injects output from
 the **last dependency** into the dependent step:
 
 1. If prior step has `images[]` → injects `images[0].url` as `image_url`
-2. If prior step has `video.url` → injects `video.url` as `image_url`
-3. Explicit `image_url` in step `params` overrides auto-injection
+2. If prior step has `image.url` → injects `image.url` as `image_url`
+3. If prior step has `frame.url` → injects `frame.url` as `image_url`
+4. If prior step has `video.url` → injects `video.url` as `video_url`
+5. Explicit parameters in step `params` override auto-injection
+
+Each step produces exactly one output type, so rules 1–4 are mutually exclusive.
 
 ### Invalid Chains
 
@@ -237,10 +364,11 @@ These combinations will fail:
 
 | Chain | Why It Fails |
 |-------|-------------|
-| animate → upscale | Animate outputs video, upscale expects image |
-| animate → edit | Animate outputs video, edit expects image |
-| video-gen → upscale | Video output, image input expected |
+| animate → upscale | Animate outputs video, upscale expects image — use extract-frame first |
+| animate → edit | Animate outputs video, edit expects image — use extract-frame first |
+| video-gen → upscale | Video output, image input expected — use extract-frame first |
 | edit without mask_url | Inpainting requires both image and mask |
+| merge-videos with single URL | Provide at least two URLs in `video_urls` |
 
 ### Dependency Rules
 
@@ -300,8 +428,12 @@ Note the singular `image` vs. plural `images`.
 
 | Parameter | Used By | Description |
 |-----------|---------|-------------|
-| `prompt` | All except upscale | Text description or guidance |
+| `prompt` | All except upscale, extract-frame, merge-videos, merge-audio-video | Text description or guidance |
 | `image_url` | upscale, edit, animate, restyle | Source image (auto-injected) |
+| `video_url` | extract-frame, merge-audio-video | Source video (auto-injected from video step) |
+| `video_urls` | merge-videos | Ordered array of video URLs to concatenate |
+| `audio_url` | merge-audio-video | Audio track to overlay |
+| `frame_type` | extract-frame | `"first"` or `"last"` frame to extract |
 | `image_size` | generate | Output dimensions preset |
 | `seed` | generate, edit, restyle | Reproducibility |
 | `strength` | edit, restyle | Transform intensity |
@@ -320,7 +452,10 @@ Note the singular `image` vs. plural `images`.
 | `Circular dependency detected` | Any | `dependsOn` forms a loop | Remove the circular reference |
 | `depends on unknown step` | Any | Typo in `dependsOn` name | Check step names match exactly |
 | `image_url is required` | upscale, edit, animate | No prior step output or empty result | Verify prior step produces images |
+| `video_url is required` | extract-frame, merge-audio-video | No prior video step or empty result | Verify prior step produces a video |
+| `video_urls is required` | merge-videos | Missing or empty `video_urls` array | Provide at least two video URLs |
 | `mask_url is required` | edit | Missing mask parameter | Add `mask_url` to edit step params |
+| `audio_url is required` | merge-audio-video | Missing audio parameter | Add `audio_url` to merge-audio-video step params |
 | `Job timed out` | animate, video-gen | Video generation exceeded timeout | Retry — video gen can be slow |
 | `HTTP 422` | Any | Invalid parameters for model | Check model schema with `Get-FalModel.ps1` |
 | `HTTP 429` | Any | Rate limited | Auto-retried; reduce request frequency |

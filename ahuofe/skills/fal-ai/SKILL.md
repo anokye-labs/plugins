@@ -51,6 +51,8 @@ Scripts import the module automatically. No manual setup needed.
 | `Get-FalModel.ps1`            | Get model info and OpenAPI schema        |
 | `Get-ModelSchema.ps1`         | Get model input/output schema            |
 | `Get-FalUsage.ps1`            | Check account usage and costs            |
+| `Get-FalPricing.ps1`          | Query live model pricing                 |
+| `Get-FalRequests.ps1`         | List and manage inference requests       |
 | `Get-QueueStatus.ps1`         | Check async request queue status         |
 | `Upload-ToFalCDN.ps1`         | Upload files to fal.ai CDN              |
 | `New-FalWorkflow.ps1`         | Define multi-step media workflows        |
@@ -127,11 +129,19 @@ $env:FAL_KEY = "your-key-here"
 ### Upload Then Generate
 
 ```powershell
-Import-Module .\scripts\FalAi.psm1
-$url = Send-FalFile -FilePath ".\photo.jpg"
+# With auto-upload (new -FilePath parameter)
 .\scripts\Invoke-FalGenerate.ps1 -Prompt "Animate this" `
     -Model "fal-ai/kling-video/v2.6/pro/image-to-video" `
-    -ImageUrl $url -Queue
+    -FilePath ".\photo.jpg" -Queue
+```
+
+### Async (Non-Blocking) Submission
+
+```powershell
+$requestId = .\scripts\Invoke-FalGenerate.ps1 -Prompt "Epic battle" -Model "fal-ai/veo3.1" -Async
+# Returns immediately: "abc123-def456"
+# Check later:
+.\scripts\Get-QueueStatus.ps1 -RequestId $requestId -Model "fal-ai/veo3.1"
 ```
 
 ### Get Model Schema
@@ -147,6 +157,56 @@ $url = Send-FalFile -FilePath ".\photo.jpg"
 .\scripts\Test-FalConnection.ps1
 # [PASS] FAL_KEY found (fal-xxxx...)
 # [PASS] API reachable (response: 245ms)
+```
+
+---
+
+## Platform Management
+
+### Query Pricing
+
+```powershell
+# List all model prices
+.\scripts\Get-FalPricing.ps1
+
+# Get pricing for a specific model
+.\scripts\Get-FalPricing.ps1 -ModelId "fal-ai/flux/dev"
+# Returns: PSCustomObject[] with .ModelId, .Price, .Unit, .Category, .PriceFormatted
+
+# Filter by category
+.\scripts\Get-FalPricing.ps1 -Category "video"
+```
+
+### Estimate Pre-Execution Cost
+
+```powershell
+# Estimate cost before running a job
+.\scripts\Measure-ApiCost.ps1 -ModelId "fal-ai/flux/dev" -Quantity 100
+# Returns: PSCustomObject with .ModelId, .Quantity, .PricePerUnit, .EstimatedCost
+
+# Estimate with unit override
+.\scripts\Measure-ApiCost.ps1 -ModelId "fal-ai/flux/dev" -Quantity 10 -Unit "image"
+```
+
+### Analyze Post-Hoc Costs
+
+```powershell
+$usage = .\scripts\Get-FalUsage.ps1 -Days 30
+.\scripts\Measure-ApiCost.ps1 -UsageData $usage -BudgetLimit 50
+# Returns cost analysis with projection, breakdown, and budget alerts
+```
+
+### Manage Requests
+
+```powershell
+# List recent requests
+.\scripts\Get-FalRequests.ps1
+
+# Filter by model with limit
+.\scripts\Get-FalRequests.ps1 -ModelId "fal-ai/flux/dev" -Limit 10
+
+# Delete payloads for a request (cleanup storage)
+.\scripts\Get-FalRequests.ps1 -Delete "req-abc123"
 ```
 
 ---
@@ -299,11 +359,14 @@ with exponential backoff, up to 3 attempts.
 | `-NumImages` | int | 1 | Number of images |
 | `-Seed` | int | — | Reproducibility seed |
 | `-ImageUrl` | string | — | Input image URL |
+| `-FilePath` | string | — | Local file auto-uploaded to fal CDN; sets ImageUrl internally |
 | `-Strength` | double | — | img2img strength |
 | `-NumInferenceSteps` | int | — | Inference steps |
 | `-GuidanceScale` | double | — | CFG scale |
 | `-EnableSafetyChecker` | switch | — | Safety filter |
 | `-Queue` | switch | — | Use queue mode |
+| `-Async` | switch | — | Submit to queue and return RequestId immediately (non-blocking) |
+| `-Lifecycle` | int | — | Generated file expiration in seconds on fal CDN |
 
 ### Invoke-FalUpscale.ps1
 

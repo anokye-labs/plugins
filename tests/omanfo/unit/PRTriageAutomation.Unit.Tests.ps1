@@ -102,6 +102,18 @@ Please rename the targets to the actual node types:
             $result.Disposition | Should -Be 'needs-human'
             $result.Priority | Should -Be 'medium'
         }
+
+        It "Should classify human test-request as needs-human, not create-issue" {
+            $result = & $scriptPath -Body "Missing test coverage for this new function" -Author "hoopsomuah"
+            $result.Disposition | Should -Be 'needs-human'
+            $result.Priority | Should -Be 'medium'
+        }
+
+        It "Should classify human nit as needs-human, not resolve" {
+            $result = & $scriptPath -Body "nit: rename this variable" -Author "hoopsomuah"
+            $result.Disposition | Should -Be 'needs-human'
+            $result.Priority | Should -Be 'medium'
+        }
     }
 
     Context "Test coverage requests → create-issue" {

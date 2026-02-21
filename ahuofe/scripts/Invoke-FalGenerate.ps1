@@ -16,6 +16,11 @@
     Seed for reproducibility.
 .PARAMETER ImageUrl
     Input image URL for image-to-image or image-to-video models.
+.PARAMETER FilePath
+    Local file to auto-upload to fal.ai CDN before generation. Automatically
+    calls Send-FalFile and sets ImageUrl internally. Eliminates the manual
+    upload step for image-to-image or image-to-video workflows.
+    When both -FilePath and -ImageUrl are specified, -FilePath takes precedence.
 .PARAMETER Strength
     Strength for img2img models (0.0-1.0).
 .PARAMETER NumInferenceSteps
@@ -26,12 +31,28 @@
     Enable the safety checker.
 .PARAMETER Queue
     Use queue mode (submit, poll, retrieve) instead of synchronous.
+.PARAMETER Async
+    Submit to the queue and return the RequestId immediately without waiting
+    for the job to complete. Useful for long-running video generation jobs.
+    Use Get-QueueStatus.ps1 to check progress later.
+.PARAMETER Lifecycle
+    Expiration time in seconds for generated files on the fal.ai CDN.
+    Passed through to the queue submission payload. Only meaningful when
+    using -Queue or -Async mode.
 .EXAMPLE
     .\Invoke-FalGenerate.ps1 -Prompt "A serene mountain landscape"
 .EXAMPLE
     .\Invoke-FalGenerate.ps1 -Prompt "Ocean waves" -Model "fal-ai/flux/schnell" -Queue
 .EXAMPLE
     .\Invoke-FalGenerate.ps1 -Prompt "Zoom in" -Model "fal-ai/kling-video/v2.6/pro/image-to-video" -ImageUrl "https://example.com/img.jpg" -Queue
+.EXAMPLE
+    .\Invoke-FalGenerate.ps1 -Prompt "Animate this photo" -Model "fal-ai/kling-video/v2.6/pro/image-to-video" -FilePath ".\photo.jpg" -Queue
+.EXAMPLE
+    $requestId = .\Invoke-FalGenerate.ps1 -Prompt "Epic battle" -Model "fal-ai/veo3.1" -Async
+    # Returns immediately: "abc123-def456"
+    # Check later: .\Get-QueueStatus.ps1 -RequestId $requestId -Model "fal-ai/veo3.1"
+.EXAMPLE
+    .\Invoke-FalGenerate.ps1 -Prompt "Sunset scene" -Model "fal-ai/flux/dev" -Lifecycle 3600 -Queue
 #>
 [CmdletBinding()]
 param(
@@ -48,6 +69,8 @@ param(
 
     [string]$ImageUrl,
 
+    [string]$FilePath,
+
     [double]$Strength,
 
     [int]$NumInferenceSteps,
@@ -56,7 +79,11 @@ param(
 
     [switch]$EnableSafetyChecker,
 
-    [switch]$Queue
+    [switch]$Queue,
+
+    [switch]$Async,
+
+    [int]$Lifecycle
 )
 
 $ErrorActionPreference = 'Stop'
@@ -64,6 +91,13 @@ $ErrorActionPreference = 'Stop'
 # Load shared module
 $modulePath = Join-Path $PSScriptRoot 'FalAi.psm1'
 Import-Module $modulePath -Force
+
+# Auto-upload local file if FilePath provided
+if ($FilePath) {
+    Write-Host "Uploading $FilePath to fal.ai CDN..." -ForegroundColor Cyan
+    $ImageUrl = Send-FalFile -FilePath $FilePath
+    Write-Host "Uploaded: $ImageUrl" -ForegroundColor DarkCyan
+}
 
 # Build payload
 $body = @{ prompt = $Prompt }
@@ -92,9 +126,15 @@ if ($PSBoundParameters.ContainsKey('NumInferenceSteps'))   { $body.num_inference
 if ($PSBoundParameters.ContainsKey('GuidanceScale'))       { $body.guidance_scale = $GuidanceScale }
 if ($PSBoundParameters.ContainsKey('EnableSafetyChecker')) { $body.enable_safety_checker = $EnableSafetyChecker.IsPresent }
 if ($ImageUrl -and -not $isI2V)                            { $body.image_url = $ImageUrl }
+if ($PSBoundParameters.ContainsKey('Lifecycle'))           { $body.x_fal_lifecycle = $Lifecycle }
 
 # Execute
-if ($Queue) {
+if ($Async) {
+    Write-Host "Submitting to queue (async): $Model..." -ForegroundColor Cyan
+    $submitResult = Invoke-FalApi -Method POST -Endpoint $Model -Body $body -BaseUrl 'https://queue.fal.run'
+    return $submitResult.request_id
+}
+elseif ($Queue) {
     Write-Host "Submitting to queue: $Model..." -ForegroundColor Cyan
     $result = Wait-FalJob -Model $Model -Body $body
 }

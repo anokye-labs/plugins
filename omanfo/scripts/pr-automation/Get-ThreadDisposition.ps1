@@ -83,7 +83,7 @@ foreach ($pattern in $securityPatterns) {
 }
 
 # --- Explicit severity badges (Codex pattern: P1/P2/P3) ---
-if ($Severity -match '^P[12]$' -or $Severity -match '^(Critical|High)$' -or $bodyLower -match 'P1[- ]' -or $bodyLower -match '!\[P1') {
+if ($Severity -match '^P[12]$' -or $Severity -match '^(Critical|High)$' -or $bodyLower -match 'P[12][- ]' -or $bodyLower -match '!\[P[12]') {
     # P1/P2 or Critical/High → fix
     return [PSCustomObject]@{
         Disposition = 'fix'
@@ -143,6 +143,18 @@ foreach ($pattern in $architecturePatterns) {
             Reason      = "Architecture/design concern: matches pattern '$pattern'"
             Priority    = 'high'
         }
+    }
+}
+
+# --- Human authors → needs-human (before lower-priority pattern matching) ---
+# Human comments always require human judgment, regardless of content patterns.
+# Only security, severity badges, suggestions, breaking bugs, and architecture
+# patterns above should override this — those are high-confidence classifications.
+if (-not $isBot) {
+    return [PSCustomObject]@{
+        Disposition = 'needs-human'
+        Reason      = 'Human reviewer comment — requires human judgment'
+        Priority    = 'medium'
     }
 }
 

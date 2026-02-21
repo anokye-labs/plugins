@@ -110,8 +110,8 @@ Nodes that create media from text prompts or source images.
 { "video": { "url": "https://v3.fal.media/files/.../video.mp4" } }
 ```
 
-**Note:** This node is typically the terminal step in a pipeline. Its video
-output cannot chain to image-based processor nodes.
+**Note:** This node is typically the terminal step in a pipeline. Use
+`extract-frame` to bridge its video output into image-based processor nodes.
 
 ---
 
@@ -217,6 +217,101 @@ handles the mapping automatically when chaining to the next step.
 
 ---
 
+## FFmpeg Utility Nodes
+
+Nodes that invoke the `fal-ai/ffmpeg-api` endpoints for video manipulation.
+These enable video chaining, scene extension, and soundtrack overlay — patterns
+that are impossible with generator/processor nodes alone.
+
+### extract-frame
+
+| Property | Value |
+|----------|-------|
+| **Node Type** | FFmpeg Utility |
+| **Mode** | Sync |
+| **Endpoint** | `fal-ai/ffmpeg-api/extract-frame` |
+
+Extract the first or last frame from a video as a static image. Use this to
+bridge video output into image-based steps (upscale, edit, image-to-video).
+
+**Required Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `video_url` | string | Source video URL (auto-injected from prior video step) |
+| `frame_type` | string | Which frame to extract: `"first"` or `"last"` |
+
+**Output Schema:**
+
+```json
+{ "frame": { "url": "https://v3.fal.media/files/.../frame.jpg" } }
+```
+
+**Reference expression:** `$node.frame.url`
+
+**Use Cases:** Get last frame for video extension, first frame for transitions.
+Bridge an animate or video-gen step into upscale, edit, restyle, or a new animate step.
+
+---
+
+### merge-videos
+
+| Property | Value |
+|----------|-------|
+| **Node Type** | FFmpeg Utility |
+| **Mode** | Sync |
+| **Endpoint** | `fal-ai/ffmpeg-api/merge-videos` |
+
+Concatenate multiple video URLs into a single video in the order supplied.
+
+**Required Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `video_urls` | string[] | Ordered array of video URLs to concatenate |
+
+**Output Schema:**
+
+```json
+{ "video": { "url": "https://v3.fal.media/files/.../merged.mp4" } }
+```
+
+**Reference expression:** `$node.video.url`
+
+**Use Cases:** Multi-scene compilation, merge parallel video-gen results into one clip.
+
+---
+
+### merge-audio-video
+
+| Property | Value |
+|----------|-------|
+| **Node Type** | FFmpeg Utility |
+| **Mode** | Sync |
+| **Endpoint** | `fal-ai/ffmpeg-api/merge-audio-video` |
+
+Overlay an audio track onto a video. The audio is mixed to the full duration of
+the video; if the audio is shorter it loops, if longer it is trimmed.
+
+**Required Parameters:**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `video_url` | string | Source video URL |
+| `audio_url` | string | Audio track URL to overlay |
+
+**Output Schema:**
+
+```json
+{ "video": { "url": "https://v3.fal.media/files/.../output.mp4" } }
+```
+
+**Reference expression:** `$node.video.url`
+
+**Use Cases:** Add soundtrack, add narration or sound effects to a video.
+
+---
+
 ## Utility Nodes
 
 Utility operations used around workflow steps. These are not invoked by the
@@ -271,10 +366,14 @@ outside the workflow engine for quality checkpoints.
 | Source Node | Output Type | Compatible Targets |
 |-------------|-------------|--------------------|
 | text-to-image | `images[0].url` | upscale, inpaint, edit, image-to-video |
-| text-to-video | `video.url` | *(terminal)* |
-| image-to-video | `video.url` | *(terminal)* |
+| text-to-video | `video.url` | extract-frame, merge-videos, merge-audio-video |
+| image-to-video | `video.url` | extract-frame, merge-videos, merge-audio-video |
 | upscale | `image.url` | inpaint, edit, image-to-video |
 | inpaint | `images[0].url` | upscale, edit, image-to-video |
 | edit | `images[0].url` | upscale, inpaint, image-to-video |
+| extract-frame | `frame.url` (image) | upscale, edit, restyle, animate (image-to-video) |
+| merge-videos | `video.url` | merge-audio-video, *(terminal)* |
+| merge-audio-video | `video.url` | *(terminal)* |
 
-Video nodes produce `video.url` which cannot chain to image-based nodes.
+Video nodes produce `video.url` which cannot chain to image-based nodes directly.
+Use `extract-frame` to bridge a video step into an image-based step.
