@@ -1,0 +1,62 @@
+name: Require Linked Issue
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+    branches: [main]
+  merge_group:
+
+jobs:
+  check-linked-issue:
+    name: Check Linked Issue
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check for linked issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Issue link was already verified on the PR; pass immediately in the merge queue
+            if (context.eventName === 'merge_group') {
+              core.info('merge_group event — linked issue was already verified on the PR.');
+              return;
+            }
+
+            const actor = context.payload.pull_request.user.login;
+            const botActors = ['dependabot[bot]', 'github-actions[bot]', 'renovate[bot]'];
+
+            if (botActors.includes(actor)) {
+              core.info(`Skipping linked-issue check for bot actor: ${actor}`);
+              return;
+            }
+
+            const result = await github.graphql(`
+              query($owner: String!, $repo: String!, $pr: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $pr) {
+                    closingIssuesReferences(first: 1) {
+                      totalCount
+                    }
+                  }
+                }
+              }
+            `, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pr: context.payload.pull_request.number,
+            });
+
+            const count = result.repository.pullRequest.closingIssuesReferences.totalCount;
+
+            if (count === 0) {
+              core.setFailed(
+                'This PR must be linked to a GitHub issue.\n\n' +
+                'Link an issue using either method:\n' +
+                '  1. Development sidebar: click "Link an issue" in the PR sidebar\n' +
+                '  2. PR description: add "Closes #N", "Fixes #N", or "Resolves #N"\n\n' +
+                'Replace N with the issue number this PR addresses.'
+              );
+            } else {
+              core.info(`PR has ${count} linked issue(s).`);
+            }
