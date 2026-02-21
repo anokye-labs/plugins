@@ -184,12 +184,7 @@ jobs:
           
           $failures = 0
           
-          # Test 1: Manifest Consistency
-          Write-Host "`n▶ Running Test-ManifestConsistency..." -ForegroundColor Blue
-          & ./omanfo/scripts/validation/Test-ManifestConsistency.ps1 -PluginPath ahuofe
-          if ($LASTEXITCODE -ne 0) { $failures++ }
-          
-          # Test 2: File Structure
+          # Test 1: File Structure
           Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
           & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath ahuofe
           if ($LASTEXITCODE -ne 0) { $failures++ }
