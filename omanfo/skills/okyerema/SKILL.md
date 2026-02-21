@@ -35,6 +35,8 @@ The Okyerema coordinates adwoma (work) across the asafo (team). This skill teach
 - Assigning work to @copilot coding agent
 - Understanding how work is structured
 - Tracking DAG status and dependency chains
+- **Auditing a repo for automation readiness** — Use Get-RepoReadiness.ps1 to check for gaps
+- **Onboarding a new repository** — Use Initialize-RepoAutomation.ps1 to scaffold missing pieces
 
 ## Deployment
 
@@ -269,6 +271,10 @@ Invoke these scripts for common operations:
 ### Status & Health Reporting- **[scripts/Get-Sitrep.ps1](scripts/Get-Sitrep.ps1)** — Tactical status report (/sitrep)
 - **[scripts/Get-PRHealth.ps1](scripts/Get-PRHealth.ps1)** — Deep PR health check (/prcheck)
 - **[scripts/Get-HierarchyHealth.ps1](scripts/Get-HierarchyHealth.ps1)** — Structural validation (/health)
+
+### Repo Onboarding
+- **[scripts/Get-RepoReadiness.ps1](scripts/Get-RepoReadiness.ps1)** — Audit a repo for automation infrastructure gaps (/readiness)
+- **[scripts/Initialize-RepoAutomation.ps1](scripts/Initialize-RepoAutomation.ps1)** — Generate GitHub issues for each readiness gap
 
 ### PR Intelligence
 - **[scripts/Get-PRStatus.ps1](scripts/Get-PRStatus.ps1)** — Comprehensive PR status (approvals, checks, merge readiness)

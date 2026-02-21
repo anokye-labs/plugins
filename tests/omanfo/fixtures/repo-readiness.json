@@ -1,0 +1,52 @@
+{
+  "data": {
+    "repository": {
+      "id": "R_kgDOABCDEF",
+      "name": "test-repo",
+      "owner": {
+        "__typename": "Organization",
+        "login": "test-org",
+        "issueTypes": {
+          "nodes": [
+            { "id": "IT_epic001", "name": "Epic" },
+            { "id": "IT_feat001", "name": "Feature" },
+            { "id": "IT_task001", "name": "Task" },
+            { "id": "IT_bug0001", "name": "Bug" }
+          ]
+        }
+      },
+      "copilotInstructions": {
+        "text": "# Copilot Instructions\n\nThis is a test repository.\n\nLine 3\nLine 4\nLine 5\nLine 6\nLine 7\nLine 8\nLine 9\nLine 10\nLine 11\nLine 12\nLine 13\nLine 14\nLine 15\nLine 16\nLine 17\nLine 18\nLine 19\nLine 20\nLine 21\nLine 22\nLine 23\nLine 24\nLine 25\nLine 26\nLine 27\nLine 28\nLine 29\nLine 30\nLine 31\nLine 32\nLine 33\nLine 34\nLine 35\nLine 36\nLine 37\nLine 38\nLine 39\nLine 40\nLine 41\nLine 42\nLine 43\nLine 44\nLine 45\nLine 46\nLine 47\nLine 48\nLine 49\nLine 50\n",
+        "byteSize": 1024
+      },
+      "agenticWorkflowsDir": {
+        "entries": [
+          { "name": "issue-triage.lock.yml", "type": "blob" },
+          { "name": "stale-patrol.lock.yml", "type": "blob" }
+        ]
+      },
+      "workflowsDir": {
+        "entries": [
+          { "name": "ci.yml", "type": "blob" },
+          { "name": "validate.yml", "type": "blob" }
+        ]
+      },
+      "openIssues": {
+        "totalCount": 5,
+        "nodes": [
+          { "issueType": { "name": "Epic" }, "labels": { "nodes": [] } },
+          { "issueType": { "name": "Task" }, "labels": { "nodes": [{ "name": "documentation" }] } },
+          { "issueType": { "name": "Task" }, "labels": { "nodes": [] } },
+          { "issueType": { "name": "Bug" },  "labels": { "nodes": [] } },
+          { "issueType": { "name": "Feature" }, "labels": { "nodes": [] } }
+        ]
+      },
+      "projectsV2": {
+        "totalCount": 1,
+        "nodes": [
+          { "id": "PVT_kgtest", "title": "Test Project Board", "closed": false, "public": true }
+        ]
+      }
+    }
+  }
+}
