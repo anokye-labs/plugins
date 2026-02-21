@@ -7,12 +7,27 @@ This document explains how branch protection is configured for this repository.
 Branch protection on `main` enforces the following rules:
 
 - **No direct pushes** — all changes must go through a PR, including for admins and org owners (`enforce_admins: true`)
-- **Linked issue required** — every PR must reference a GitHub issue using a closing keyword (`Closes #N`, `Fixes #N`, or `Resolves #N`)
-- **Required status checks** — the following checks must pass before a PR can merge:
+- **Linked issue required** — every PR must reference a GitHub issue via the Development sidebar or closing keywords (`Closes #N`, `Fixes #N`, `Resolves #N`)
+- **Required status checks** — the following checks must pass before a PR can enter the merge queue:
   - `Static Validation` (from `validate-plugin.yml`)
   - `Check Linked Issue` (from `require-linked-issue.yml`)
-- **Required review** — at least 1 approving review; stale reviews are dismissed
+- **Required review** — at least 1 approving review; stale reviews are dismissed; auto-approved for trusted actors
+- **Merge queue** — PRs are merged via GitHub's merge queue, which re-runs CI against the merged result before committing
 - **Conversation resolution** — all review comments must be resolved
+
+## Agent-Only PR Lifecycle
+
+This repository is designed for zero human intervention in the PR lifecycle:
+
+1. **Agent opens PR** linked to a GitHub issue
+2. **`auto-approve.yml`** fires — approves the PR and enables auto-merge
+3. **`require-linked-issue.yml`** and **`validate-plugin.yml`** checks run on the PR
+4. Once all requirements are satisfied, the PR is **automatically added to the merge queue**
+5. **Merge queue** runs `Static Validation` against the merged result
+6. If all checks pass, the **PR merges automatically**
+
+Trusted actors (auto-approved): `hoopsomuah`, `devin-ai-integration[bot]`, `claude[bot]`, `chatgpt-codex-connector[bot]`, `dependabot[bot]`, `renovate[bot]`
+
 
 ## Automated Configuration
 
@@ -107,11 +122,12 @@ If you prefer to configure branch protection manually via the GitHub UI:
 
 ## Workflows
 
-| Workflow | Trigger | Job ID | Purpose |
+| Workflow | Trigger | Job display name | Purpose |
 |----------|---------|--------|---------|
-| `validate-plugin.yml` | Push to non-main branches | `validate` | Plugin quality checks (manifest, syntax, SKILL.md, eval coverage) |
+| `validate-plugin.yml` | Push to non-main branches; `merge_group` | `Static Validation` | Plugin quality checks (manifest, syntax, SKILL.md, eval coverage) |
 | `e2e-automated.yml` | Push to main | `e2e-automated` | End-to-end tests |
-| `require-linked-issue.yml` | PR targeting main | `check-linked-issue` | Verifies PR body contains `Closes/Fixes/Resolves #N` |
+| `require-linked-issue.yml` | PR targeting main | `Check Linked Issue` | Verifies PR has a linked GitHub issue |
+| `auto-approve.yml` | PR targeting main | `Auto Approve` | Approves PRs from trusted actors and enables auto-merge |
 
 ## Troubleshooting
 
@@ -152,6 +168,7 @@ After configuration, verify the setup:
 
 ## Related Issues
 
+- [#178](https://github.com/anokye-labs/plugins/issues/178) - Agent-only PR workflow: merge queues and zero human intervention
 - [#170](https://github.com/anokye-labs/plugins/issues/170) - Harden main branch protection
 - [#171](https://github.com/anokye-labs/plugins/issues/171) - Enable enforce_admins on branch protection
 - [#172](https://github.com/anokye-labs/plugins/issues/172) - Add linked-issue requirement for PRs
