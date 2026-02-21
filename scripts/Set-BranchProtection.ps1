@@ -175,11 +175,13 @@ mutation {
     requiresStatusChecks: true
     requiredStatusCheckContexts: $(ConvertTo-JsonArray $RequiredStatusChecks)
     requiresStrictStatusChecks: false
+    isAdminEnforced: true
   }) {
     branchProtectionRule {
       id
       pattern
       requiredStatusCheckContexts
+      isAdminEnforced
     }
   }
 }
@@ -196,11 +198,13 @@ mutation {
     requiresStatusChecks: true
     requiredStatusCheckContexts: $(ConvertTo-JsonArray $RequiredStatusChecks)
     requiresStrictStatusChecks: false
+    isAdminEnforced: true
   }) {
     branchProtectionRule {
       id
       pattern
       requiredStatusCheckContexts
+      isAdminEnforced
     }
   }
 }
@@ -213,6 +217,57 @@ mutation {
     }
     catch {
         Write-ColorOutput "❌ Failed to set branch protection rule: $_" -Color Red
+        throw
+    }
+}
+
+function Set-MergeQueueRuleset {
+    param(
+        [string]$Owner,
+        [string]$Repo,
+        [string]$Branch
+    )
+
+    $rulesetName = "Merge queue for $Branch"
+    $existing = & gh api /repos/$Owner/$Repo/rulesets | ConvertFrom-Json |
+        Where-Object { $_.name -eq $rulesetName } | Select-Object -First 1
+
+    $payload = @{
+        name        = $rulesetName
+        target      = "branch"
+        enforcement = "active"
+        conditions  = @{
+            ref_name = @{
+                include = @("refs/heads/$Branch")
+                exclude = @()
+            }
+        }
+        rules = @(
+            @{
+                type = "merge_queue"
+                parameters = @{
+                    check_response_timeout_minutes    = 60
+                    grouping_strategy                 = "ALLGREEN"
+                    max_entries_to_build              = 5
+                    max_entries_to_merge              = 5
+                    merge_method                      = "MERGE"
+                    min_entries_to_merge              = 1
+                    min_entries_to_merge_wait_minutes = 0
+                }
+            }
+        )
+    } | ConvertTo-Json -Depth 10
+
+    try {
+        if ($existing) {
+            $response = $payload | & gh api /repos/$Owner/$Repo/rulesets/$($existing.id) --method PUT --input - | ConvertFrom-Json
+        } else {
+            $response = $payload | & gh api /repos/$Owner/$Repo/rulesets --method POST --input - | ConvertFrom-Json
+        }
+        return $response
+    }
+    catch {
+        Write-ColorOutput "❌ Failed to configure merge queue ruleset: $_" -Color Red
         throw
     }
 }
@@ -274,9 +329,11 @@ else {
 }
 
 # Define required status checks
-# The job ID in the workflow is "validate" (display name is "Static Validation")
-# GitHub status checks use the job ID, not the display name
-$requiredChecks = @("validate")
+# GitHub matches these contexts against the job DISPLAY NAME (the `name:` field in the workflow),
+# not the job ID. Use the display name exactly as it appears in the workflow file.
+#   "Static Validation"  — validate-plugin.yml (job: validate, name: Static Validation)
+#   "Check Linked Issue" — require-linked-issue.yml (job: check-linked-issue, name: Check Linked Issue)
+$requiredChecks = @("Static Validation", "Check Linked Issue")
 
 Write-Host ""
 Write-ColorOutput "▶ Required status checks to configure:" -Color Blue
@@ -292,6 +349,7 @@ if ($DryRun) {
     Write-ColorOutput "Would configure:" -Color Cyan
     Write-Host "  Repository: $Owner/$Repo"
     Write-Host "  Branch: $Branch"
+    Write-Host "  Admin enforcement: enabled"
     Write-Host "  Required status checks:"
     foreach ($check in $requiredChecks) {
         Write-Host "    - $check"
@@ -314,12 +372,19 @@ else {
         Write-Host ""
         Write-Host "  Repository: $Owner/$Repo"
         Write-Host "  Branch: $Branch"
+        Write-Host "  Admin enforcement: enabled"
         Write-Host "  Required status checks:"
         foreach ($check in $requiredChecks) {
             Write-Host "    ✓ $check"
         }
         Write-Host ""
         Write-ColorOutput "PRs targeting $Branch now require the validation workflow to pass before merging." -Color Cyan
+
+        # Configure merge queue ruleset
+        Write-Host ""
+        Write-ColorOutput "▶ Configuring merge queue ruleset..." -Color Blue
+        $mqResult = Set-MergeQueueRuleset -Owner $Owner -Repo $Repo -Branch $Branch
+        Write-ColorOutput "  ✓ Merge queue ruleset: $($mqResult.name) (id=$($mqResult.id))" -Color Green
     }
     catch {
         Write-Host ""
