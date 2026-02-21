@@ -1,0 +1,80 @@
+{
+  "data": {
+    "repository": {
+      "issues": {
+        "nodes": [
+          {
+            "number": 10,
+            "title": "Task A",
+            "state": "OPEN",
+            "body": "",
+            "subIssues": {
+              "totalCount": 0,
+              "nodes": []
+            }
+          },
+          {
+            "number": 11,
+            "title": "Task B",
+            "state": "OPEN",
+            "body": "**Blocked by** #10",
+            "subIssues": {
+              "totalCount": 0,
+              "nodes": []
+            }
+          },
+          {
+            "number": 12,
+            "title": "Task C",
+            "state": "OPEN",
+            "body": "**Blocked by** #11",
+            "subIssues": {
+              "totalCount": 0,
+              "nodes": []
+            }
+          },
+          {
+            "number": 13,
+            "title": "Task D - Cycle Start",
+            "state": "OPEN",
+            "body": "**Blocked by** #14",
+            "subIssues": {
+              "totalCount": 0,
+              "nodes": []
+            }
+          },
+          {
+            "number": 14,
+            "title": "Task E - Cycle Middle",
+            "state": "OPEN",
+            "body": "**Blocked by** #15",
+            "subIssues": {
+              "totalCount": 0,
+              "nodes": []
+            }
+          },
+          {
+            "number": 15,
+            "title": "Task F - Cycle End",
+            "state": "OPEN",
+            "body": "**Blocked by** #13",
+            "subIssues": {
+              "totalCount": 0,
+              "nodes": []
+            }
+          },
+          {
+            "number": 16,
+            "title": "Task G - External Block",
+            "state": "OPEN",
+            "body": "**Blocked by** owner/other-repo#999",
+            "subIssues": {
+              "totalCount": 0,
+              "nodes": []
+            }
+          }
+        ]
+      }
+    }
+  }
+}

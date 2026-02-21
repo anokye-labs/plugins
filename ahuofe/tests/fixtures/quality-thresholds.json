@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "description": "Quality threshold configuration for CI/CD gates",
+  "image": {
+    "min_file_size_bytes": 1024,
+    "max_file_size_bytes": 52428800,
+    "min_dimensions": { "width": 64, "height": 64 },
+    "max_dimensions": { "width": 8192, "height": 8192 },
+    "min_brightness": 0.05,
+    "max_brightness": 0.95,
+    "min_contrast": 0.02,
+    "min_entropy": 1.0,
+    "ssim_threshold": 0.7,
+    "clip_score_threshold": 0.2
+  },
+  "video": {
+    "min_duration_seconds": 0.5,
+    "max_duration_seconds": 300,
+    "min_fps": 12,
+    "min_resolution": { "width": 256, "height": 256 }
+  },
+  "performance": {
+    "max_generation_time_seconds": 120,
+    "max_queue_wait_seconds": 300
+  },
+  "token_budget": {
+    "skill_file_max_lines": 500,
+    "skill_file_max_tokens": 6500
+  }
+}

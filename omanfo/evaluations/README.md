@@ -29,6 +29,7 @@ Work through each `.eval.md` file in order:
 | 7 | [labels](07-labels.eval.md) | Label operations and best practices | 🟢 Nice-to-have |
 | 8 | [end-to-end](08-end-to-end.eval.md) | Full workflow: plan → implement → review | 🔴 Critical |
 | 9 | [agent-conventions](09-agent-conventions.eval.md) | Agent behavior conventions compliance | 🔴 Critical |
+| 10 | [slash-commands](10-slash-commands.eval.md) | Agent slash commands & status scripts | 🔴 Critical |
 
 ### Pass Criteria
 

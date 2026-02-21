@@ -1,0 +1,46 @@
+{
+  "name": "ahuofe",
+  "version": "1.0.0",
+  "description": "The Ahuofe plugin — media generation and manipulation using fal.ai and ImageSorcery for the Anokye System",
+  "author": "anokye-labs",
+  "license": "MIT",
+  "repository": "https://github.com/anokye-labs/plugins",
+  "skills": [
+    {
+      "name": "fal-ai",
+      "path": "skills/fal-ai",
+      "entryPoint": "SKILL.md",
+      "references": 4,
+      "scripts": 0
+    },
+    {
+      "name": "fal-workflow",
+      "path": "skills/fal-workflow",
+      "entryPoint": "SKILL.md",
+      "references": 5,
+      "scripts": 0
+    },
+    {
+      "name": "image-sorcery",
+      "path": "skills/image-sorcery",
+      "entryPoint": "SKILL.md",
+      "references": 6,
+      "scripts": 0
+    },
+    {
+      "name": "media-agents",
+      "path": "skills/media-agents",
+      "entryPoint": "SKILL.md",
+      "references": 4,
+      "scripts": 0
+    }
+  ],
+  "documentation": {
+    "agents": "AGENTS.md"
+  },
+  "requirements": {
+    "powershell": "7.0+",
+    "falApiKey": "FAL_KEY environment variable or .env file",
+    "imageSorcery": "ImageSorcery MCP server (optional, for local processing)"
+  }
+}

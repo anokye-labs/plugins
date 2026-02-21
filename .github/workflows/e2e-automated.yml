@@ -1,0 +1,99 @@
+name: Automated E2E Tests
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'omanfo/skills/**'
+      - 'tests/omanfo/e2e/automated/**'
+      - '.github/workflows/e2e-automated.yml'
+  workflow_dispatch:
+
+jobs:
+  e2e-automated:
+    name: Run Automated E2E Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: tests/omanfo/e2e/automated/package-lock.json
+      
+      - name: Install dependencies
+        working-directory: tests/omanfo/e2e/automated
+        run: npm ci
+      
+      - name: Setup GitHub CLI
+        run: |
+          # GitHub CLI is pre-installed on ubuntu-latest
+          gh --version
+      
+      - name: Run Sitrep E2E test
+        working-directory: tests/omanfo/e2e/automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_TEST_REPO: ${{ github.repository }}
+        run: |
+          node --loader ts-node/esm sitrep.e2e.ts
+      
+      - name: Run Health E2E test
+        working-directory: tests/omanfo/e2e/automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_TEST_REPO: ${{ github.repository }}
+        run: |
+          node --loader ts-node/esm health.e2e.ts
+      
+      - name: Run What's Left E2E test
+        working-directory: tests/omanfo/e2e/automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_TEST_REPO: ${{ github.repository }}
+        run: |
+          node --loader ts-node/esm whatsleft.e2e.ts
+      
+      - name: Run PR Check E2E test
+        working-directory: tests/omanfo/e2e/automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_TEST_REPO: ${{ github.repository }}
+          E2E_TEST_PR: '107'
+        run: |
+          node --loader ts-node/esm prcheck.e2e.ts
+        continue-on-error: true  # PR might not exist
+      
+      - name: Run Issue Creation E2E test
+        working-directory: tests/omanfo/e2e/automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_TEST_REPO: ${{ github.repository }}
+        run: |
+          node --loader ts-node/esm issue-creation.e2e.ts
+      
+      - name: Run Plan Materialization E2E test
+        working-directory: tests/omanfo/e2e/automated
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          E2E_TEST_REPO: ${{ github.repository }}
+        run: |
+          node --loader ts-node/esm plan-materialize.e2e.ts
+      
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "## Automated E2E Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "All automated E2E tests have completed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Check individual test steps for details." >> $GITHUB_STEP_SUMMARY

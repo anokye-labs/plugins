@@ -8,7 +8,7 @@
   "skills": [
     {
       "name": "okyeame",
-      "path": ".github/skills/okyeame",
+      "path": "skills/okyeame",
       "entryPoint": "SKILL.md",
       "agentFile": "okyeame.agent.md",
       "references": 0,
@@ -16,10 +16,10 @@
     },
     {
       "name": "okyerema",
-      "path": ".github/skills/okyerema",
+      "path": "skills/okyerema",
       "entryPoint": "SKILL.md",
-      "references": 8,
-      "scripts": 10
+      "references": 9,
+      "scripts": 28
     }
   ],
   "documentation": {
@@ -29,10 +29,15 @@
   "requirements": {
     "powershell": "7.0+",
     "githubCli": "2.0+",
-    "orgIssueTypes": ["Epic", "Feature", "Task", "Bug"]
+    "orgIssueTypes": [
+      "Epic",
+      "Feature",
+      "Task",
+      "Bug"
+    ]
   },
   "evaluations": {
-    "count": 9,
+    "count": 10,
     "path": "evaluations/"
   }
 }

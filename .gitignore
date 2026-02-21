@@ -27,5 +27,34 @@ Desktop.ini
 ## Test artifacts
 test-*-eval/
 
+## Node.js
+node_modules/
+*.log
+# Allow package-lock.json in automated E2E tests for reproducible CI builds
+!tests/omanfo/e2e/automated/package-lock.json
+
 ## Coverage reports
 scripts/coverage-report.json
+
+## Ahuofe / media plugin
+*.ps1xml
+*.psd1xml
+.env.*.local
+*.env
+dist/
+build/
+out/
+secrets/
+secrets.json
+*.key
+*.pem
+credentials.json
+coverage/
+.nyc_output/
+test-results/
+*.test.log
+output/
+temp/
+*.tmp
+*.temp
+.cache/

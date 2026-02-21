@@ -1,11 +1,18 @@
 name: Validate Plugin
 
 on:
-  pull_request:
+  push:
+    branches-ignore:
+      - main
     paths:
       - 'omanfo/**'
       - 'okyeame/**'
-      - '.github/workflows/validate-plugin.yml'
+      - 'ahuofe/**'
+      - '.github/workflows/**'
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+  merge_group:
 
 jobs:
   validate:
@@ -26,8 +33,17 @@ jobs:
           echo "Detecting which plugins have changes..."
           
           # Get list of changed files
-          git fetch origin ${{ github.base_ref }}
-          CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
+          # For push events, diff against the SHA before the push
+          # Use github.event.before to capture all commits in multi-commit pushes
+          # For new branches (null SHA), compare against origin/main
+          BEFORE_SHA="${{ github.event.before }}"
+          if [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ] || ! git cat-file -e "$BEFORE_SHA" 2>/dev/null; then
+            echo "New branch or force-push detected, comparing against origin/main"
+            git fetch origin main
+            CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
+          else
+            CHANGED_FILES=$(git diff --name-only $BEFORE_SHA...HEAD)
+          fi
           
           # Check if omanfo has changes
           if echo "$CHANGED_FILES" | grep -q "^omanfo/"; then
@@ -36,6 +52,15 @@ jobs:
           else
             echo "omanfo_changed=false" >> $GITHUB_OUTPUT
             echo "○ omanfo has no changes"
+          fi
+          
+          # Check if ahuofe has changes
+          if echo "$CHANGED_FILES" | grep -q "^ahuofe/"; then
+            echo "ahuofe_changed=true" >> $GITHUB_OUTPUT
+            echo "✓ ahuofe has changes"
+          else
+            echo "ahuofe_changed=false" >> $GITHUB_OUTPUT
+            echo "○ ahuofe has no changes"
           fi
           
           # Check if okyeame has changes
@@ -85,6 +110,11 @@ jobs:
           # Test 6: Markdown Structure
           Write-Host "`n▶ Running Test-MarkdownStructure..." -ForegroundColor Blue
           & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath omanfo
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 7: Script Test Coverage
+          Write-Host "`n▶ Running Test-ScriptTestCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ScriptTestCoverage.ps1 -PluginPath omanfo
           if ($LASTEXITCODE -ne 0) { $failures++ }
           
           # Summary
@@ -139,10 +169,72 @@ jobs:
           & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath okyeame
           if ($LASTEXITCODE -ne 0) { $failures++ }
           
+          # Test 7: Script Test Coverage
+          Write-Host "`n▶ Running Test-ScriptTestCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ScriptTestCoverage.ps1 -PluginPath okyeame
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
           # Summary
           Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
           if ($failures -eq 0) {
             Write-Host "   ✅ ALL OKYEAME VALIDATIONS PASSED" -ForegroundColor Green
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 0
+          } else {
+            Write-Host "   ❌ $failures VALIDATION(S) FAILED" -ForegroundColor Red
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 1
+          }
+      
+      - name: Validate ahuofe plugin
+        if: steps.changes.outputs.ahuofe_changed == 'true'
+        shell: pwsh
+        run: |
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "       VALIDATING AHUOFE PLUGIN" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+          
+          $failures = 0
+          
+          # Test 1: Manifest Consistency
+          Write-Host "`n▶ Running Test-ManifestConsistency..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ManifestConsistency.ps1 -PluginPath ahuofe
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 2: File Structure
+          Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath ahuofe
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 3: PowerShell Syntax
+          Write-Host "`n▶ Running Test-PowerShellSyntax..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-PowerShellSyntax.ps1 -PluginPath ahuofe
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 4: SKILL.md Quality
+          Write-Host "`n▶ Running Test-SkillQuality..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-SkillQuality.ps1 -PluginPath ahuofe
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 5: Evaluation Coverage
+          Write-Host "`n▶ Running Test-EvalCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-EvalCoverage.ps1 -PluginPath ahuofe
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 6: Markdown Structure
+          Write-Host "`n▶ Running Test-MarkdownStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath ahuofe
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Test 7: Script Test Coverage
+          Write-Host "`n▶ Running Test-ScriptTestCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ScriptTestCoverage.ps1 -PluginPath ahuofe
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+          
+          # Summary
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          if ($failures -eq 0) {
+            Write-Host "   ✅ ALL AHUOFE VALIDATIONS PASSED" -ForegroundColor Green
             Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
             exit 0
           } else {

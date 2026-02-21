@@ -1,0 +1,206 @@
+{
+  "version": "1.0",
+  "description": "Golden prompt dataset for quality regression testing",
+  "prompts": [
+    {
+      "id": "img-001",
+      "category": "photorealistic",
+      "prompt": "A professional headshot of a person in business attire, studio lighting, neutral background",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.2, "max_brightness": 0.8, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-002",
+      "category": "photorealistic",
+      "prompt": "A golden retriever sitting in a sunlit park, shallow depth of field, bokeh background",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 768 },
+      "quality_thresholds": { "min_brightness": 0.25, "max_brightness": 0.85, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-003",
+      "category": "photorealistic",
+      "prompt": "A modern kitchen interior with marble countertops, natural light from large windows, architectural photography",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 768 },
+      "quality_thresholds": { "min_brightness": 0.2, "max_brightness": 0.85, "min_contrast": 0.12 }
+    },
+    {
+      "id": "img-004",
+      "category": "artistic",
+      "prompt": "An oil painting of a coastal village at sunset, impressionist style, warm colors",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.15, "max_brightness": 0.85, "min_contrast": 0.08 }
+    },
+    {
+      "id": "img-005",
+      "category": "artistic",
+      "prompt": "A watercolor illustration of cherry blossoms over a Japanese garden, soft pastels",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.3, "max_brightness": 0.9, "min_contrast": 0.06 }
+    },
+    {
+      "id": "img-006",
+      "category": "artistic",
+      "prompt": "A digital art portrait in cyberpunk style, neon lighting, futuristic cityscape background",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 768, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.1, "max_brightness": 0.8, "min_contrast": 0.15 }
+    },
+    {
+      "id": "img-007",
+      "category": "product",
+      "prompt": "A pair of wireless headphones on a white marble surface, product photography, soft shadows",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.4, "max_brightness": 0.95, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-008",
+      "category": "product",
+      "prompt": "A glass bottle of perfume with water droplets, dramatic lighting, dark background, commercial photography",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 768, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.1, "max_brightness": 0.7, "min_contrast": 0.15 }
+    },
+    {
+      "id": "img-009",
+      "category": "product",
+      "prompt": "A smartwatch on a minimalist wooden desk, top-down flat lay, clean product shot",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.3, "max_brightness": 0.9, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-010",
+      "category": "landscape",
+      "prompt": "A panoramic view of snow-capped mountains reflected in a crystal clear alpine lake at dawn",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 576 },
+      "quality_thresholds": { "min_brightness": 0.15, "max_brightness": 0.85, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-011",
+      "category": "landscape",
+      "prompt": "A tropical beach with turquoise water, white sand, and palm trees, aerial drone perspective",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 576 },
+      "quality_thresholds": { "min_brightness": 0.3, "max_brightness": 0.9, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-012",
+      "category": "landscape",
+      "prompt": "A dense misty forest with rays of sunlight filtering through tall redwood trees",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 768, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.1, "max_brightness": 0.7, "min_contrast": 0.08 }
+    },
+    {
+      "id": "img-013",
+      "category": "abstract",
+      "prompt": "Abstract geometric patterns with metallic gold and deep navy blue, 3D render, octane",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.1, "max_brightness": 0.85, "min_contrast": 0.12 }
+    },
+    {
+      "id": "img-014",
+      "category": "abstract",
+      "prompt": "Fluid art with swirling marble textures in pink, white, and gold, macro photography style",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.2, "max_brightness": 0.9, "min_contrast": 0.08 }
+    },
+    {
+      "id": "img-015",
+      "category": "text-overlay",
+      "prompt": "A motivational poster with the text 'CREATE' in bold sans-serif font over a gradient background",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.15, "max_brightness": 0.9, "min_contrast": 0.2 }
+    },
+    {
+      "id": "img-016",
+      "category": "text-overlay",
+      "prompt": "A social media banner with 'SUMMER SALE 50% OFF' text, bright colors, tropical theme",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 512 },
+      "quality_thresholds": { "min_brightness": 0.25, "max_brightness": 0.9, "min_contrast": 0.15 }
+    },
+    {
+      "id": "img-017",
+      "category": "video",
+      "prompt": "A timelapse of clouds moving over a mountain range, cinematic, smooth motion",
+      "model": "fal-ai/kling-video/v1/standard/text-to-video",
+      "expected_duration_seconds": 5,
+      "quality_thresholds": { "min_brightness": 0.15, "max_brightness": 0.85, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-018",
+      "category": "video",
+      "prompt": "A candle flame flickering gently in a dark room, slow motion, cinematic lighting",
+      "model": "fal-ai/kling-video/v1/standard/text-to-video",
+      "expected_duration_seconds": 5,
+      "quality_thresholds": { "min_brightness": 0.05, "max_brightness": 0.6, "min_contrast": 0.12 }
+    },
+    {
+      "id": "img-019",
+      "category": "upscale",
+      "prompt": "Upscale a low-resolution photograph to 4x resolution while preserving detail and sharpness",
+      "model": "fal-ai/creative-upscaler",
+      "expected_scale_factor": 4,
+      "quality_thresholds": { "min_brightness": 0.1, "max_brightness": 0.9, "min_contrast": 0.08 }
+    },
+    {
+      "id": "img-020",
+      "category": "upscale",
+      "prompt": "Enhance and upscale a vintage photograph, restore clarity and color accuracy",
+      "model": "fal-ai/creative-upscaler",
+      "expected_scale_factor": 2,
+      "quality_thresholds": { "min_brightness": 0.1, "max_brightness": 0.9, "min_contrast": 0.06 }
+    },
+    {
+      "id": "img-021",
+      "category": "photorealistic",
+      "prompt": "A steaming cup of latte art on a rustic wooden table, morning light, coffee shop ambiance",
+      "model": "fal-ai/flux/schnell",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.2, "max_brightness": 0.8, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-022",
+      "category": "abstract",
+      "prompt": "Fractal patterns resembling deep sea coral, bioluminescent colors on black background",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.05, "max_brightness": 0.7, "min_contrast": 0.15 }
+    },
+    {
+      "id": "img-023",
+      "category": "landscape",
+      "prompt": "Northern lights aurora borealis over a frozen lake in Iceland, long exposure, night photography",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 576 },
+      "quality_thresholds": { "min_brightness": 0.05, "max_brightness": 0.6, "min_contrast": 0.1 }
+    },
+    {
+      "id": "img-024",
+      "category": "product",
+      "prompt": "A collection of skincare bottles arranged symmetrically, pastel background, beauty product photography",
+      "model": "fal-ai/flux/dev",
+      "expected_dimensions": { "width": 1024, "height": 1024 },
+      "quality_thresholds": { "min_brightness": 0.35, "max_brightness": 0.9, "min_contrast": 0.08 }
+    },
+    {
+      "id": "img-025",
+      "category": "video",
+      "prompt": "Ocean waves crashing on rocky cliffs, slow motion, aerial perspective, cinematic",
+      "model": "fal-ai/kling-video/v1/standard/text-to-video",
+      "expected_duration_seconds": 5,
+      "quality_thresholds": { "min_brightness": 0.15, "max_brightness": 0.85, "min_contrast": 0.1 }
+    }
+  ]
+}
