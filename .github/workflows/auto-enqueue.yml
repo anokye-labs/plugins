@@ -1,0 +1,118 @@
+name: Auto Enqueue
+
+on:
+  workflow_run:
+    workflows: ["Validate Plugin", "Require Linked Issue"]
+    types: [completed]
+
+jobs:
+  auto-enqueue:
+    name: Auto Enqueue
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Enqueue ready PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const requiredChecks = ['Static Validation', 'Check Linked Issue'];
+            const headSha = context.payload.workflow_run.head_sha;
+
+            // Helper: get the latest check run conclusion for a given name
+            function latestConclusion(checkRuns, name) {
+              const matches = checkRuns
+                .filter(r => r.name === name && r.status === 'completed')
+                .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+              return matches.length > 0 ? matches[0].conclusion : null;
+            }
+
+            // Find open PRs matching the head SHA from the completed workflow
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: 'main',
+              per_page: 100,
+            });
+
+            for (const pr of prs) {
+              if (pr.head.sha !== headSha) continue;
+              if (pr.draft) {
+                core.info(`PR #${pr.number}: is a draft, skipping.`);
+                continue;
+              }
+              if (!pr.auto_merge) {
+                core.info(`PR #${pr.number}: auto-merge not enabled, skipping.`);
+                continue;
+              }
+
+              // Verify latest run of each required check passed
+              const { data: checkData } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: headSha,
+                per_page: 100,
+              });
+              const allPassed = requiredChecks.every(name =>
+                latestConclusion(checkData.check_runs, name) === 'success'
+              );
+              if (!allPassed) {
+                core.info(`PR #${pr.number}: not all required checks passed yet.`);
+                continue;
+              }
+
+              // Verify approval
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: pr.number,
+              });
+              if (!reviews.some(r => r.state === 'APPROVED')) {
+                core.info(`PR #${pr.number}: no approval yet.`);
+                continue;
+              }
+
+              // Paginate review threads to check for unresolved conversations
+              let hasUnresolved = false;
+              let cursor = null;
+              do {
+                const threads = await github.graphql(`
+                  query($owner:String!,$repo:String!,$pr:Int!,$cursor:String) {
+                    repository(owner:$owner,name:$repo) {
+                      pullRequest(number:$pr) {
+                        reviewThreads(first:100,after:$cursor) {
+                          nodes { isResolved }
+                          pageInfo { hasNextPage endCursor }
+                        }
+                      }
+                    }
+                  }
+                `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number, cursor });
+                const page = threads.repository.pullRequest.reviewThreads;
+                if (page.nodes.some(t => !t.isResolved)) { hasUnresolved = true; break; }
+                cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+              } while (cursor);
+
+              if (hasUnresolved) {
+                core.info(`PR #${pr.number}: has unresolved review threads, skipping.`);
+                continue;
+              }
+
+              // All conditions met — enqueue
+              try {
+                const result = await github.graphql(`
+                  mutation($prId:ID!) {
+                    enqueuePullRequest(input:{ pullRequestId:$prId }) {
+                      mergeQueueEntry { position state }
+                    }
+                  }
+                `, { prId: pr.node_id });
+                const entry = result.enqueuePullRequest.mergeQueueEntry;
+                core.info(`PR #${pr.number} added to merge queue at position ${entry.position} (${entry.state}).`);
+              } catch (e) {
+                core.info(`Could not enqueue PR #${pr.number} (may already be queued): ${e.message}`);
+              }
+            }
