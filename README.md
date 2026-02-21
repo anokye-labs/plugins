@@ -2,13 +2,14 @@
 
 **Deploy the Anokye System to any GitHub repository** — turning your repo into an AI-orchestrated project management environment with multi-agent automation.
 
-## The Plugin
+## Plugins
 
 | Plugin | Description | Skills | Status |
 |--------|-------------|--------|--------|
 | [omanfo](omanfo/) | The Omanfo plugin containing Okyeame (agent) and Okyerema (orchestration skill) for the Anokye System | Okyeame, Okyerema | ✅ Ready |
+| [ahuofe](ahuofe/) | The Ahuofe plugin for media generation and manipulation using fal.ai and ImageSorcery | fal-ai, fal-workflow, image-sorcery, media-agents | ✅ Ready |
 
-**Omanfo** ("The People") is the single plugin that contains:
+**Omanfo** ("The People") is the project-management plugin that contains:
 - **Okyeame** — The agent persona (linguist) for project management, status reporting, and coordination
 - **Okyerema** — The orchestration skill (master drummer) with scripts, references, and workflow automation
 - **Agent Archetypes** — Reusable templates for doc-sync, issue-labeler, and pr-reviewer automation
