@@ -1,3 +1,7 @@
+BeforeAll {
+    Import-Module "$PSScriptRoot/../../scripts/FalAi.psm1" -Force
+}
+
 Describe 'Measure-ApiCost' {
 
     Context 'Cost Calculations' {
@@ -86,6 +90,54 @@ Describe 'Measure-ApiCost' {
                 Where-Object { $_ -is [PSCustomObject] }
             $result.BudgetAlert.Status | Should -Be 'WARNING'
             $result.BudgetAlert.Message | Should -Match '80%'
+        }
+    }
+
+    Context 'Pre-Execution Estimation' {
+        BeforeEach {
+            $script:savedKey = $env:FAL_KEY
+            $env:FAL_KEY = 'mock-key-for-testing'
+            Mock Import-Module {} -ParameterFilter { $Name -and "$Name" -match 'FalAi' }
+        }
+
+        AfterEach {
+            $env:FAL_KEY = $script:savedKey
+        }
+
+        It 'Estimates cost using live pricing' {
+            Mock Invoke-RestMethod {
+                return @(
+                    [PSCustomObject]@{ model_id = 'fal-ai/flux/dev'; price = 0.005; unit = 'request'; category = 'image' }
+                )
+            } -ModuleName FalAi
+
+            $result = & "$PSScriptRoot/../../scripts/Measure-ApiCost.ps1" -ModelId 'fal-ai/flux/dev' -Quantity 100
+            $result.ModelId       | Should -Be 'fal-ai/flux/dev'
+            $result.Quantity      | Should -Be 100
+            $result.PricePerUnit  | Should -Be 0.005
+            $result.EstimatedCost | Should -Be 0.5
+        }
+
+        It 'Returns zero cost when no pricing found' {
+            Mock Invoke-RestMethod {
+                return @()
+            } -ModuleName FalAi
+
+            $result = & "$PSScriptRoot/../../scripts/Measure-ApiCost.ps1" -ModelId 'fal-ai/unknown' -Quantity 50 3>&1 |
+                Where-Object { $_ -is [PSCustomObject] }
+            $result.EstimatedCost | Should -Be 0
+            $result.PricePerUnit  | Should -Be 0
+        }
+
+        It 'Uses provided Unit override' {
+            Mock Invoke-RestMethod {
+                return @(
+                    [PSCustomObject]@{ model_id = 'fal-ai/flux/dev'; price = 0.0001; unit = 'megapixel'; category = 'image' }
+                )
+            } -ModuleName FalAi
+
+            $result = & "$PSScriptRoot/../../scripts/Measure-ApiCost.ps1" -ModelId 'fal-ai/flux/dev' -Quantity 10 -Unit 'image'
+            $result.Unit | Should -Be 'image'
         }
     }
 

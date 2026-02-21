@@ -51,6 +51,8 @@ Scripts import the module automatically. No manual setup needed.
 | `Get-FalModel.ps1`            | Get model info and OpenAPI schema        |
 | `Get-ModelSchema.ps1`         | Get model input/output schema            |
 | `Get-FalUsage.ps1`            | Check account usage and costs            |
+| `Get-FalPricing.ps1`          | Query live model pricing                 |
+| `Get-FalRequests.ps1`         | List and manage inference requests       |
 | `Get-QueueStatus.ps1`         | Check async request queue status         |
 | `Upload-ToFalCDN.ps1`         | Upload files to fal.ai CDN              |
 | `New-FalWorkflow.ps1`         | Define multi-step media workflows        |
@@ -155,6 +157,56 @@ $requestId = .\scripts\Invoke-FalGenerate.ps1 -Prompt "Epic battle" -Model "fal-
 .\scripts\Test-FalConnection.ps1
 # [PASS] FAL_KEY found (fal-xxxx...)
 # [PASS] API reachable (response: 245ms)
+```
+
+---
+
+## Platform Management
+
+### Query Pricing
+
+```powershell
+# List all model prices
+.\scripts\Get-FalPricing.ps1
+
+# Get pricing for a specific model
+.\scripts\Get-FalPricing.ps1 -ModelId "fal-ai/flux/dev"
+# Returns: PSCustomObject[] with .ModelId, .Price, .Unit, .Category, .PriceFormatted
+
+# Filter by category
+.\scripts\Get-FalPricing.ps1 -Category "video"
+```
+
+### Estimate Pre-Execution Cost
+
+```powershell
+# Estimate cost before running a job
+.\scripts\Measure-ApiCost.ps1 -ModelId "fal-ai/flux/dev" -Quantity 100
+# Returns: PSCustomObject with .ModelId, .Quantity, .PricePerUnit, .EstimatedCost
+
+# Estimate with unit override
+.\scripts\Measure-ApiCost.ps1 -ModelId "fal-ai/flux/dev" -Quantity 10 -Unit "image"
+```
+
+### Analyze Post-Hoc Costs
+
+```powershell
+$usage = .\scripts\Get-FalUsage.ps1 -Days 30
+.\scripts\Measure-ApiCost.ps1 -UsageData $usage -BudgetLimit 50
+# Returns cost analysis with projection, breakdown, and budget alerts
+```
+
+### Manage Requests
+
+```powershell
+# List recent requests
+.\scripts\Get-FalRequests.ps1
+
+# Filter by model with limit
+.\scripts\Get-FalRequests.ps1 -ModelId "fal-ai/flux/dev" -Limit 10
+
+# Delete payloads for a request (cleanup storage)
+.\scripts\Get-FalRequests.ps1 -Delete "req-abc123"
 ```
 
 ---
