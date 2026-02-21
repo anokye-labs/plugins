@@ -120,6 +120,26 @@ Describe 'Invoke-FalImageEdit' {
                 -Operation inpaint
             } | Should -Throw '*MaskUrl*'
         }
+
+        It 'Returns Operation and Model properties for inpaint' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{
+                    images = @([PSCustomObject]@{ url = 'https://fal.ai/inpainted.png'; width = 1024; height = 1024 })
+                    seed   = 55
+                }
+            } -ModuleName FalAi
+
+            $result = & $script:editScript `
+                -ImageUrl  'https://fal.media/photo.jpg' `
+                -MaskUrl   'https://fal.media/mask.png' `
+                -Prompt    'a red rose' `
+                -Operation inpaint
+
+            $result.Operation | Should -Be 'inpaint'
+            $result.Model     | Should -Be 'fal-ai/flux/dev/inpainting'
+            $result.Images.Count | Should -Be 1
+            $result.Images[0].Url | Should -Be 'https://fal.ai/inpainted.png'
+        }
     }
 
     Context 'Model override' {
