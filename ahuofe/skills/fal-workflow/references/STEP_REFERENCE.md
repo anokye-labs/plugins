@@ -327,6 +327,152 @@ is trimmed if longer.
 
 ---
 
+### llm (Text Generation)
+
+Generate text from a prompt using a language model.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `openrouter/router` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 1–5s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prompt` | string | ✅ | — | User instruction or question |
+| `system_prompt` | string | | — | System-level instruction |
+| `model` | string | | `google/gemini-2.5-flash` | OpenRouter model identifier |
+| `temperature` | float | | model default | Sampling temperature (0.0–2.0) |
+
+**Output:**
+
+```json
+{ "output": "Generated text string" }
+```
+
+**Reference output path:** `$node.output`
+
+**Chains from:** Any step — `llm` typically starts a workflow or follows another text node.
+**Chains to:** text-concat, merge-text, generate (passes output as `prompt`).
+
+> **Note:** Text-only. Use `vision-llm` when you need to analyze an image.
+
+---
+
+### vision-llm (Image Analysis)
+
+Analyze one or more images and produce a text description or answer.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `openrouter/router/vision` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | 2–8s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `prompt` | string | ✅ | — | Question or instruction about the image(s) |
+| `image_urls` | array | ✅ | — | Image URLs to analyze |
+| `system_prompt` | string | | — | System-level instruction |
+| `model` | string | | `google/gemini-3-pro-preview` | OpenRouter vision model identifier |
+| `temperature` | float | | model default | Sampling temperature (0.0–2.0) |
+| `reasoning` | bool | | `false` | Enable chain-of-thought reasoning |
+
+**Output:**
+
+```json
+{ "output": "Analysis or description text" }
+```
+
+**Reference output path:** `$node.output`
+
+**Chains from:** generate, upscale, edit — any step producing an image URL.
+**Chains to:** text-concat, merge-text, generate (passes output as `prompt`).
+
+> **Warning:** ONLY use `vision-llm` when you need to analyze an image. For
+> all text-only tasks use the plain `llm` step — it is faster and cheaper.
+
+---
+
+### text-concat (Concatenate 2 texts)
+
+Concatenate exactly two text values into one.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/text-concat` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | <1s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `text1` | string | ✅ | — | First text (static string or `$node.output` reference) |
+| `text2` | string | ✅ | — | Second text (typically a `$node.output` reference) |
+
+**Output:**
+
+```json
+{ "results": "text1text2" }
+```
+
+**Reference output path:** `$node.results`
+
+**Chains from:** llm, vision-llm — receives `$node.output` as `text1` or `text2`.
+**Chains to:** merge-text, generate (passes `results` as `prompt`).
+
+**Common pattern — Label + dynamic value:**
+
+```json
+{ "text1": "Cinematic scene: ", "text2": "$llm_step.output" }
+```
+
+---
+
+### merge-text (Merge 3+ texts)
+
+Merge an array of text values using a separator.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `fal-ai/workflow-utilities/merge-text` |
+| **Mode** | Sync (auto) |
+| **Typical Time** | <1s |
+
+**Input Parameters:**
+
+| Parameter | Type | Required | Default | Description |
+|-----------|------|----------|---------|-------------|
+| `texts` | array | ✅ | — | Array of text values or `$node.output` references |
+| `separator` | string | | `""` | String inserted between each value |
+
+**Output:**
+
+```json
+{ "text": "merged result" }
+```
+
+**Reference output path:** `$node.text`
+
+**Chains from:** llm, vision-llm, text-concat — receives output references in the `texts` array.
+**Chains to:** generate (passes `text` as `prompt`), llm (passes `text` as `prompt`).
+
+**Common pattern — Combine labeled expert outputs:**
+
+```json
+{
+  "texts": ["$expert1.results", "$expert2.results", "$expert3.results"],
+  "separator": "\n\n"
+}
+```
+
+---
+
 ## Chaining Rules
 
 ### Compatibility Matrix
@@ -335,15 +481,19 @@ Source output → Target input compatibility:
 
 | Source Step | Output Format | Compatible Targets |
 |------------|---------------|--------------------|
-| generate | `images[0].url` | upscale, edit, animate, restyle |
-| upscale | `image.url` | animate, edit, restyle |
-| edit | `images[0].url` | upscale, animate, restyle |
-| restyle | `images[0].url` | upscale, animate |
+| generate | `images[0].url` | upscale, edit, animate, restyle, vision-llm |
+| upscale | `image.url` | animate, edit, restyle, vision-llm |
+| edit | `images[0].url` | upscale, animate, restyle, vision-llm |
+| restyle | `images[0].url` | upscale, animate, vision-llm |
 | animate | `video.url` | extract-frame, merge-videos, merge-audio-video |
 | video-gen | `video.url` | extract-frame, merge-videos, merge-audio-video |
 | extract-frame | `frame.url` (image) | upscale, edit, restyle, animate |
 | merge-videos | `video.url` | merge-audio-video, *(terminal)* |
 | merge-audio-video | `video.url` | *(terminal)* |
+| llm | `output` (text) | text-concat, merge-text, generate, video-gen |
+| vision-llm | `output` (text) | text-concat, merge-text, generate, video-gen |
+| text-concat | `results` (text) | merge-text, generate, llm |
+| merge-text | `text` (text) | generate, llm, video-gen |
 
 ### Auto-Injection Rules
 
@@ -369,6 +519,8 @@ These combinations will fail:
 | video-gen → upscale | Video output, image input expected — use extract-frame first |
 | edit without mask_url | Inpainting requires both image and mask |
 | merge-videos with single URL | Provide at least two URLs in `video_urls` |
+| vision-llm without image_urls | Vision LLM requires at least one image URL |
+| llm → vision-llm (no image) | llm output is text, vision-llm needs image URLs |
 
 ### Dependency Rules
 
@@ -428,8 +580,15 @@ Note the singular `image` vs. plural `images`.
 
 | Parameter | Used By | Description |
 |-----------|---------|-------------|
-| `prompt` | All except upscale, extract-frame, merge-videos, merge-audio-video | Text description or guidance |
+| `prompt` | All except upscale, extract-frame, merge-videos, merge-audio-video, text-concat, merge-text | Text description or guidance |
+| `system_prompt` | llm, vision-llm | System-level instruction for the model |
+| `model` | llm, vision-llm | OpenRouter model identifier |
+| `temperature` | llm, vision-llm | Sampling temperature (0.0–2.0) |
 | `image_url` | upscale, edit, animate, restyle | Source image (auto-injected) |
+| `image_urls` | vision-llm | Images to analyze (array) |
+| `text1`, `text2` | text-concat | Text values to concatenate |
+| `texts` | merge-text | Array of text values to merge |
+| `separator` | merge-text | Delimiter between merged values |
 | `video_url` | extract-frame, merge-audio-video | Source video (auto-injected from video step) |
 | `video_urls` | merge-videos | Ordered array of video URLs to concatenate |
 | `audio_url` | merge-audio-video | Audio track to overlay |
@@ -452,6 +611,7 @@ Note the singular `image` vs. plural `images`.
 | `Circular dependency detected` | Any | `dependsOn` forms a loop | Remove the circular reference |
 | `depends on unknown step` | Any | Typo in `dependsOn` name | Check step names match exactly |
 | `image_url is required` | upscale, edit, animate | No prior step output or empty result | Verify prior step produces images |
+| `image_urls is required` | vision-llm | No image URLs provided | Add `image_urls` array to step params |
 | `video_url is required` | extract-frame, merge-audio-video | No prior video step or empty result | Verify prior step produces a video |
 | `video_urls is required` | merge-videos | Missing or empty `video_urls` array | Provide at least two video URLs |
 | `mask_url is required` | edit | Missing mask parameter | Add `mask_url` to edit step params |
