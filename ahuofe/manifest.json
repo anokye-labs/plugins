@@ -35,6 +35,13 @@
       "scripts": 0
     },
     {
+      "name": "fal-audio",
+      "path": "skills/fal-audio",
+      "entryPoint": "SKILL.md",
+      "references": 2,
+      "scripts": 3
+    },
+    {
       "name": "fal-image-edit",
       "path": "skills/fal-image-edit",
       "entryPoint": "SKILL.md",
