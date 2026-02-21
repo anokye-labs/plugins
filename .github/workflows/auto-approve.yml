@@ -25,6 +25,7 @@ jobs:
               'devin-ai-integration[bot]',
               'claude[bot]',
               'chatgpt-codex-connector[bot]',
+              'Copilot',
               'copilot-swe-agent[bot]',
               'app/copilot-swe-agent',
             ];
