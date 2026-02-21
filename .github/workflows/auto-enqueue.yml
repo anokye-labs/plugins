@@ -1,17 +1,14 @@
 name: Auto Enqueue
 
 on:
-  check_run:
+  workflow_run:
+    workflows: ["Validate Plugin", "Require Linked Issue"]
     types: [completed]
 
 jobs:
   auto-enqueue:
     name: Auto Enqueue
-    # Only run when a required check succeeds — avoids unnecessary runs
-    if: |
-      github.event.check_run.conclusion == 'success' &&
-      (github.event.check_run.name == 'Static Validation' ||
-       github.event.check_run.name == 'Check Linked Issue')
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -22,7 +19,7 @@ jobs:
         with:
           script: |
             const requiredChecks = ['Static Validation', 'Check Linked Issue'];
-            const headSha = context.payload.check_run.head_sha;
+            const headSha = context.payload.workflow_run.head_sha;
 
             // Helper: get the latest check run conclusion for a given name
             function latestConclusion(checkRuns, name) {
@@ -32,7 +29,7 @@ jobs:
               return matches.length > 0 ? matches[0].conclusion : null;
             }
 
-            // Paginate all open PRs targeting main
+            // Find open PRs matching the head SHA from the completed workflow
             const prs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -43,6 +40,10 @@ jobs:
 
             for (const pr of prs) {
               if (pr.head.sha !== headSha) continue;
+              if (pr.draft) {
+                core.info(`PR #${pr.number}: is a draft, skipping.`);
+                continue;
+              }
               if (!pr.auto_merge) {
                 core.info(`PR #${pr.number}: auto-merge not enabled, skipping.`);
                 continue;
