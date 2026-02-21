@@ -135,7 +135,7 @@ Respond in EXACTLY this JSON format (no markdown, no code fences):
       };
     }
 
-    return { score: 3, reasoning: 'Could not parse judge response' };
+    throw new Error(`Could not parse judge response: ${result.trim().slice(0, 200)}`);
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error);
     return { score: 0, reasoning: `Judge error: ${msg}` };
