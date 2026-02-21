@@ -35,7 +35,7 @@ Import-Module $modulePath -Force
 
 # ─── Delete payloads for a specific request ─────────────────────────────────
 if ($Delete) {
-    $deleteUrl = "https://api.fal.ai/v1/models/requests/$Delete/payloads"
+    $deleteUrl = "https://api.fal.ai/v1/models/requests/$([uri]::EscapeDataString($Delete))/payloads"
     Write-Host "Deleting payloads for request '$Delete'..." -ForegroundColor Cyan
 
     Invoke-FalApi -Method DELETE -Endpoint $deleteUrl -RawUrl | Out-Null
