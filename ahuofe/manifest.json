@@ -17,7 +17,7 @@
       "name": "fal-workflow",
       "path": "skills/fal-workflow",
       "entryPoint": "SKILL.md",
-      "references": 5,
+      "references": 6,
       "scripts": 0
     },
     {
@@ -40,6 +40,13 @@
       "entryPoint": "SKILL.md",
       "references": 2,
       "scripts": 3
+    },
+    {
+      "name": "fal-image-edit",
+      "path": "skills/fal-image-edit",
+      "entryPoint": "SKILL.md",
+      "references": 2,
+      "scripts": 1
     }
   ],
   "documentation": {
