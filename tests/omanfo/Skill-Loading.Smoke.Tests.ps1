@@ -187,32 +187,32 @@ Describe "Skill Metadata" {
     }
 }
 
-Describe "Plugin Manifest Validation" {
-    Context "Manifest File" {
+Describe "Plugin Metadata Validation" {
+    Context "plugin.json File" {
         BeforeAll {
-            $script:ManifestPath = Join-Path $script:PluginRoot "manifest.json"
-            $script:Manifest = Get-Content $script:ManifestPath -Raw | ConvertFrom-Json
+            $script:PluginJsonPath = Join-Path $script:PluginRoot ".github/plugin/plugin.json"
+            $script:PluginJson = Get-Content $script:PluginJsonPath -Raw | ConvertFrom-Json
         }
         
-        It "Should have manifest.json in plugin root" {
-            Test-Path $script:ManifestPath | Should -Be $true
+        It "Should have .github/plugin/plugin.json" {
+            Test-Path $script:PluginJsonPath | Should -Be $true
         }
         
         It "Should have valid JSON format" {
-            $script:Manifest | Should -Not -BeNullOrEmpty
+            $script:PluginJson | Should -Not -BeNullOrEmpty
         }
         
         It "Should have name field" {
-            $script:Manifest.name | Should -Be 'omanfo'
+            $script:PluginJson.name | Should -Be 'omanfo'
         }
         
         It "Should have version field" {
-            $script:Manifest.version | Should -Not -BeNullOrEmpty
+            $script:PluginJson.version | Should -Not -BeNullOrEmpty
         }
         
-        It "Should have skills array" {
-            $script:Manifest.skills | Should -Not -BeNullOrEmpty
-            $script:Manifest.skills.Count | Should -BeGreaterThan 0
+        It "Should have items array" {
+            $script:PluginJson.items | Should -Not -BeNullOrEmpty
+            $script:PluginJson.items.Count | Should -BeGreaterThan 0
         }
     }
 }

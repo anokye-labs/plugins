@@ -1,0 +1,39 @@
+{
+  "name": "ahuofe",
+  "description": "The Ahuofe plugin — media generation and manipulation using fal.ai and ImageSorcery for the Anokye System.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Anokye Labs"
+  },
+  "repository": "https://github.com/anokye-labs/plugins",
+  "license": "MIT",
+  "tags": [
+    "media-generation",
+    "fal-ai",
+    "image-processing",
+    "video-generation",
+    "image-sorcery"
+  ],
+  "items": [
+    {
+      "path": "skills/fal-ai/SKILL.md",
+      "kind": "skill",
+      "usage": "recommended\n\nCore fal.ai integration skill for AI media generation — text-to-image, image-to-image, and model discovery."
+    },
+    {
+      "path": "skills/fal-workflow/SKILL.md",
+      "kind": "skill",
+      "usage": "recommended\n\nSkill for building multi-step fal.ai workflows with chained operations."
+    },
+    {
+      "path": "skills/image-sorcery/SKILL.md",
+      "kind": "skill",
+      "usage": "recommended\n\nImageSorcery MCP integration for local image processing and manipulation."
+    },
+    {
+      "path": "skills/media-agents/SKILL.md",
+      "kind": "skill",
+      "usage": "recommended\n\nSkill for orchestrating media generation agents."
+    }
+  ]
+}

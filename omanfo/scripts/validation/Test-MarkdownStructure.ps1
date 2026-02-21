@@ -53,24 +53,10 @@ $pluginDir = if ([System.IO.Path]::IsPathRooted($PluginPath)) {
 
 Write-Host "`n🔍 Validating markdown structure for: $pluginDir`n" -ForegroundColor Cyan
 
-# Load manifest
-$manifestPath = Join-Path $pluginDir "manifest.json"
-if (-not (Test-Path $manifestPath)) {
-    Write-ValidationError "manifest.json not found at: $manifestPath"
-    exit 1
-}
-
-$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-
-# Check if evaluations section exists
-if (-not $manifest.evaluations) {
-    Write-ValidationWarning "manifest.json has no evaluations section"
-    exit 0
-}
-
-$evalPath = Join-Path $pluginDir $manifest.evaluations.path
+# Check for evaluations directory
+$evalPath = Join-Path $pluginDir "evaluations"
 if (-not (Test-Path $evalPath)) {
-    Write-ValidationWarning "Evaluations directory not found: $evalPath"
+    Write-ValidationWarning "No evaluations/ directory found"
     exit 0
 }
 

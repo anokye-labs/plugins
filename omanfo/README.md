@@ -90,4 +90,4 @@ See [evaluations/](evaluations/) for test scenarios that validate the plugin aft
 
 ## Version
 
-See [manifest.json](manifest.json) for current version and compatibility information.
+See [.github/plugin/plugin.json](.github/plugin/plugin.json) for current version and compatibility information.

@@ -1,23 +1,23 @@
 <#
 .SYNOPSIS
-    Installs the Omanfo plugin via the Copilot CLI.
+    Installs the Ahuofe media plugin via the Copilot CLI.
 
 .DESCRIPTION
-    Installs the Omanfo plugin (Okyeame agent, Okyerema coordinator, and project
-    management skills) using `copilot plugin install`. Supports installation from
-    the local source tree or from the remote GitHub repository.
+    Installs the Ahuofe plugin (fal.ai, fal-workflow, image-sorcery, and
+    media-agents skills) using `copilot plugin install`. Supports installation
+    from the local source tree or from the remote GitHub repository.
 
 .PARAMETER Source
     Plugin source: a local path, owner/repo, or owner/repo:path.
-    Defaults to the omanfo directory in this repository.
+    Defaults to the ahuofe directory in this repository.
 
 .PARAMETER Remote
     Install from the remote GitHub repository instead of the local source tree.
 
 .EXAMPLE
-    .\Install-Anokye.ps1
-    .\Install-Anokye.ps1 -Remote
-    .\Install-Anokye.ps1 -Source C:\path\to\omanfo
+    .\Install-Ahuofe.ps1
+    .\Install-Ahuofe.ps1 -Remote
+    .\Install-Ahuofe.ps1 -Source C:\path\to\ahuofe
 #>
 #Requires -Version 5.1
 [CmdletBinding()]
@@ -36,13 +36,13 @@ if (-not (Get-Command copilot -ErrorAction SilentlyContinue)) {
 
 if (-not $Source) {
     if ($Remote) {
-        $Source = "anokye-labs/plugins:omanfo"
+        $Source = "anokye-labs/plugins:ahuofe"
     } else {
         $Source = $pluginRoot
     }
 }
 
-Write-Host "`n🥁 Installing Omanfo plugin" -ForegroundColor Cyan
+Write-Host "`n🎨 Installing Ahuofe plugin" -ForegroundColor Cyan
 Write-Host "   Source: $Source`n" -ForegroundColor Gray
 
 copilot plugin install $Source
@@ -52,5 +52,5 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host "`n💡 Next steps:" -ForegroundColor Yellow
-Write-Host "   1. Verify org issue types: Get-IssueTypeIds.ps1 -Owner <your-org>"
-Write-Host "   2. Test with: @okyerema create a Feature issue titled 'Test'"
+Write-Host "   1. Set your fal.ai API key: `$env:FAL_KEY = 'your-key'"
+Write-Host "   2. Test with: 'Generate an image of a mountain landscape'"

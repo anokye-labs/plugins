@@ -24,42 +24,30 @@ if (-not (Test-Path $pluginRoot)) {
     exit 0
 }
 
-# Read manifest to discover skills with scripts
-$manifestPath = Join-Path $pluginRoot "manifest.json"
-if (-not (Test-Path $manifestPath)) {
-    Write-Host "ℹ Manifest not found: $manifestPath" -ForegroundColor Cyan
-    Write-Host "✓ Skipping test coverage validation (no manifest)" -ForegroundColor Green
+# Discover skills with scripts by scanning skills/ directory
+$skillsDir = Join-Path $pluginRoot "skills"
+if (-not (Test-Path $skillsDir)) {
+    Write-Host "ℹ skills/ directory not found: $skillsDir" -ForegroundColor Cyan
+    Write-Host "✓ Skipping test coverage validation" -ForegroundColor Green
     Write-Host ""
     exit 0
 }
 
-$manifest = Get-Content $manifestPath -Raw | ConvertFrom-Json
-
-# Find skills with scripts > 0
-$skillsWithScripts = $manifest.skills | Where-Object { $_.scripts -gt 0 }
-
-if ($skillsWithScripts.Count -eq 0) {
-    Write-Host "✓ No skills with scripts in this plugin - skipping test coverage validation" -ForegroundColor Green
-    Write-Host ""
-    exit 0
-}
-
-# Process each skill with scripts
+# Process each skill that has a scripts/ subdirectory
 $allScriptFiles = @()
 $allScriptsDirs = @()
 
-foreach ($skill in $skillsWithScripts) {
-    $scriptsDir = Join-Path $pluginRoot $skill.path "scripts"
+foreach ($dir in (Get-ChildItem $skillsDir -Directory)) {
+    $scriptsDir = Join-Path $dir.FullName "scripts"
     
     if (-not (Test-Path $scriptsDir)) {
-        Write-Host "⚠ Scripts directory not found for skill '$($skill.name)': $scriptsDir" -ForegroundColor Yellow
         continue
     }
     
     $allScriptsDirs += $scriptsDir
     
     $scriptFiles = Get-ChildItem -Path $scriptsDir -Filter "*.ps1" -File | 
-        Where-Object { $_.Name -notmatch '^_' } |  # Exclude helper files starting with _
+        Where-Object { $_.Name -notmatch '^_' } |
         Select-Object -ExpandProperty BaseName
     
     $allScriptFiles += $scriptFiles
