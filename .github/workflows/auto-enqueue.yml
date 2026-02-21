@@ -4,11 +4,16 @@ on:
   workflow_run:
     workflows: ["Validate Plugin", "Require Linked Issue"]
     types: [completed]
+  # Sweep all open PRs periodically — catches PRs that missed event-driven enqueue
+  # (e.g., triage resolved threads after checks passed, race conditions, late approvals)
+  schedule:
+    - cron: '*/15 * * * *'
 
 jobs:
   auto-enqueue:
     name: Auto Enqueue
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # For workflow_run: only proceed on success. For schedule: always run.
+    if: ${{ github.event_name == 'schedule' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -19,7 +24,6 @@ jobs:
         with:
           script: |
             const requiredChecks = ['Static Validation', 'Check Linked Issue'];
-            const headSha = context.payload.workflow_run.head_sha;
 
             // Helper: get the latest check run conclusion for a given name
             function latestConclusion(checkRuns, name) {
@@ -29,7 +33,9 @@ jobs:
               return matches.length > 0 ? matches[0].conclusion : null;
             }
 
-            // Find open PRs matching the head SHA from the completed workflow
+            // For workflow_run events, we know the head SHA. For schedule, sweep all.
+            const targetSha = context.payload.workflow_run?.head_sha || null;
+
             const prs = await github.paginate(github.rest.pulls.list, {
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -38,8 +44,11 @@ jobs:
               per_page: 100,
             });
 
+            let enqueued = 0;
             for (const pr of prs) {
-              if (pr.head.sha !== headSha) continue;
+              // For workflow_run events, only process the PR that triggered it
+              if (targetSha && pr.head.sha !== targetSha) continue;
+
               if (pr.draft) {
                 core.info(`PR #${pr.number}: is a draft, skipping.`);
                 continue;
@@ -49,11 +58,18 @@ jobs:
                 continue;
               }
 
+              // Skip PRs in active triage (threads still being resolved)
+              const triageActive = pr.labels?.some(l => l.name === 'triage/active');
+              if (triageActive) {
+                core.info(`PR #${pr.number}: triage/active label present, skipping.`);
+                continue;
+              }
+
               // Verify latest run of each required check passed
               const { data: checkData } = await github.rest.checks.listForRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: headSha,
+                ref: pr.head.sha,
                 per_page: 100,
               });
               const allPassed = requiredChecks.every(name =>
@@ -112,7 +128,10 @@ jobs:
                 `, { prId: pr.node_id });
                 const entry = result.enqueuePullRequest.mergeQueueEntry;
                 core.info(`PR #${pr.number} added to merge queue at position ${entry.position} (${entry.state}).`);
+                enqueued++;
               } catch (e) {
                 core.info(`Could not enqueue PR #${pr.number} (may already be queued): ${e.message}`);
               }
             }
+
+            core.info(`Sweep complete: ${enqueued} PR(s) enqueued out of ${prs.length} open.`);
