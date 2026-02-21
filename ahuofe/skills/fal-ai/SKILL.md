@@ -227,11 +227,6 @@ with exponential backoff, up to 3 attempts.
 
 ### Upscale
 
-| Model | Notes |
-|-------|-------|
-| `fal-ai/seedvr/upscale/image` | High-quality upscaling |
-| `fal-ai/aura-sr` | Fast super-resolution |
-
 ### Audio / Music
 
 | Model | Notes |
@@ -264,6 +259,23 @@ with exponential backoff, up to 3 attempts.
 |-------|-------|
 | `fal-ai/bria/background/remove` | Remove image backgrounds |
 | `fal-ai/workflow-utilities/crop-image` | Percentage-based cropping |
+| `fal-ai/aura-sr` | Fast upscaling |
+| `fal-ai/seedvr/upscale/image` | Higher quality |
+
+### Music Generation
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/ace-step` | Text-to-music, full tracks |
+| `fal-ai/stable-audio` | Short audio clips |
+
+### TTS (Text-to-Speech)
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/kokoro/american-english` | Natural American English voice |
+| `fal-ai/kokoro/british-english` | Natural British English voice |
+| `fal-ai/playai-tts` | Multi-voice, expressive |
 
 ---
 
