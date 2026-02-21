@@ -1,31 +1,46 @@
 <#
 .SYNOPSIS
-    Upscale an image using fal.ai super-resolution models.
+    Upscale an image or video using fal.ai super-resolution models.
 .DESCRIPTION
-    Increases the resolution of an image using AI upscaling.
+    Increases the resolution of an image or video using AI upscaling.
     Supports both synchronous and queue-based modes.
 .PARAMETER ImageUrl
-    URL of the image to upscale (required).
+    URL of the image to upscale. Required for image upscaling (default).
+.PARAMETER VideoUrl
+    URL of the video to upscale. Required when UpscaleType is 'video'.
+.PARAMETER UpscaleType
+    Type of media to upscale: 'image' (default) or 'video'.
 .PARAMETER Scale
     Upscale factor. Default: 2. Valid values: 2, 4.
 .PARAMETER Model
-    The fal.ai upscaling model endpoint. Default: fal-ai/aura-sr.
+    The fal.ai upscaling model endpoint.
+    Image default: fal-ai/aura-sr. Video default: fal-ai/video-upscaler.
 .PARAMETER Queue
     Use queue mode (submit, poll, retrieve) instead of synchronous.
 .EXAMPLE
     .\Invoke-FalUpscale.ps1 -ImageUrl "https://fal.media/files/example.png"
 .EXAMPLE
     .\Invoke-FalUpscale.ps1 -ImageUrl "https://..." -Scale 4 -Queue
+.EXAMPLE
+    .\Invoke-FalUpscale.ps1 -VideoUrl "https://..." -UpscaleType video -Queue
+.EXAMPLE
+    .\Invoke-FalUpscale.ps1 -VideoUrl "https://..." -Model "fal-ai/topaz/upscale/video" -Queue
 #>
-[CmdletBinding()]
+[CmdletBinding(DefaultParameterSetName='Image')]
 param(
-    [Parameter(Mandatory)]
+    [Parameter(Mandatory, ParameterSetName='Image')]
     [string]$ImageUrl,
+
+    [Parameter(Mandatory, ParameterSetName='Video')]
+    [string]$VideoUrl,
+
+    [ValidateSet('image', 'video')]
+    [string]$UpscaleType,
 
     [ValidateSet(2, 4)]
     [int]$Scale = 2,
 
-    [string]$Model = 'fal-ai/aura-sr',
+    [string]$Model,
 
     [switch]$Queue
 )
@@ -36,10 +51,23 @@ $ErrorActionPreference = 'Stop'
 $modulePath = Join-Path $PSScriptRoot 'FalAi.psm1'
 Import-Module $modulePath -Force
 
+# Determine upscale type and set model default
+$isVideo = $PSCmdlet.ParameterSetName -eq 'Video'
+if (-not $Model) {
+    $Model = if ($isVideo) { 'fal-ai/video-upscaler' } else { 'fal-ai/aura-sr' }
+}
+
 # Build payload
-$body = @{
-    image_url = $ImageUrl
-    scale     = $Scale
+if ($isVideo) {
+    $body = @{
+        video_url = $VideoUrl
+        scale     = $Scale
+    }
+} else {
+    $body = @{
+        image_url = $ImageUrl
+        scale     = $Scale
+    }
 }
 
 # Execute
@@ -55,24 +83,36 @@ else {
 # Build output
 $output = [PSCustomObject]@{
     Image  = $null
+    Video  = $null
     Width  = $null
     Height = $null
 }
 
-if ($result.image) {
-    $output.Image = [PSCustomObject]@{
-        Url    = $result.image.url
-        Width  = $result.image.width
-        Height = $result.image.height
+if ($isVideo) {
+    if ($result.video) {
+        $output.Video = [PSCustomObject]@{
+            Url = $result.video.url
+        }
     }
-    $output.Width  = $result.image.width
-    $output.Height = $result.image.height
+} else {
+    if ($result.image) {
+        $output.Image = [PSCustomObject]@{
+            Url    = $result.image.url
+            Width  = $result.image.width
+            Height = $result.image.height
+        }
+        $output.Width  = $result.image.width
+        $output.Height = $result.image.height
+    }
 }
 
 # Display summary
 if ($output.Image) {
     Write-Host "Upscaled: $($output.Image.Url)" -ForegroundColor Green
     Write-Host "Size: $($output.Width)x$($output.Height)" -ForegroundColor Green
+}
+elseif ($output.Video) {
+    Write-Host "Upscaled video: $($output.Video.Url)" -ForegroundColor Green
 }
 
 $output

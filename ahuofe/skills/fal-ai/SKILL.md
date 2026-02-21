@@ -3,7 +3,7 @@ name: fal-ai
 description: >
   Generate images, videos, and audio using fal.ai AI models. Use when the user
   requests "generate image", "create video", "text to image", "image to video",
-  "upscale image", "edit image", "search fal models", "get model schema", or
+  "upscale image", "upscale video", "edit image", "search fal models", "get model schema", or
   similar AI generation tasks. Also covers file uploads to fal CDN and queue
   management for long-running jobs.
 metadata:
@@ -43,7 +43,7 @@ Scripts import the module automatically. No manual setup needed.
 | Script                        | Purpose                                  |
 |-------------------------------|------------------------------------------|
 | `Invoke-FalGenerate.ps1`      | Generate images from text prompts        |
-| `Invoke-FalUpscale.ps1`       | AI-powered image upscaling               |
+| `Invoke-FalUpscale.ps1`       | AI-powered image and video upscaling     |
 | `Invoke-FalInpainting.ps1`    | Image inpainting with masks              |
 | `Invoke-FalVideoGen.ps1`      | Text-to-video generation                 |
 | `Invoke-FalImageToVideo.ps1`  | Animate still images to video            |
@@ -101,6 +101,27 @@ $env:FAL_KEY = "your-key-here"
     -Model "fal-ai/kling-video/v2.6/pro/image-to-video" `
     -ImageUrl "https://example.com/photo.jpg" `
     -Queue
+```
+
+### Image Upscaling
+
+```powershell
+# Default (Aura SR)
+.\scripts\Invoke-FalUpscale.ps1 -ImageUrl "https://example.com/photo.jpg"
+
+# With detail preservation
+.\scripts\Invoke-FalUpscale.ps1 -ImageUrl "https://..." -Model "fal-ai/clarity-upscaler" -Scale 4
+```
+
+### Video Upscaling
+
+```powershell
+# Default (general purpose)
+.\scripts\Invoke-FalUpscale.ps1 -VideoUrl "https://example.com/clip.mp4" -UpscaleType video -Queue
+
+# Premium quality with Topaz
+.\scripts\Invoke-FalUpscale.ps1 -VideoUrl "https://..." -UpscaleType video `
+    -Model "fal-ai/topaz/upscale/video" -Queue
 ```
 
 ### Upload Then Generate
@@ -244,6 +265,26 @@ with exponential backoff, up to 3 attempts.
 | `fal-ai/kokoro/british-english` | Natural British English voice |
 | `fal-ai/playai-tts` | Multi-voice, expressive |
 
+### Image Upscale
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/aura-sr` | Fast (default) |
+| `fal-ai/clarity-upscaler` | Detail preservation, 2–4× |
+| `fal-ai/creative-upscaler` | Artistic enhancement, 2–4× |
+
+### Video Upscale
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/video-upscaler` | General purpose (default) |
+| `fal-ai/topaz/upscale/video` | **Premium quality** |
+| `fal-ai/bria/video/increase-resolution` | Fast |
+| `fal-ai/flashvsr` | Real-time |
+| `fal-ai/seedvr/upscale/video` | High fidelity |
+| `fal-ai/bytedance-upscaler` | Good balance |
+| `fal-ai/simalabs/sima-video-upscaler-lite` | Lightweight |
+
 ---
 
 ## Script Parameters Reference
@@ -262,6 +303,17 @@ with exponential backoff, up to 3 attempts.
 | `-NumInferenceSteps` | int | — | Inference steps |
 | `-GuidanceScale` | double | — | CFG scale |
 | `-EnableSafetyChecker` | switch | — | Safety filter |
+| `-Queue` | switch | — | Use queue mode |
+
+### Invoke-FalUpscale.ps1
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `-ImageUrl` | string | *(required for image)* | URL of image to upscale |
+| `-VideoUrl` | string | *(required for video)* | URL of video to upscale |
+| `-UpscaleType` | string | `image` | Media type: `image` or `video` |
+| `-Scale` | int | `2` | Upscale factor (2 or 4) |
+| `-Model` | string | `fal-ai/aura-sr` (image) / `fal-ai/video-upscaler` (video) | Model endpoint |
 | `-Queue` | switch | — | Use queue mode |
 
 ### Get-FalModel.ps1
