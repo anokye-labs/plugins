@@ -172,7 +172,7 @@ for the specification.
 All structured GitHub operations go through `gh api graphql -f query="..."`.
 
 ### PowerShell Helper Scripts
-Located at `.github/skills/okyerema/scripts/`:
+Located at `omanfo/skills/okyerema/scripts/`:
 
 | Script | Purpose |
 |--------|---------|
@@ -188,7 +188,7 @@ Located at `.github/skills/okyerema/scripts/`:
 | `Get-HierarchyHealth.ps1` | Issue hierarchy validation |
 
 ### Skill References
-Load on-demand from `.github/skills/okyerema/references/`:
+Load on-demand from `omanfo/skills/okyerema/references/`:
 - `agentic-workflows.md` — gh-aw specification, templates, decision tree
 - `issue-types.md` — type creation, lookup, assignment
 - `relationships.md` — sub-issue hierarchy queries

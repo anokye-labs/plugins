@@ -335,7 +335,7 @@ All structured GitHub operations go through `gh api graphql -f query="..."`.
 For mutations with variables, use `-f` for strings and `-F` for other types.
 
 ### PowerShell Helper Scripts
-Scripts available from the Okyerema skill (`.github/skills/okyerema/scripts/`):
+Scripts available from the Okyerema skill (`omanfo/skills/okyerema/scripts/`):
 
 | Script | Purpose |
 |--------|---------|
@@ -351,7 +351,7 @@ Scripts available from the Okyerema skill (`.github/skills/okyerema/scripts/`):
 | `Get-HierarchyHealth.ps1` | Issue hierarchy validation |
 
 ### Skill References
-Load on-demand from Okyerema skill references (`.github/skills/okyerema/references/`):
+Load on-demand from Okyerema skill references (`omanfo/skills/okyerema/references/`):
 - `issue-types.md` — type creation, lookup, assignment
 - `relationships.md` — sub-issue hierarchy queries
 - `projects.md` — Projects V2 GraphQL API
