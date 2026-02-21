@@ -217,8 +217,32 @@ with exponential backoff, up to 3 attempts.
 
 | Model | Notes |
 |-------|-------|
+| `fal-ai/bytedance/seedance/v1.5/pro/image-to-video` | Default I2V |
 | `fal-ai/kling-video/v2.6/pro/image-to-video` | Best overall |
-| `fal-ai/veo3/fast` | Fast, high quality |
+| `fal-ai/kling-video/o1/image-to-video` | First/last frame control |
+| `fal-ai/veo3.1/fast/image-to-video` | Fast, high quality |
+
+### Upscale
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/aura-sr` | Fast upscaling |
+| `fal-ai/seedvr/upscale/image` | Higher quality |
+
+### Music Generation
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/ace-step` | Text-to-music, full tracks |
+| `fal-ai/stable-audio` | Short audio clips |
+
+### TTS (Text-to-Speech)
+
+| Model | Notes |
+|-------|-------|
+| `fal-ai/kokoro/american-english` | Natural American English voice |
+| `fal-ai/kokoro/british-english` | Natural British English voice |
+| `fal-ai/playai-tts` | Multi-voice, expressive |
 
 ---
 
