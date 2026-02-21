@@ -311,7 +311,7 @@ Describe "Get-DagCompletionReport" {
 
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
 
-        # Fixture: 10 total, 4 closed (issues 2,4,5,7) = 40%
+        # Fixture: 10 total, 4 closed (issues 2, 4, 5, 7) = 40%
         $result.TotalIssues    | Should -Be 10
         $result.ClosedCount    | Should -Be 4
         $result.PercentComplete | Should -Be 40
@@ -325,7 +325,7 @@ Describe "Get-DagCompletionReport" {
 
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
 
-        # Fixture has 3 all-open paths: #1→#3→#6, #8→#9, #8→#10
+        # Fixture has 3 all-open paths: #1 → #3 → #6, #8 → #9, #8 → #10
         $result.BlockedPathCount | Should -Be 3
         $result.BlockedPaths.Count | Should -Be $result.BlockedPathCount
     }
@@ -338,7 +338,7 @@ Describe "Get-DagCompletionReport" {
 
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
 
-        # Longest all-open path in fixture is #1→#3→#6 (length 3)
+        # Longest all-open path in fixture is #1 → #3 → #6 (length 3)
         $result.CriticalPathLength | Should -Be 3
     }
 
