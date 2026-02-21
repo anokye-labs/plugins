@@ -116,7 +116,12 @@ if ($PSBoundParameters.ContainsKey('Lifecycle'))           { $body.x_fal_lifecyc
 if ($Async) {
     Write-Host "Submitting to queue (async): $Model..." -ForegroundColor Cyan
     $submitResult = Invoke-FalApi -Method POST -Endpoint $Model -Body $body -BaseUrl 'https://queue.fal.run'
-    return $submitResult.request_id
+    $requestId = $submitResult.request_id
+    if (-not $requestId) {
+        $msg = ConvertTo-FalError $submitResult
+        throw "Queue submission failed: $msg"
+    }
+    return $requestId
 }
 elseif ($Queue) {
     Write-Host "Submitting to queue: $Model..." -ForegroundColor Cyan
