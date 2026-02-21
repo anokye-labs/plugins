@@ -71,6 +71,182 @@ Describe "CLITestHarness Module" {
         }
     }
 
+    Context "Get-CLIOutput" {
+        It "Should be exported from the module" {
+            $cmd = Get-Command Get-CLIOutput -ErrorAction SilentlyContinue
+            $cmd | Should -Not -BeNullOrEmpty
+        }
+
+        It "Should require mandatory Session parameter" {
+            $cmd = Get-Command Get-CLIOutput
+            $param = $cmd.Parameters['Session']
+            $param | Should -Not -BeNullOrEmpty
+            $param.Attributes.Where({ $_ -is [System.Management.Automation.ParameterAttribute] }).Mandatory | Should -Be $true
+        }
+
+        It "Should drain the output buffer and return joined lines" {
+            $queue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+            $queue.Enqueue('line one')
+            $queue.Enqueue('line two')
+            $fakeProcess = [PSCustomObject]@{ HasExited = $false }
+            $session = [PSCustomObject]@{
+                Process      = $fakeProcess
+                Provider     = 'copilot'
+                OutputBuffer = $queue
+                ErrorBuffer  = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                StdoutEvent  = [PSCustomObject]@{ Name = 'fake-stdout'; Id = 0 }
+                StderrEvent  = [PSCustomObject]@{ Name = 'fake-stderr'; Id = 0 }
+                StartTime    = Get-Date
+                TurnCount    = 0
+            }
+
+            $output = Get-CLIOutput -Session $session
+            $output | Should -Match 'line one'
+            $output | Should -Match 'line two'
+            $queue.Count | Should -Be 0
+        }
+
+        It "Should return empty string when buffer is empty" {
+            $fakeProcess = [PSCustomObject]@{ HasExited = $false }
+            $session = [PSCustomObject]@{
+                Process      = $fakeProcess
+                Provider     = 'copilot'
+                OutputBuffer = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                ErrorBuffer  = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                StdoutEvent  = [PSCustomObject]@{ Name = 'fake-stdout'; Id = 0 }
+                StderrEvent  = [PSCustomObject]@{ Name = 'fake-stderr'; Id = 0 }
+                StartTime    = Get-Date
+                TurnCount    = 0
+            }
+
+            $output = Get-CLIOutput -Session $session
+            $output | Should -Be ''
+        }
+
+        It "Should include error buffer when IncludeErrorOutput is set" {
+            $outQueue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+            $outQueue.Enqueue('stdout line')
+            $errQueue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+            $errQueue.Enqueue('stderr line')
+            $fakeProcess = [PSCustomObject]@{ HasExited = $false }
+            $session = [PSCustomObject]@{
+                Process      = $fakeProcess
+                Provider     = 'copilot'
+                OutputBuffer = $outQueue
+                ErrorBuffer  = $errQueue
+                StdoutEvent  = [PSCustomObject]@{ Name = 'fake-stdout'; Id = 0 }
+                StderrEvent  = [PSCustomObject]@{ Name = 'fake-stderr'; Id = 0 }
+                StartTime    = Get-Date
+                TurnCount    = 0
+            }
+
+            $output = Get-CLIOutput -Session $session -IncludeErrorOutput
+            $output | Should -Match 'stdout line'
+            $output | Should -Match 'stderr line'
+        }
+    }
+
+    Context "Wait-CLIPattern" {
+        It "Should be exported from the module" {
+            $cmd = Get-Command Wait-CLIPattern -ErrorAction SilentlyContinue
+            $cmd | Should -Not -BeNullOrEmpty
+        }
+
+        It "Should require mandatory Session parameter" {
+            $cmd = Get-Command Wait-CLIPattern
+            $param = $cmd.Parameters['Session']
+            $param | Should -Not -BeNullOrEmpty
+            $param.Attributes.Where({ $_ -is [System.Management.Automation.ParameterAttribute] }).Mandatory | Should -Be $true
+        }
+
+        It "Should require mandatory Pattern parameter" {
+            $cmd = Get-Command Wait-CLIPattern
+            $param = $cmd.Parameters['Pattern']
+            $param | Should -Not -BeNullOrEmpty
+            $param.Attributes.Where({ $_ -is [System.Management.Automation.ParameterAttribute] }).Mandatory | Should -Be $true
+        }
+
+        It "Should return Matched=true when pattern is already in buffer" {
+            $queue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+            $queue.Enqueue('Thinking...')
+            $queue.Enqueue('Created issue #42 successfully')
+            $fakeProcess = [PSCustomObject]@{ HasExited = $false }
+            $session = [PSCustomObject]@{
+                Process      = $fakeProcess
+                Provider     = 'copilot'
+                OutputBuffer = $queue
+                ErrorBuffer  = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                StdoutEvent  = [PSCustomObject]@{ Name = 'fake-stdout'; Id = 0 }
+                StderrEvent  = [PSCustomObject]@{ Name = 'fake-stderr'; Id = 0 }
+                StartTime    = Get-Date
+                TurnCount    = 0
+            }
+
+            $result = Wait-CLIPattern -Session $session -Pattern '#\d+' -TimeoutSeconds 5
+            $result.Matched | Should -Be $true
+            $result.Output | Should -Match '#42'
+            $result.Error | Should -BeNullOrEmpty
+        }
+
+        It "Should return Matched=false and error on timeout" {
+            $queue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+            $queue.Enqueue('some other output')
+            $fakeProcess = [PSCustomObject]@{ HasExited = $false }
+            $session = [PSCustomObject]@{
+                Process      = $fakeProcess
+                Provider     = 'copilot'
+                OutputBuffer = $queue
+                ErrorBuffer  = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                StdoutEvent  = [PSCustomObject]@{ Name = 'fake-stdout'; Id = 0 }
+                StderrEvent  = [PSCustomObject]@{ Name = 'fake-stderr'; Id = 0 }
+                StartTime    = Get-Date
+                TurnCount    = 0
+            }
+
+            $result = Wait-CLIPattern -Session $session -Pattern 'NEVER_MATCHES_XYZ' -TimeoutSeconds 1
+            $result.Matched | Should -Be $false
+            $result.Error | Should -Match 'Timed out'
+        }
+
+        It "Should return Matched=false when session process has exited" {
+            $fakeProcess = [PSCustomObject]@{ HasExited = $true }
+            $session = [PSCustomObject]@{
+                Process      = $fakeProcess
+                Provider     = 'copilot'
+                OutputBuffer = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                ErrorBuffer  = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                StdoutEvent  = [PSCustomObject]@{ Name = 'fake-stdout'; Id = 0 }
+                StderrEvent  = [PSCustomObject]@{ Name = 'fake-stderr'; Id = 0 }
+                StartTime    = Get-Date
+                TurnCount    = 0
+            }
+
+            $result = Wait-CLIPattern -Session $session -Pattern 'anything'
+            $result.Matched | Should -Be $false
+            $result.Error | Should -Match 'exited'
+        }
+
+        It "Should return Match object with capture groups" {
+            $queue = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+            $queue.Enqueue('issue number is #99')
+            $fakeProcess = [PSCustomObject]@{ HasExited = $false }
+            $session = [PSCustomObject]@{
+                Process      = $fakeProcess
+                Provider     = 'copilot'
+                OutputBuffer = $queue
+                ErrorBuffer  = [System.Collections.Concurrent.ConcurrentQueue[string]]::new()
+                StdoutEvent  = [PSCustomObject]@{ Name = 'fake-stdout'; Id = 0 }
+                StderrEvent  = [PSCustomObject]@{ Name = 'fake-stderr'; Id = 0 }
+                StartTime    = Get-Date
+                TurnCount    = 0
+            }
+
+            $result = Wait-CLIPattern -Session $session -Pattern '#(\d+)' -TimeoutSeconds 5
+            $result.Matched | Should -Be $true
+            $result.Match.Groups[1].Value | Should -Be '99'
+        }
+    }
+
     Context "Invoke-CLIPrompt parameter validation" {
         It "Should reject invalid provider" {
             { Invoke-CLIPrompt -Provider 'invalid' -Prompt 'test' } | Should -Throw

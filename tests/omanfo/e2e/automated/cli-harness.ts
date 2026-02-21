@@ -6,7 +6,7 @@
  * This harness works by spawning CLI processes directly.
  */
 
-import { spawn, execFileSync } from 'child_process';
+import { spawn, execFileSync, ChildProcess } from 'child_process';
 
 export type Provider = 'copilot' | 'claude';
 
@@ -27,9 +27,26 @@ export interface CLIResult {
   durationMs: number;
 }
 
+export interface CLIPatternResult {
+  matched: boolean;
+  output: string;
+  match: RegExpMatchArray | null;
+  error: string | null;
+}
+
+export interface CLISession {
+  provider: Provider;
+  process: ChildProcess;
+  outputBuffer: string[];
+  errorBuffer: string[];
+  startTime: number;
+  turnCount: number;
+}
+
 interface ProviderSpec {
   command: string;
   oneShotArgs: (prompt: string) => string[];
+  interactiveArgs: string[];
   installUrl: string;
 }
 
@@ -37,11 +54,13 @@ const PROVIDERS: Record<Provider, ProviderSpec> = {
   copilot: {
     command: 'copilot',
     oneShotArgs: (prompt: string) => ['-p', prompt, '--allow-all-tools', '-s'],
+    interactiveArgs: [],
     installUrl: 'https://github.com/github/copilot-cli',
   },
   claude: {
     command: 'claude',
     oneShotArgs: (prompt: string) => ['-p', prompt, '--output-format', 'text'],
+    interactiveArgs: [],
     installUrl: 'https://docs.anthropic.com/en/docs/claude-code',
   },
 };
@@ -86,11 +105,11 @@ export function sendPrompt(
       env: { ...process.env },
     });
 
-    child.stdout.on('data', (data: Buffer) => {
+    child.stdout!.on('data', (data: Buffer) => {
       stdout += data.toString();
     });
 
-    child.stderr.on('data', (data: Buffer) => {
+    child.stderr!.on('data', (data: Buffer) => {
       stderr += data.toString();
     });
 
@@ -147,6 +166,181 @@ export function sendPrompt(
     });
   });
 }
+
+// ── Interactive session API ────────────────────────────────────────────────
+
+/**
+ * Launches a CLI provider in interactive (REPL) mode.
+ * Returns a session object used by sendToSession / waitForPattern / stopSession.
+ */
+export function startSession(
+  provider: Provider,
+  options: { workingDirectory?: string; additionalArgs?: string[] } = {}
+): CLISession {
+  const spec = PROVIDERS[provider];
+  const args = [...spec.interactiveArgs, ...(options.additionalArgs ?? [])];
+
+  const child = spawn(spec.command, args, {
+    cwd: options.workingDirectory,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    env: { ...process.env },
+  });
+
+  const session: CLISession = {
+    provider,
+    process: child,
+    outputBuffer: [],
+    errorBuffer: [],
+    startTime: Date.now(),
+    turnCount: 0,
+  };
+
+  // Use line buffers to handle partial chunks correctly
+  let stdoutPartial = '';
+  let stderrPartial = '';
+
+  child.stdout!.on('data', (data: Buffer) => {
+    stdoutPartial += data.toString();
+    const lines = stdoutPartial.split('\n');
+    stdoutPartial = lines.pop() ?? '';
+    session.outputBuffer.push(...lines);
+  });
+
+  child.stderr!.on('data', (data: Buffer) => {
+    stderrPartial += data.toString();
+    const lines = stderrPartial.split('\n');
+    stderrPartial = lines.pop() ?? '';
+    session.errorBuffer.push(...lines);
+  });
+
+  // Flush any remaining partial line when the process closes
+  child.on('close', () => {
+    if (stdoutPartial) {
+      session.outputBuffer.push(stdoutPartial);
+      stdoutPartial = '';
+    }
+    if (stderrPartial) {
+      session.errorBuffer.push(stderrPartial);
+      stderrPartial = '';
+    }
+  });
+
+  return session;
+}
+
+/**
+ * Writes a prompt line to the stdin of an interactive CLI session.
+ */
+export function sendToSession(session: CLISession, prompt: string): void {
+  if (!session.process.stdin) {
+    throw new Error('Session process has no stdin');
+  }
+  session.process.stdin.write(prompt + '\n');
+  session.turnCount++;
+}
+
+/**
+ * Drains and returns all accumulated output from the session buffer (non-blocking).
+ */
+export function getSessionOutput(session: CLISession, includeErrors = false): string {
+  const lines = session.outputBuffer.splice(0);
+  if (includeErrors) {
+    lines.push(...session.errorBuffer.splice(0));
+  }
+  return lines.join('\n');
+}
+
+/**
+ * Blocks until a line matching the given regex pattern appears in session output,
+ * or until the timeout elapses.
+ */
+export function waitForPattern(
+  session: CLISession,
+  pattern: RegExp | string,
+  timeoutMs = 30_000,
+  includeErrors = false
+): Promise<CLIPatternResult> {
+  const re = typeof pattern === 'string' ? new RegExp(pattern) : pattern;
+  const collectedLines: string[] = [];
+
+  return new Promise((resolve) => {
+    const deadline = Date.now() + timeoutMs;
+
+    function poll() {
+      // Drain stdout buffer
+      const stdoutLines = session.outputBuffer.splice(0);
+      collectedLines.push(...stdoutLines);
+
+      if (includeErrors) {
+        const stderrLines = session.errorBuffer.splice(0);
+        collectedLines.push(...stderrLines);
+      }
+
+      // Check all collected lines for the pattern
+      for (const line of collectedLines) {
+        const m = line.match(re);
+        if (m) {
+          resolve({
+            matched: true,
+            output: collectedLines.join('\n'),
+            match: m,
+            error: null,
+          });
+          return;
+        }
+      }
+
+      if (Date.now() >= deadline) {
+        resolve({
+          matched: false,
+          output: collectedLines.join('\n'),
+          match: null,
+          error: `Timed out after ${timeoutMs}ms waiting for pattern: ${re}`,
+        });
+        return;
+      }
+
+      setTimeout(poll, 100);
+    }
+
+    poll();
+  });
+}
+
+/**
+ * Gracefully shuts down an interactive CLI session.
+ * Sends '/exit', waits briefly, then kills if needed.
+ */
+export function stopSession(session: CLISession, gracefulMs = 5000): Promise<void> {
+  return new Promise((resolve) => {
+    if (session.process.exitCode !== null) {
+      resolve();
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      session.process.kill('SIGKILL');
+    }, gracefulMs);
+
+    session.process.on('close', () => {
+      clearTimeout(timer);
+      resolve();
+    });
+
+    try {
+      if (session.process.stdin) {
+        session.process.stdin.write('/exit\n');
+        session.process.stdin.end();
+      } else {
+        session.process.kill('SIGTERM');
+      }
+    } catch {
+      session.process.kill('SIGTERM');
+    }
+  });
+}
+
+// ── GitHub state verification ──────────────────────────────────────────────
 
 export function extractIssueNumbers(text: string): number[] {
   const matches = text.matchAll(/#(\d+)/g);
