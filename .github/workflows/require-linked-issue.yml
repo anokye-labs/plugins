@@ -14,7 +14,8 @@ jobs:
     name: Check Linked Issue
     runs-on: ubuntu-latest
     permissions:
-      pull-requests: read
+      pull-requests: write
+      issues: write
     steps:
       - name: Check for linked issue
         uses: actions/github-script@v7
@@ -34,6 +35,32 @@ jobs:
               return;
             }
 
+            const GATE_LABEL = 'needs-linked-issue';
+            const prNumber = context.payload.pull_request.number;
+            const prNodeId = context.payload.pull_request.node_id;
+            const isDraft = context.payload.pull_request.draft;
+            const hasGateLabel = context.payload.pull_request.labels
+              .some(l => l.name === GATE_LABEL);
+
+            // Ensure the gate label exists in the repo
+            try {
+              await github.rest.issues.getLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                name: GATE_LABEL,
+              });
+            } catch (e) {
+              if (e.status === 404) {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: GATE_LABEL,
+                  color: 'e4e669',
+                  description: 'PR converted to draft by the linked-issue gate',
+                });
+              }
+            }
+
             const result = await github.graphql(`
               query($owner: String!, $repo: String!, $pr: Int!) {
                 repository(owner: $owner, name: $repo) {
@@ -47,19 +74,74 @@ jobs:
             `, {
               owner: context.repo.owner,
               repo: context.repo.repo,
-              pr: context.payload.pull_request.number,
+              pr: prNumber,
             });
 
             const count = result.repository.pullRequest.closingIssuesReferences.totalCount;
 
             if (count === 0) {
+              // Convert to draft and post a comment only if not already gated
+              if (!isDraft) {
+                await github.graphql(`
+                  mutation($prId: ID!) {
+                    convertPullRequestToDraft(input: { pullRequestId: $prId }) {
+                      pullRequest { isDraft }
+                    }
+                  }
+                `, { prId: prNodeId });
+                core.info(`PR #${prNumber} converted to draft — no linked issue found.`);
+
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  labels: [GATE_LABEL],
+                });
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: [
+                    '⚠️ **This PR has been converted to draft because it is not linked to a GitHub issue.**',
+                    '',
+                    'Add a closing keyword to the **PR description** to link the issue and re-trigger this check:',
+                    '```',
+                    'Closes #N',
+                    '```',
+                    'Replace `N` with the issue number this PR addresses (`Fixes #N` and `Resolves #N` also work).',
+                    '',
+                    '> **Note:** Linking via the Development sidebar alone does not re-trigger this check.',
+                    '> You must add the closing keyword to the PR description body.',
+                  ].join('\n'),
+                });
+              }
+
               core.setFailed(
                 'This PR must be linked to a GitHub issue.\n\n' +
-                'Link an issue using either method:\n' +
-                '  1. Development sidebar: click "Link an issue" in the PR sidebar\n' +
-                '  2. PR description: add "Closes #N", "Fixes #N", or "Resolves #N"\n\n' +
+                'Add a closing keyword to the PR description body:\n' +
+                '  Closes #N  (or Fixes #N / Resolves #N)\n\n' +
                 'Replace N with the issue number this PR addresses.'
               );
             } else {
               core.info(`PR has ${count} linked issue(s).`);
+
+              // Only mark ready for review if this workflow was the one that drafted the PR
+              if (isDraft && hasGateLabel) {
+                await github.rest.issues.removeLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  name: GATE_LABEL,
+                });
+
+                await github.graphql(`
+                  mutation($prId: ID!) {
+                    markPullRequestReadyForReview(input: { pullRequestId: $prId }) {
+                      pullRequest { isDraft }
+                    }
+                  }
+                `, { prId: prNodeId });
+                core.info(`PR #${prNumber} marked ready for review — linked issue found.`);
+              }
             }
