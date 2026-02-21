@@ -5,6 +5,9 @@ on:
     types: [opened, edited, reopened, synchronize, ready_for_review]
     branches: [main]
   merge_group:
+  push:
+    branches:
+      - 'gh-readonly-queue/main/**'
 
 jobs:
   check-linked-issue:
@@ -18,8 +21,8 @@ jobs:
         with:
           script: |
             // Issue link was already verified on the PR; pass immediately in the merge queue
-            if (context.eventName === 'merge_group') {
-              core.info('merge_group event — linked issue was already verified on the PR.');
+            if (context.eventName === 'merge_group' || context.eventName === 'push') {
+              core.info(`${context.eventName} event — linked issue was already verified on the PR.`);
               return;
             }
 
