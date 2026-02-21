@@ -128,6 +128,14 @@ Describe 'Invoke-FalGenerate' {
                 $Uri -match 'queue\.fal\.run' -and $Method -eq 'POST'
             }
         }
+
+        It 'Throws when queue submission returns no request_id' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{ detail = 'Internal Server Error' }
+            } -ModuleName FalAi
+
+            { & $script:generateScript -Prompt 'async job' -Async } | Should -Throw '*Queue submission failed*'
+        }
     }
 
     Context '-Lifecycle CDN expiration' {
