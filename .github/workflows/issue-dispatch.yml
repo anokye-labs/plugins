@@ -78,7 +78,7 @@ jobs:
       - name: Assign Copilot
         if: steps.triage.outputs.should_dispatch == 'true'
         env:
-          GH_TOKEN: ${{ secrets.COPILOT_GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.ANOKYE_LABS_PLUGINS_COPILOT_DISPATCH_PAT }}
         run: |
           ISSUE_NODE_ID="${{ steps.triage.outputs.issue_node_id }}"
           REPO_NODE_ID="${{ github.event.repository.node_id }}"
@@ -115,7 +115,7 @@ jobs:
 
       # Add label using GITHUB_TOKEN (doesn't need user token)
       - name: Add agent/assigned label
-        if: steps.triage.outputs.should_dispatch == 'true'
+        if: always() && steps.triage.outputs.should_dispatch == 'true'
         uses: actions/github-script@v7
         with:
           script: |
