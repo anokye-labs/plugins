@@ -1,0 +1,116 @@
+name: Stale Branch Cleanup
+
+on:
+  schedule:
+    - cron: '0 6 * * 1' # Weekly on Monday at 06:00 UTC
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  cleanup:
+    name: Delete Stale Branches
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Clean up stale branches
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const STALE_DAYS = 14;
+            const PROTECTED_BRANCHES = ['main', 'master', 'develop'];
+            const now = new Date();
+            const deleted = [];
+            const skipped = [];
+
+            // List all branches
+            const branches = await github.paginate(
+              github.rest.repos.listBranches,
+              {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                per_page: 100,
+              }
+            );
+
+            for (const branch of branches) {
+              const name = branch.name;
+
+              // Skip protected branches
+              if (PROTECTED_BRANCHES.includes(name) || branch.protected) {
+                skipped.push(`${name} (protected)`);
+                continue;
+              }
+
+              // Find PRs associated with this branch
+              const { data: pulls } = await github.rest.pulls.list({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                head: `${context.repo.owner}:${name}`,
+                state: 'all',
+                per_page: 5,
+              });
+
+              // Skip branches with open PRs
+              const hasOpenPR = pulls.some(pr => pr.state === 'open');
+              if (hasOpenPR) {
+                skipped.push(`${name} (has open PR)`);
+                continue;
+              }
+
+              // Skip branches with no PRs (may be active development)
+              if (pulls.length === 0) {
+                skipped.push(`${name} (no associated PR)`);
+                continue;
+              }
+
+              // Check if all PRs are closed/merged and older than STALE_DAYS
+              const latestPR = pulls.sort((a, b) =>
+                new Date(b.updated_at) - new Date(a.updated_at)
+              )[0];
+
+              const closedAt = new Date(latestPR.closed_at || latestPR.updated_at);
+              const daysSinceClosed = (now - closedAt) / (1000 * 60 * 60 * 24);
+
+              if (daysSinceClosed < STALE_DAYS) {
+                skipped.push(`${name} (closed ${Math.floor(daysSinceClosed)}d ago, < ${STALE_DAYS}d threshold)`);
+                continue;
+              }
+
+              // Delete the branch
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${name}`,
+                });
+                const prInfo = latestPR.merged_at ? 'merged' : 'closed';
+                deleted.push(`${name} (PR #${latestPR.number} ${prInfo} ${Math.floor(daysSinceClosed)}d ago)`);
+                core.info(`Deleted branch: ${name}`);
+              } catch (e) {
+                core.warning(`Failed to delete branch ${name}: ${e.message}`);
+              }
+            }
+
+            // Log summary
+            core.info('');
+            core.info('=== Stale Branch Cleanup Summary ===');
+            core.info(`Deleted: ${deleted.length}`);
+            for (const d of deleted) core.info(`  - ${d}`);
+            core.info(`Skipped: ${skipped.length}`);
+            for (const s of skipped) core.info(`  - ${s}`);
+
+            // Set summary for workflow run
+            const summary = [
+              '## Stale Branch Cleanup',
+              '',
+              `**Deleted:** ${deleted.length} branch(es)`,
+              deleted.length > 0 ? deleted.map(d => `- \`${d}\``).join('\n') : '_None_',
+              '',
+              `**Skipped:** ${skipped.length} branch(es)`,
+              '<details><summary>Details</summary>',
+              '',
+              skipped.map(s => `- \`${s}\``).join('\n'),
+              '</details>',
+            ].join('\n');
+
+            await core.summary.addRaw(summary).write();
