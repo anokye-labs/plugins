@@ -1,15 +1,16 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    E2E tests for issue hierarchy capabilities via Copilot CLI.
+    E2E tests for issue hierarchy capabilities via CLI provider (copilot or claude).
 
 .DESCRIPTION
-    Tests building Epic→Feature→Task hierarchies through copilot prompts
+    Tests building Epic→Feature→Task hierarchies through AI CLI prompts
     and verifies parent-child relationships via GitHub API.
 
 .NOTES
-    Dependencies: copilot CLI on PATH, gh authenticated
+    Dependencies: copilot or claude CLI on PATH, gh authenticated
     Environment: $env:E2E_TEST_REPO or defaults to anokye-labs/plugins
+                 $env:E2E_CLI_PROVIDER or defaults to copilot
 #>
 
 [CmdletBinding()]
@@ -20,15 +21,23 @@ BeforeAll {
     $script:TestRepo = $env:E2E_TEST_REPO ?? "anokye-labs/plugins"
     $script:RunId = Get-Date -Format "yyyyMMdd-HHmmss"
     $script:CreatedIssues = @()
-    
-    # Verify prerequisites
-    $copilotCmd = Get-Command copilot -ErrorAction SilentlyContinue
-    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
-    
-    if (-not $copilotCmd) {
-        throw "Copilot CLI not found on PATH"
+
+    # Load shared CLI test harness
+    $harnessPath = Join-Path $PSScriptRoot '..' '..' '..' 'shared' 'CLITestHarness' 'CLITestHarness.psm1'
+    if (Test-Path $harnessPath) {
+        Import-Module $harnessPath -Force
     }
-    
+
+    # Determine provider from environment (set by Run-E2ETests.ps1 or manually)
+    $script:Provider = $env:E2E_CLI_PROVIDER ?? 'copilot'
+
+    # Verify prerequisites
+    $providerCheck = Test-ProviderAvailable -Provider $script:Provider -SkipAuthCheck
+    if (-not $providerCheck.Available) {
+        throw "$script:Provider CLI not found on PATH. Install from: $($providerCheck.InstallUrl)"
+    }
+
+    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
     if (-not $ghCmd) {
         throw "GitHub CLI (gh) not found on PATH"
     }
@@ -46,6 +55,7 @@ BeforeAll {
     
     Write-Host "🧪 E2E Hierarchy Test Configuration:" -ForegroundColor Cyan
     Write-Host "   Repository: $script:TestRepo" -ForegroundColor Gray
+    Write-Host "   Provider: $script:Provider" -ForegroundColor Gray
     Write-Host "   Run ID: $script:RunId" -ForegroundColor Gray
     Write-Host ""
 }
@@ -60,7 +70,7 @@ Create an Epic issue titled '$epicTitle' in $script:TestRepo with two Feature su
 - Feature 2: Test Feature Beta
 "@
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             # Extract issue numbers
             $allMatches = [regex]::Matches($output, '#(\d+)')
@@ -116,7 +126,7 @@ Create a Feature issue titled '$featureTitle' in $script:TestRepo with three Tas
 - Task 3: Update documentation
 "@
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $allMatches = [regex]::Matches($output, '#(\d+)')
             $allMatches.Count | Should -BeGreaterThan 0
@@ -142,7 +152,7 @@ Create a complete hierarchy in $script:TestRepo:
     - Task: Write unit tests
 "@
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $allMatches = [regex]::Matches($output, '#(\d+)')
             $allMatches.Count | Should -BeGreaterThan 0
@@ -208,7 +218,7 @@ query {
             # First create a Feature
             $featureTitle = "E2E-$script:RunId: Parent Feature"
             $createPrompt = "Create a Feature issue titled '$featureTitle' in $script:TestRepo"
-            $output1 = copilot -p $createPrompt --allow-all-tools -s 2>&1 | Out-String
+            $output1 = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $createPrompt).Output
             
             $featureMatch = $output1 -match '#(\d+)'
             $featureMatch | Should -Be $true
@@ -221,7 +231,7 @@ query {
                 
                 # Now add a child task
                 $addChildPrompt = "Add a Task sub-issue to Feature #$featureNum in $script:TestRepo titled 'E2E-$script:RunId: Child Task'"
-                $output2 = copilot -p $addChildPrompt --allow-all-tools -s 2>&1 | Out-String
+                $output2 = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $addChildPrompt).Output
                 
                 $taskMatch = $output2 -match '#(\d+)'
                 if ($taskMatch) {
@@ -260,7 +270,7 @@ query {
         It "Should query hierarchy health for test issues" {
             $prompt = "Check hierarchy health for issues with prefix 'E2E-$script:RunId' in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             # Should not throw error and should complete
             $output | Should -Not -BeNullOrEmpty
