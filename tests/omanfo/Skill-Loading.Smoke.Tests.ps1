@@ -188,6 +188,37 @@ Describe "Skill Metadata" {
 }
 
 Describe "Plugin Metadata Validation" {
+    Context ".mcp.json File" {
+        BeforeAll {
+            $script:McpJsonPath = Join-Path $script:PluginRoot ".mcp.json"
+            $script:McpJson = Get-Content $script:McpJsonPath -Raw | ConvertFrom-Json
+        }
+        
+        It "Should have .mcp.json in plugin root" {
+            Test-Path $script:McpJsonPath | Should -Be $true
+        }
+        
+        It "Should have valid JSON format" {
+            $script:McpJson | Should -Not -BeNullOrEmpty
+        }
+        
+        It "Should have mcpServers object" {
+            $script:McpJson.mcpServers | Should -Not -BeNullOrEmpty
+        }
+        
+        It "Should have omanfo server entry" {
+            $script:McpJson.mcpServers.omanfo | Should -Not -BeNullOrEmpty
+        }
+        
+        It "Should have command field in omanfo server" {
+            $script:McpJson.mcpServers.omanfo.command | Should -Not -BeNullOrEmpty
+        }
+        
+        It "Should have tools field in omanfo server" {
+            $script:McpJson.mcpServers.omanfo.tools | Should -Not -BeNullOrEmpty
+        }
+    }
+    
     Context "plugin.json File" {
         BeforeAll {
             $script:PluginJsonPath = Join-Path $script:PluginRoot ".github/plugin/plugin.json"
