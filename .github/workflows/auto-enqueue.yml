@@ -8,12 +8,14 @@ on:
   # (e.g., triage resolved threads after checks passed, race conditions, late approvals)
   schedule:
     - cron: '*/15 * * * *'
+  # Allow manual trigger for testing / unblocking stuck PRs
+  workflow_dispatch:
 
 jobs:
   auto-enqueue:
     name: Auto Enqueue
-    # For workflow_run: only proceed on success. For schedule: always run.
-    if: ${{ github.event_name == 'schedule' || github.event.workflow_run.conclusion == 'success' }}
+    # For workflow_run: only proceed on success. For schedule/dispatch: always run.
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
