@@ -1,0 +1,1 @@
+../../omanfo/okyeame.agent.md
