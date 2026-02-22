@@ -64,15 +64,6 @@ jobs:
             echo "okyeame_changed=false" >> $GITHUB_OUTPUT
             echo "○ okyeame has no changes"
           fi
-          
-          # Check if .github/skills has changes
-          if echo "$CHANGED_FILES" | grep -q "^\.github/skills/"; then
-            echo "github_skills_changed=true" >> $GITHUB_OUTPUT
-            echo "✓ .github/skills has changes"
-          else
-            echo "github_skills_changed=false" >> $GITHUB_OUTPUT
-            echo "○ .github/skills has no changes"
-          fi
       
       - name: Validate omanfo plugin
         if: steps.changes.outputs.omanfo_changed == 'true'
@@ -222,43 +213,6 @@ jobs:
           Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
           if ($failures -eq 0) {
             Write-Host "   ✅ ALL AHUOFE VALIDATIONS PASSED" -ForegroundColor Green
-            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
-            exit 0
-          } else {
-            Write-Host "   ❌ $failures VALIDATION(S) FAILED" -ForegroundColor Red
-            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
-            exit 1
-          }
-
-      - name: Validate .github/skills
-        if: steps.changes.outputs.github_skills_changed == 'true'
-        shell: pwsh
-        run: |
-          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
-          Write-Host "       VALIDATING .GITHUB/SKILLS" -ForegroundColor Cyan
-          Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
-          
-          $failures = 0
-          
-          # Test 1: File Structure
-          Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
-          & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath .github
-          if ($LASTEXITCODE -ne 0) { $failures++ }
-          
-          # Test 2: PowerShell Syntax
-          Write-Host "`n▶ Running Test-PowerShellSyntax..." -ForegroundColor Blue
-          & ./omanfo/scripts/validation/Test-PowerShellSyntax.ps1 -PluginPath .github
-          if ($LASTEXITCODE -ne 0) { $failures++ }
-          
-          # Test 3: SKILL.md Quality
-          Write-Host "`n▶ Running Test-SkillQuality..." -ForegroundColor Blue
-          & ./omanfo/scripts/validation/Test-SkillQuality.ps1 -PluginPath .github
-          if ($LASTEXITCODE -ne 0) { $failures++ }
-          
-          # Summary
-          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
-          if ($failures -eq 0) {
-            Write-Host "   ✅ ALL .GITHUB/SKILLS VALIDATIONS PASSED" -ForegroundColor Green
             Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
             exit 0
           } else {

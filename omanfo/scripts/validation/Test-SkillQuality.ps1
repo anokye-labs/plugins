@@ -50,9 +50,8 @@ Write-Host "`n🔍 Validating SKILL.md quality for: $pluginDir`n" -ForegroundCol
 # Discover skills by scanning skills/ directory
 $skillsDir = Join-Path $pluginDir "skills"
 if (-not (Test-Path $skillsDir)) {
-    Write-Host "ℹ skills/ directory not found at: $skillsDir" -ForegroundColor Cyan
-    Write-Host "✓ Skipping SKILL.md quality validation (skills may be at .github/skills/)" -ForegroundColor Green
-    exit 0
+    Write-ValidationError "skills/ directory not found at: $skillsDir"
+    exit 1
 }
 
 $skillDirs = @(Get-ChildItem $skillsDir -Directory)
