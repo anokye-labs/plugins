@@ -10,6 +10,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      contents: read
+      pull-requests: write
+      actions: read
     steps:
       - name: Dispatch to agent
         uses: actions/github-script@v7
@@ -66,23 +69,40 @@ jobs:
               }
             }
 
-            // Assign Copilot agent via GraphQL updateIssue mutation
-            // BOT_kgDOC9w8XQ is the Copilot bot node ID for this organization
+            // Assign Copilot coding agent via addAssigneesToAssignable mutation.
+            // Requires the GraphQL-Features header for Copilot assignment API support
+            // and the agentAssignment input to trigger the coding agent.
+            // See: https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/create-a-pr#assigning-an-issue-to-copilot-via-the-github-api
             const COPILOT_BOT_NODE_ID = 'BOT_kgDOC9w8XQ';
+            const REPOSITORY_NODE_ID = '${{ github.event.repository.node_id }}';
+            const GRAPHQL_FEATURES = 'issues_copilot_assignment_api_support,coding_agent_model_selection';
 
             try {
               await github.graphql(`
-                mutation($issueId: ID!, $assigneeIds: [ID!]!) {
-                  updateIssue(input: {
-                    id: $issueId
+                mutation($issueId: ID!, $assigneeIds: [ID!]!, $repoId: ID!) {
+                  addAssigneesToAssignable(input: {
+                    assignableId: $issueId
                     assigneeIds: $assigneeIds
+                    agentAssignment: {
+                      targetRepositoryId: $repoId
+                      baseRef: "main"
+                    }
                   }) {
-                    issue { number }
+                    assignable {
+                      ... on Issue {
+                        number
+                        assignees(first: 5) { nodes { login } }
+                      }
+                    }
                   }
                 }
               `, {
                 issueId: issueNodeId,
                 assigneeIds: [COPILOT_BOT_NODE_ID],
+                repoId: REPOSITORY_NODE_ID,
+                headers: {
+                  'GraphQL-Features': GRAPHQL_FEATURES,
+                },
               });
               core.info(`Assigned Copilot to issue #${issueNumber}`);
             } catch (e) {
