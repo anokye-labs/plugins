@@ -219,13 +219,13 @@ Describe "Plugin Metadata Validation" {
 
 Describe "Agent Configuration Files" {
     Context "Agent Markdown Files" {
-        It "Should have okyeame.agent.md in plugin root" {
-            $agentMd = Join-Path $script:PluginRoot "okyeame.agent.md"
+        It "Should have okyeame.agent.md in agents directory" {
+            $agentMd = Join-Path $script:PluginRoot "agents/okyeame.agent.md"
             Test-Path $agentMd | Should -Be $true
         }
         
-        It "Should have okyerema agent.md in skill directory" {
-            $agentMd = Join-Path $script:SkillsPath "okyerema/okyerema.agent.md"
+        It "Should have okyerema.agent.md in agents directory" {
+            $agentMd = Join-Path $script:PluginRoot "agents/okyerema.agent.md"
             Test-Path $agentMd | Should -Be $true
         }
     }

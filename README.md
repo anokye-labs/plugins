@@ -142,12 +142,16 @@ The Omanfo plugin contains multiple skills and follows this structure:
 omanfo/
 ├── README.md                          # Plugin docs and usage
 ├── .github/plugin/plugin.json         # Copilot CLI plugin metadata
-├── okyeame.agent.md                   # Okyeame agent persona file
-├── .github/skills/
+├── agents/
+│   ├── okyeame.agent.md               # Okyeame agent persona (authoritative)
+│   └── okyerema.agent.md              # Okyerema agent persona (authoritative)
+├── references/
+│   └── glossary.md                    # Shared Anokye System glossary
+├── skills/
 │   ├── okyeame/                       # Okyeame skill
-│   │   └── SKILL.md                   # Main skill file (<500 lines)
+│   │   └── SKILL.md                   # Skill instructions (<500 lines)
 │   └── okyerema/                      # Okyerema skill  
-│       ├── SKILL.md                   # Main skill file (<500 lines)
+│       ├── SKILL.md                   # Skill instructions (<500 lines)
 │       ├── references/                # On-demand reference guides
 │       └── scripts/                   # PowerShell helper scripts
 ├── how-we-work/                       # Human-facing documentation

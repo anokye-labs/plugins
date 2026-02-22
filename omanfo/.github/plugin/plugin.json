@@ -16,9 +16,14 @@
   ],
   "items": [
     {
-      "path": "okyeame.agent.md",
+      "path": "agents/okyeame.agent.md",
       "kind": "agent",
       "usage": "recommended\n\nThe Okyeame (linguist) is the voice of the Anokye System — giving status updates, reporting on blocked issues, asking for clarity when needed, and facilitating project management via GitHub Issues."
+    },
+    {
+      "path": "agents/okyerema.agent.md",
+      "kind": "agent",
+      "usage": "optional\n\nThe Okyerema (master drummer) sets the rhythm — configuring agentic workflows, CI/CD pipelines, patrol schedules, and automation scaffolding. Invoke via Okyeame or independently for workflow automation tasks."
     },
     {
       "path": "skills/okyerema/SKILL.md",
