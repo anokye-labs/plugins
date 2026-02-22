@@ -172,6 +172,85 @@ Describe 'Workflow Builder Integration' {
 
             Should -Invoke -CommandName Invoke-FalApi -Times 2
         }
+
+        It 'Should inject image_url from upscale image.url into animate step' {
+            $script:upscaleCallCount = 0
+            Mock -CommandName Invoke-FalApi -MockWith {
+                $script:upscaleCallCount++
+                if ($script:upscaleCallCount -eq 1) {
+                    [PSCustomObject]@{
+                        image = [PSCustomObject]@{ url = 'https://fal.media/upscaled.png'; width = 2048; height = 1536 }
+                    }
+                }
+            }
+            Mock -CommandName Wait-FalJob -MockWith {
+                [PSCustomObject]@{
+                    video = [PSCustomObject]@{ url = 'https://fal.media/out.mp4' }
+                }
+            }
+
+            $steps = @(
+                @{ name = 'upscale'; model = 'fal-ai/aura-sr'
+                   params = @{ image_url = 'https://fal.media/src.png' }; dependsOn = @() }
+                @{ name = 'animate'; model = 'fal-ai/kling-video/v2.6/pro/image-to-video'
+                   params = @{ prompt = 'Pan' }; dependsOn = @('upscale') }
+            )
+
+            & $script:WorkflowScript -Name 'upscale-animate' -Steps $steps
+
+            Should -Invoke -CommandName Wait-FalJob -ParameterFilter {
+                $Body['image_url'] -eq 'https://fal.media/upscaled.png'
+            }
+        }
+
+        It 'Should inject image_url from extract-frame frame.url into animate step' {
+            Mock -CommandName Invoke-FalApi -MockWith {
+                [PSCustomObject]@{
+                    frame = [PSCustomObject]@{ url = 'https://fal.media/frame.jpg' }
+                }
+            }
+            Mock -CommandName Wait-FalJob -MockWith {
+                [PSCustomObject]@{
+                    video = [PSCustomObject]@{ url = 'https://fal.media/out.mp4' }
+                }
+            }
+
+            $steps = @(
+                @{ name = 'extract-frame'; model = 'fal-ai/ffmpeg-api/extract-frame'
+                   params = @{ video_url = 'https://fal.media/src.mp4'; frame_type = 'last' }; dependsOn = @() }
+                @{ name = 'animate'; model = 'fal-ai/kling-video/v2.6/pro/image-to-video'
+                   params = @{ prompt = 'Zoom' }; dependsOn = @('extract-frame') }
+            )
+
+            & $script:WorkflowScript -Name 'frame-animate' -Steps $steps
+
+            Should -Invoke -CommandName Wait-FalJob -ParameterFilter {
+                $Body['image_url'] -eq 'https://fal.media/frame.jpg'
+            }
+        }
+
+        It 'Should inject video_url (not image_url) from video step into merge-audio-video step' {
+            Mock -CommandName Wait-FalJob -MockWith {
+                [PSCustomObject]@{
+                    video = [PSCustomObject]@{ url = 'https://fal.media/scene.mp4' }
+                }
+            }
+
+            $steps = @(
+                @{ name = 'animate'; model = 'fal-ai/kling-video/v2.6/pro/image-to-video'
+                   params = @{ image_url = 'https://fal.media/img.png'; prompt = 'Float' }; dependsOn = @() }
+                @{ name = 'add-audio'; model = 'fal-ai/ffmpeg-api/merge-audio-video'
+                   params = @{ audio_url = 'https://fal.media/music.mp3' }; dependsOn = @('animate') }
+            )
+
+            & $script:WorkflowScript -Name 'video-audio' -Steps $steps
+
+            Should -Invoke -CommandName Wait-FalJob -ParameterFilter {
+                $Body['video_url'] -eq 'https://fal.media/scene.mp4' -and
+                $Body['audio_url'] -eq 'https://fal.media/music.mp3' -and
+                -not $Body.ContainsKey('image_url')
+            }
+        }
     }
 
     Context 'Dry-Run Validation' {

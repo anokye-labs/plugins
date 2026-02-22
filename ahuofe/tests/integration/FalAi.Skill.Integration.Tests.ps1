@@ -80,9 +80,10 @@ Describe 'fal.ai Skill Integration' {
 
         It 'Should throw on missing FAL_KEY' {
             $env:FAL_KEY = $null
-            Push-Location $env:TEMP
+            $tempRoot = [System.IO.Path]::GetTempPath()
+            Push-Location $tempRoot
             try {
-                $envFile = Join-Path $env:TEMP '.env'
+                $envFile = Join-Path $tempRoot '.env'
                 if (Test-Path $envFile) { Remove-Item $envFile -Force }
                 { Get-FalApiKey } | Should -Throw '*FAL_KEY not found*'
             }

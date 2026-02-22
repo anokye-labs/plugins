@@ -710,6 +710,148 @@ function Close-TestIssues {
 
 #endregion
 
+#region Output Reading
+
+<#
+.SYNOPSIS
+    Reads and returns all accumulated output from an interactive CLI session buffer.
+
+.DESCRIPTION
+    Drains the output buffer of a session started by Start-CLISession without blocking.
+    Returns whatever output has accumulated since the last read.
+
+.PARAMETER Session
+    The session object returned by Start-CLISession.
+
+.PARAMETER IncludeErrorOutput
+    If set, also drains and includes the stderr buffer in the returned output.
+
+.EXAMPLE
+    $output = Get-CLIOutput -Session $session
+
+.EXAMPLE
+    $output = Get-CLIOutput -Session $session -IncludeErrorOutput
+#>
+function Get-CLIOutput {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [PSCustomObject]$Session,
+
+        [Parameter()]
+        [switch]$IncludeErrorOutput
+    )
+
+    $lines = @()
+    $line = $null
+    while ($Session.OutputBuffer.TryDequeue([ref]$line)) {
+        $lines += $line
+    }
+
+    if ($IncludeErrorOutput) {
+        while ($Session.ErrorBuffer.TryDequeue([ref]$line)) {
+            $lines += $line
+        }
+    }
+
+    return $lines -join "`n"
+}
+
+<#
+.SYNOPSIS
+    Blocks until the specified pattern appears in the session output.
+
+.DESCRIPTION
+    Polls the output buffer of an interactive CLI session until a line matching
+    the given pattern is found, or until the timeout elapses.
+
+.PARAMETER Session
+    The session object returned by Start-CLISession.
+
+.PARAMETER Pattern
+    A regular expression pattern to wait for in the output stream.
+
+.PARAMETER TimeoutSeconds
+    Maximum time to wait for the pattern. Default is 30 seconds.
+
+.PARAMETER IncludeErrorOutput
+    If set, also checks the stderr buffer for the pattern.
+
+.EXAMPLE
+    $result = Wait-CLIPattern -Session $session -Pattern '> $'
+
+.EXAMPLE
+    $result = Wait-CLIPattern -Session $session -Pattern 'Created issue #\d+' -TimeoutSeconds 60
+#>
+function Wait-CLIPattern {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [PSCustomObject]$Session,
+
+        [Parameter(Mandatory)]
+        [string]$Pattern,
+
+        [Parameter()]
+        [int]$TimeoutSeconds = 30,
+
+        [Parameter()]
+        [switch]$IncludeErrorOutput
+    )
+
+    if ($Session.Process.HasExited) {
+        return [PSCustomObject]@{
+            Matched = $false
+            Output  = ''
+            Match   = $null
+            Error   = 'Session process has exited'
+        }
+    }
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    $collectedLines = @()
+    $line = $null
+
+    while ((Get-Date) -lt $deadline) {
+        while ($Session.OutputBuffer.TryDequeue([ref]$line)) {
+            $collectedLines += $line
+            if ($line -match $Pattern) {
+                return [PSCustomObject]@{
+                    Matched = $true
+                    Output  = ($collectedLines -join "`n")
+                    Match   = [regex]::Match($line, $Pattern)
+                    Error   = $null
+                }
+            }
+        }
+
+        if ($IncludeErrorOutput) {
+            while ($Session.ErrorBuffer.TryDequeue([ref]$line)) {
+                $collectedLines += $line
+                if ($line -match $Pattern) {
+                    return [PSCustomObject]@{
+                        Matched = $true
+                        Output  = ($collectedLines -join "`n")
+                        Match   = [regex]::Match($line, $Pattern)
+                        Error   = $null
+                    }
+                }
+            }
+        }
+
+        Start-Sleep -Milliseconds 100
+    }
+
+    return [PSCustomObject]@{
+        Matched = $false
+        Output  = ($collectedLines -join "`n")
+        Match   = $null
+        Error   = "Timed out after $TimeoutSeconds seconds waiting for pattern: $Pattern"
+    }
+}
+
+#endregion
+
 #region Module Exports
 
 Export-ModuleMember -Function @(
@@ -720,6 +862,8 @@ Export-ModuleMember -Function @(
     'Start-CLISession'
     'Send-CLISessionPrompt'
     'Stop-CLISession'
+    'Get-CLIOutput'
+    'Wait-CLIPattern'
     'Get-IssueNumbersFromOutput'
     'Assert-IssueState'
     'Close-TestIssues'

@@ -89,7 +89,7 @@ Describe 'Upload-ToFalCDN' {
                 return [PSCustomObject]@{ access_url = 'https://v3b.fal.media/files/uploaded.png' }
             } -ModuleName FalAi
 
-            $testFile = Join-Path $env:TEMP "fal-upload-test-$(New-Guid).png"
+            $testFile = Join-Path ([System.IO.Path]::GetTempPath()) "fal-upload-test-$(New-Guid).png"
             New-MockImageFile -Path $testFile
 
             try {

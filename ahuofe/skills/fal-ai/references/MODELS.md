@@ -385,6 +385,8 @@ Animate a still image to video with optional built-in audio. **Community default
 }
 ```
 
+> **Note:** `duration` is typed as `string` in this model's API schema (pass `"5"` or `"10"`). Other video models such as Kling v2.6 and Veo 3.1 accept `duration` as an `integer`.
+
 ---
 
 ### Kling Video O1 — Image-to-Video
@@ -417,6 +419,8 @@ Image-to-video generation with optional first **and** last frame control.
 ```
 
 **Use case:** Provide both `image_url` and `tail_image_url` to generate a video that smoothly transitions between two specific frames.
+
+> **Note:** `duration` is typed as `string` in this model's API schema (pass `"5"` or `"10"`). Other video models such as Kling v2.6 and Veo 3.1 accept `duration` as an `integer`.
 
 ---
 
@@ -856,7 +860,7 @@ Transcribe audio files to text.
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `audio_url` | string | ✅ | — | URL of audio file |
-| `language` | string | | auto | Language code (e.g., `en`, `es`) |
+| `language` | string | | `auto` | Language code (e.g., `en`, `es`) |
 | `task` | string | | `transcribe` | `transcribe` or `translate` |
 | `chunk_level` | string | | `segment` | `segment` or `word` |
 
@@ -1035,7 +1039,7 @@ Multi-language text-to-speech supporting diverse languages and accents.
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
 | `text` | string | ✅ | — | Text to convert to speech |
-| `language` | string | | auto | Language code (e.g., `en`, `es`, `fr`, `de`) |
+| `language` | string | | `auto` | Language code (e.g., `en`, `es`, `fr`, `de`) |
 | `voice` | string | | — | Voice identifier |
 
 **Output Format:**
@@ -1308,8 +1312,10 @@ Crop a region from an image using percentage-based coordinates. Useful for split
 | Generate images with text | `fal-ai/ideogram/v3` | Superior text rendering |
 | Design-focused generation | `fal-ai/recraft-v3` | Strong style control |
 | Edit an image with a prompt | `fal-ai/nano-banana-pro/edit` | Community default for editing |
+| Edit an image with high fidelity | `fal-ai/bytedance/seedream/v4/edit` | Advanced image editing from ByteDance |
 | Create a video from text | `fal-ai/kling-video/v2.6/pro/text-to-video` | Best text-to-video quality |
 | Animate a photo | `fal-ai/bytedance/seedance/v1.5/pro/image-to-video` | Community default, includes audio |
+| Animate a photo (fast, high-quality) | `fal-ai/veo3.1/fast/image-to-video` | High-quality I2V from Google Veo |
 | Animate with first+last frame | `fal-ai/kling-video/o1/image-to-video` | First and last frame control |
 | Upscale a low-res image | `fal-ai/seedvr/upscale/image` | High-quality upscaling |
 | Upscale with detail preservation | `fal-ai/clarity-upscaler` | 2–4×, photorealistic detail |
@@ -1325,7 +1331,10 @@ Crop a region from an image using percentage-based coordinates. Useful for split
 | Generate speech (fastest) | `fal-ai/minimax/speech-2.6-turbo` | Low-latency TTS |
 | Generate speech (expressive) | `fal-ai/elevenlabs/tts/eleven-v3` | Expressive voice control |
 | Clone a voice | `fal-ai/minimax/voice-clone` | Clone voice from audio sample |
+| Generate speech (multi-language) | `fal-ai/chatterbox/multilingual` | Multi-language TTS |
 | Generate music | `fal-ai/elevenlabs/music` | Prompt-based music generation |
+| Generate music (high quality) | `fal-ai/minimax-music/v2` | High-quality music from text |
+| Generate audio / sound effects | `fal-ai/stable-audio` | General-purpose audio generation |
 | Add audio to a video | `fal-ai/mmaudio` | Video-to-audio synthesis |
 | Generate 3D from one image | `fal-ai/hunyuan3d-v3/image-to-3d` | Single-view 3D mesh |
 | Generate 3D from multiple views | `fal-ai/hyper3d/rodin/v2` | Multi-view 3D mesh |

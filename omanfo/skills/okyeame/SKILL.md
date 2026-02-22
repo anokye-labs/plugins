@@ -5,9 +5,7 @@ description: >
   updates, reporting on blocked issues, asking for clarity when needed, and
   tracking progress across GitHub Projects. Invoke for status reporting, issue
   management, blocker surfacing, and invoking the Okyerema to set the rhythm.
-tools:
-  - powershell
-  - github-cli
+allowed-tools: "powershell github-cli"
 ---
 
 # Okyeame — The Linguist

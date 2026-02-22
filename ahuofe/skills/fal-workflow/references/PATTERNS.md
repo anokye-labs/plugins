@@ -290,9 +290,11 @@ $steps = @(
 
     # '${llm-video-prompt.output}' — the LLM node returns its text result in the
     # 'output' field (a plain string). See fal-ai/any-llm output schema for details.
+    # image_url must be set explicitly: the engine auto-injects from the last
+    # dependency (llm-video-prompt), which produces text — not an image.
     @{ name = 'video-gen'
        model = 'fal-ai/kling-video/v2.6/pro/image-to-video'
-       params = @{ prompt = '${llm-video-prompt.output}' }
+       params = @{ prompt = '${llm-video-prompt.output}'; image_url = '${image-gen.images.0.url}' }
        dependsOn = @('image-gen', 'llm-video-prompt') }
 )
 
@@ -469,7 +471,7 @@ $planStep = @{
 }
 
 $planResult = .\scripts\New-FalWorkflow.ps1 -Name 'scene-plan' -Steps @($planStep)
-$scenes = $planResult.Steps['scene-planner'].Output.output | ConvertFrom-Json
+$scenes = ($planResult.Steps | Where-Object StepName -eq 'scene-planner').Output.output | ConvertFrom-Json
 
 # Phase 2: Build parallel image + video steps for each scene
 # Note: workflow reference strings like '${image-0.images.0.url}' are resolved

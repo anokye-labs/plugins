@@ -1,0 +1,22 @@
+name: Gate Tests
+
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - 'scripts/**'
+      - 'skills/**'
+      - 'docs/**'
+      - 'tests/**'
+      - '.github/**'
+
+jobs:
+  gate-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run gate tests
+        shell: pwsh
+        working-directory: ahuofe
+        run: |
+          Invoke-Pester -Path './tests/gates' -Output Detailed -CI

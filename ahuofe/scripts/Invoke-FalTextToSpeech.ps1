@@ -56,7 +56,7 @@ $output = [PSCustomObject]@{
 
 if ($result.audio) {
     $output.AudioUrl = $result.audio.url
-    if ($result.audio.duration) { $output.Duration = $result.audio.duration }
+    if ($null -ne $result.audio.duration) { $output.Duration = $result.audio.duration }
 }
 elseif ($result.audio_url) {
     $output.AudioUrl = $result.audio_url

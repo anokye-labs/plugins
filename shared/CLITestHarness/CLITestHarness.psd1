@@ -15,6 +15,8 @@
         'Start-CLISession'
         'Send-CLISessionPrompt'
         'Stop-CLISession'
+        'Get-CLIOutput'
+        'Wait-CLIPattern'
         'Get-IssueNumbersFromOutput'
         'Assert-IssueState'
         'Close-TestIssues'

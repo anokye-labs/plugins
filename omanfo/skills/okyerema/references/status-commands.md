@@ -197,6 +197,46 @@ When running `/context` in a new or unfamiliar repo, always append a readiness s
 
 ---
 
+### `/progress [root-number]` — DAG Completion Report
+
+| | |
+|---|---|
+| **Priority** | P1 |
+| **Trigger** | `/progress`, `/progress 10`, "how complete are we", "show dag completion" |
+| **Queries** | All issues (open + closed) with hierarchy, computes completion %, blocked paths, critical path |
+| **Script** | `scripts/Get-DagCompletionReport.ps1` |
+
+**Output format:**
+```
+📈 DAG Completion Report: anokye-labs/plugins
+
+✅ Overall Progress: 40.0% complete (4/10 issues closed)
+
+🌳 Hierarchy Breakdown:
+   #1 [Epic] Epic: Platform Migration
+   [████░░░░░░] 57.1% (4/7)
+   #8 [Feature] Feature: Standalone
+   [░░░░░░░░░░] 0.0% (0/3)
+
+🚧 Blocked paths (all-open dependency chains): 3
+   #1 → #3 → #6
+   #8 → #9
+   #8 → #10
+
+⚡ Critical path (3 steps):
+   #1 [Epic] → #3 [Feature] → #6 [Task]
+```
+
+**Emoji indicators:**
+- 📈 Completion report header
+- ✅ / 🟢 Healthy progress (≥75%)
+- 🟡 Partial progress (25–74%)
+- 🔴 No progress (<25%)
+- 🚧 Blocked / all-open dependency chains
+- ⚡ Critical path (longest remaining dependency chain)
+
+---
+
 ### `/board [project]` — Project Board Summary
 
 | | |
@@ -279,6 +319,7 @@ PR #12:
 | `Get-HierarchyHealth.ps1` | `/health` | P1 | ✅ Implemented |
 | `Get-RepoReadiness.ps1` | `/readiness` | P2 | ✅ Implemented |
 | *(agent-driven)* | `/context` | P0 | Agent introspection + readiness summary |
+| `Get-DagCompletionReport.ps1` | `/progress` | P1 | ✅ Implemented |
 | *(agent-driven)* | `/recap` | P1 | Agent synthesis |
 | *(agent-driven)* | `/whatsleft` | P1 | Agent + hierarchy query |
 | *(agent-driven)* | `/board` | P2 | Agent + projects API |

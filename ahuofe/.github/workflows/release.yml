@@ -1,0 +1,22 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'ahuofe/v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate plugin structure
+        shell: pwsh
+        working-directory: ahuofe
+        run: |
+          Invoke-Pester -Path './tests/gates' -Output Detailed -CI
+      - name: Create release notes
+        shell: pwsh
+        run: |
+          $tag = $env:GITHUB_REF -replace 'refs/tags/', ''
+          Write-Host "Releasing $tag"
