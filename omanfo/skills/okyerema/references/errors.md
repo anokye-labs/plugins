@@ -101,6 +101,71 @@ mutation {
 
 ---
 
+## Error: 'copilot' not found when assigning to Copilot via gh CLI
+
+**Cause:** Using `--add-assignee "copilot"` (without `@` prefix) in the `gh issue edit` command.
+
+**Fix:** Always include the `@` prefix:
+```bash
+# ✅ Works
+gh issue edit {number} --add-assignee "@copilot"
+
+# ❌ Fails with "'copilot' not found"
+gh issue edit {number} --add-assignee "copilot"
+```
+
+Note: The REST API uses a different pattern — capital `C`, no `@`:
+```bash
+gh api repos/{owner}/{repo}/issues/{number}/assignees \
+  --method POST \
+  -f 'assignees[]=Copilot'
+```
+
+---
+
+## Error: GraphQL `addAssigneesToAssignable` returns NOT_FOUND for Copilot
+
+**Cause:** Attempting to assign Copilot via GraphQL. Copilot's node ID (e.g., `BOT_kgDOC9w8XQ`) is a BOT type, not a User type. GraphQL mutations only accept User-type node IDs for assignees.
+
+**Fix:** Use the REST API endpoint instead of GraphQL:
+```bash
+gh api repos/{owner}/{repo}/issues/{number}/assignees \
+  --method POST \
+  -f 'assignees[]=Copilot'
+```
+
+The following GraphQL mutation will NOT work for Copilot:
+```graphql
+# ❌ Returns NOT_FOUND — BOT-type node IDs are not accepted
+mutation {
+  addAssigneesToAssignable(input: {
+    assignableId: "I_issue_node_id"
+    assigneeIds: ["BOT_kgDOC9w8XQ"]
+  }) {
+    assignable { id }
+  }
+}
+```
+
+---
+
+## Error: Copilot not found in `/assignees` or `/collaborators` endpoints
+
+**Cause:** Attempting to verify Copilot availability before assigning by querying the standard endpoints. Copilot does NOT appear in these lists even when enabled at the org level.
+
+```bash
+# ❌ Copilot will NOT appear in these results even when enabled
+gh api repos/{owner}/{repo}/assignees
+gh api repos/{owner}/{repo}/collaborators
+```
+
+**Fix:** Do not pre-validate Copilot availability via these endpoints. Org-level enablement is required and must be verified via GitHub org settings (not the API). Assignment scripts must handle errors gracefully rather than checking first:
+- Attempt the assignment directly
+- Catch and surface errors (e.g., 422 Unprocessable Entity) as actionable messages
+- Direct users to check GitHub org settings → Copilot → coding agent if assignment fails
+
+---
+
 ## Pre-Flight Checklist
 
 Before starting any issue operations:
