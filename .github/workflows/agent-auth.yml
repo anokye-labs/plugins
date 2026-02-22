@@ -34,23 +34,22 @@ jobs:
           BASE_REF: ${{ github.event.pull_request.base.ref }}
           HEAD_REF: ${{ github.event.pull_request.head.ref }}
         run: |
-          # Load the validation script
+          # Run the validation script directly with parameters
+          # NOTE: Do NOT dot-source this script — it has mandatory params at
+          # the script level that cause ParameterBindingException in CI.
           $scriptPath = Join-Path $PWD "workflow-templates/scripts/Test-AgentAuth.ps1"
-          if (Test-Path $scriptPath) {
-            . $scriptPath
-          } else {
+          if (-not (Test-Path $scriptPath)) {
             Write-Host "::error::Agent auth validation script not found at $scriptPath"
             Write-Host "Please ensure workflow-templates/scripts/Test-AgentAuth.ps1 exists"
             exit 1
           }
           
-          # Run validation
           $dryRun = $env:DRY_RUN -eq 'true'
           $owner = "${{ github.repository_owner }}"
           $repo = "${{ github.event.repository.name }}"
-          $prNumber = $env:PR_NUMBER
+          $prNumber = [int]$env:PR_NUMBER
           
-          Test-AgentAuth `
+          & $scriptPath `
             -Owner $owner `
             -Repo $repo `
             -PRNumber $prNumber `
