@@ -14,7 +14,11 @@ jobs:
   resolve-pr:
     name: Resolve PR
     runs-on: ubuntu-latest
-    if: startsWith(github.head_ref, 'copilot/')
+    # Gate on BOTH branch prefix AND actor identity to prevent untrusted code execution.
+    # Branch name alone is insufficient — any user can create a copilot/* branch.
+    if: >
+      startsWith(github.head_ref, 'copilot/')
+      && contains(fromJSON('["Copilot","copilot-swe-agent[bot]"]'), github.event.pull_request.user.login)
     outputs:
       pr_number: ${{ steps.pr.outputs.number }}
       pr_node_id: ${{ steps.pr.outputs.node_id }}
@@ -30,7 +34,7 @@ jobs:
           echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
           echo "head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
           echo "skip=false" >> $GITHUB_OUTPUT
-          echo "Found PR #${{ github.event.pull_request.number }} from branch ${{ github.event.pull_request.head.ref }}"
+          echo "Found PR #${{ github.event.pull_request.number }} from branch ${{ github.event.pull_request.head.ref }} by ${{ github.event.pull_request.user.login }}"
 
   # ── Required check: Static Validation ─────────────────────────────────
   validate:
@@ -40,7 +44,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      checks: write
     steps:
       - name: Checkout PR code
         uses: actions/checkout@v4
@@ -171,6 +174,9 @@ jobs:
           Invoke-Pester -Configuration $config
 
   # ── Auto-approve + enqueue ────────────────────────────────────────────
+  # NOTE: This job deliberately does NOT checkout PR code. It only uses
+  # GitHub API calls (which run base-branch code from actions/github-script)
+  # so write permissions here are safe.
   auto-approve:
     name: Auto Approve (Copilot)
     needs: [resolve-pr, validate, check-linked-issue]
