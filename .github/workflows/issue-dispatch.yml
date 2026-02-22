@@ -10,17 +10,14 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
-      contents: read
-      pull-requests: write
-      actions: read
     steps:
-      - name: Dispatch to agent
+      - name: Triage issue
+        id: triage
         uses: actions/github-script@v7
         with:
           script: |
             const issue = context.payload.issue;
             const issueNumber = issue.number;
-            const issueNodeId = issue.node_id;
 
             // Skip if already assigned
             if (issue.assignees && issue.assignees.length > 0) {
@@ -69,10 +66,22 @@ jobs:
               }
             }
 
-            // Assign Copilot coding agent via addAssigneesToAssignable mutation.
-            // Requires the GraphQL-Features header for Copilot assignment API support
-            // and the agentAssignment input to trigger the coding agent.
-            // See: https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/create-a-pr#assigning-an-issue-to-copilot-via-the-github-api
+            // Signal that this issue should be dispatched
+            core.setOutput('should_dispatch', 'true');
+            core.setOutput('issue_node_id', issue.node_id);
+            core.info(`Issue #${issueNumber} is eligible for auto-dispatch.`);
+
+      # Assign Copilot coding agent using a PAT.
+      # The Copilot assignment API requires a user token — GITHUB_TOKEN (installation token) cannot
+      # assign Copilot. See: https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/create-a-pr#assigning-an-issue-to-copilot-via-the-github-api
+      - name: Assign Copilot
+        if: steps.triage.outputs.should_dispatch == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.COPILOT_DISPATCH_PAT }}
+          script: |
+            const issueNumber = context.payload.issue.number;
+            const issueNodeId = '${{ steps.triage.outputs.issue_node_id }}';
             const COPILOT_BOT_NODE_ID = 'BOT_kgDOC9w8XQ';
             const REPOSITORY_NODE_ID = '${{ github.event.repository.node_id }}';
             const GRAPHQL_FEATURES = 'issues_copilot_assignment_api_support,coding_agent_model_selection';
@@ -106,11 +115,17 @@ jobs:
               });
               core.info(`Assigned Copilot to issue #${issueNumber}`);
             } catch (e) {
-              core.warning(`Failed to assign Copilot to issue #${issueNumber}: ${e.message}`);
-              return;
+              core.setFailed(`Failed to assign Copilot to issue #${issueNumber}: ${e.message}`);
             }
 
-            // Add agent/assigned label
+      # Add label using GITHUB_TOKEN (doesn't need user token)
+      - name: Add agent/assigned label
+        if: steps.triage.outputs.should_dispatch == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.payload.issue.number;
+
             try {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
