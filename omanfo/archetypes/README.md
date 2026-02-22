@@ -10,6 +10,19 @@ Reusable agent templates for common automation patterns in the Anokye System. Th
 | [issue-labeler](issue-labeler.agent.md) | Issue classification | New issue → Analyze content → Apply labels (type, priority, phase) |
 | [pr-reviewer](pr-reviewer.agent.md) | Pull request reviews | PR opened → Analyze diff → Post review → Track resolution |
 
+## Deployment in This Repository
+
+The archetype files are also deployed to `.github/agents/` in this repository so they are discoverable by GitHub Copilot:
+
+```
+.github/agents/
+├── doc-sync.agent.md
+├── issue-labeler.agent.md
+└── pr-reviewer.agent.md
+```
+
+This serves as a working example of deployment — the same pattern you follow when deploying to target repositories.
+
 ## What Are Agent Archetypes?
 
 Agent archetypes are reusable `.agent.md` templates that define:
