@@ -26,7 +26,7 @@ This repository is designed for zero human intervention in the PR lifecycle:
 5. **Merge queue** runs `Static Validation` against the merged result
 6. If all checks pass, the **PR merges automatically**
 
-Trusted actors (auto-approved): `hoopsomuah`, `devin-ai-integration[bot]`, `claude[bot]`, `chatgpt-codex-connector[bot]`, `dependabot[bot]`, `renovate[bot]`
+Trusted actors (auto-approved): `hoopsomuah`, `Copilot`, `copilot-swe-agent[bot]`, `app/copilot-swe-agent`, `devin-ai-integration[bot]`, `claude[bot]`, `chatgpt-codex-connector[bot]`, `dependabot[bot]`, `renovate[bot]`
 
 
 ## Automated Configuration
