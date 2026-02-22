@@ -91,29 +91,58 @@ jobs:
                 continue;
               }
 
-              // Paginate review threads to check for unresolved conversations
-              let hasUnresolved = false;
-              let cursor = null;
-              do {
-                const threads = await github.graphql(`
-                  query($owner:String!,$repo:String!,$pr:Int!,$cursor:String) {
-                    repository(owner:$owner,name:$repo) {
-                      pullRequest(number:$pr) {
-                        reviewThreads(first:100,after:$cursor) {
-                          nodes { isResolved }
-                          pageInfo { hasNextPage endCursor }
+              // Auto-resolve bot review threads before checking for unresolved conversations.
+              // Automated review bots leave informational comments that block the merge queue.
+              const botLogins = [
+                'github-code-quality[bot]',
+                'devin-ai-integration[bot]',
+                'github-advanced-security[bot]',
+              ];
+
+              const threadData = await github.graphql(`
+                query($owner:String!,$repo:String!,$pr:Int!) {
+                  repository(owner:$owner,name:$repo) {
+                    pullRequest(number:$pr) {
+                      reviewThreads(first:100) {
+                        nodes {
+                          id
+                          isResolved
+                          comments(first:1) {
+                            nodes { author { login } }
+                          }
                         }
                       }
                     }
                   }
-                `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number, cursor });
-                const page = threads.repository.pullRequest.reviewThreads;
-                if (page.nodes.some(t => !t.isResolved)) { hasUnresolved = true; break; }
-                cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
-              } while (cursor);
+                }
+              `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number });
+
+              const unresolvedBotThreads = threadData.repository.pullRequest.reviewThreads.nodes
+                .filter(t => !t.isResolved && t.comments.nodes.length > 0
+                  && botLogins.includes(t.comments.nodes[0].author.login));
+
+              for (const thread of unresolvedBotThreads) {
+                try {
+                  await github.graphql(`
+                    mutation($id: ID!) {
+                      resolveReviewThread(input: { threadId: $id }) {
+                        thread { isResolved }
+                      }
+                    }
+                  `, { id: thread.id });
+                  core.info(`PR #${pr.number}: resolved bot thread (by ${thread.comments.nodes[0].author.login})`);
+                } catch (e) {
+                  core.info(`PR #${pr.number}: could not resolve thread: ${e.message}`);
+                }
+              }
+
+              // Check for remaining unresolved threads (human comments only)
+              const hasUnresolved = threadData.repository.pullRequest.reviewThreads.nodes
+                .some(t => !t.isResolved && (t.comments.nodes.length === 0
+                  || !botLogins.includes(t.comments.nodes[0].author.login)));
 
               if (hasUnresolved) {
-                core.info(`PR #${pr.number}: has unresolved review threads, skipping.`);
+                core.info(`PR #${pr.number}: has unresolved human review threads, skipping.`);
                 continue;
               }
 
