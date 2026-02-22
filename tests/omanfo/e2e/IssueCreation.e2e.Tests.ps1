@@ -66,12 +66,12 @@ Describe "Issue Creation E2E Tests" {
             $title = "E2E-$script:RunId: Test Task Creation"
             $prompt = "Create a Task issue titled '$title' in $script:TestRepo with body 'Test task for E2E validation'"
             
-            # Execute copilot command
+            # Execute CLI prompt
             $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             # Look for issue number in output (format: #123)
             $issueMatch = $output -match '#(\d+)'
-            $issueMatch | Should -Be $true -Because "Copilot should create issue and report number"
+            $issueMatch | Should -Be $true -Because "CLI provider should create issue and report number"
             
             if ($issueMatch) {
                 $issueNum = $matches[1]
