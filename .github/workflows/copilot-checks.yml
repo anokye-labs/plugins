@@ -251,11 +251,13 @@ jobs:
             // Auto-resolve bot review threads — automated review bots (code-quality,
             // Devin review) leave informational comments that create unresolved threads,
             // blocking the merge queue. Resolve them so auto-enqueue can proceed.
-            const botLogins = [
-              'github-code-quality[bot]',
-              'devin-ai-integration[bot]',
-              'github-advanced-security[bot]',
-            ];
+            // GraphQL author.login omits the [bot] suffix shown in the UI.
+            // Keep both forms so the match works regardless of API surface.
+            const botLogins = new Set([
+              'github-code-quality[bot]',  'github-code-quality',
+              'devin-ai-integration[bot]', 'devin-ai-integration',
+              'github-advanced-security[bot]', 'github-advanced-security',
+            ]);
 
             const threadData = await github.graphql(`
               query($owner:String!,$repo:String!,$pr:Int!) {
@@ -277,7 +279,7 @@ jobs:
 
             const unresolvedBotThreads = threadData.repository.pullRequest.reviewThreads.nodes
               .filter(t => !t.isResolved && t.comments.nodes.length > 0
-                && botLogins.includes(t.comments.nodes[0].author.login));
+                && botLogins.has(t.comments.nodes[0].author.login));
 
             for (const thread of unresolvedBotThreads) {
               try {
