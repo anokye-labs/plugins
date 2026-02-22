@@ -47,6 +47,12 @@ jobs:
           $dryRun = $env:DRY_RUN -eq 'true'
           $owner = "${{ github.repository_owner }}"
           $repo = "${{ github.event.repository.name }}"
+          
+          # Guard: skip when PR_NUMBER is empty (e.g. workflow_dispatch)
+          if (-not $env:PR_NUMBER) {
+            Write-Host "::warning::No PR number available — skipping agent-auth validation."
+            exit 0
+          }
           $prNumber = [int]$env:PR_NUMBER
           
           & $scriptPath `
