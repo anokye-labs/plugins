@@ -105,22 +105,34 @@ foreach ($stepName in $executionOrder) {
     $model = $step.model
     $body = if ($step.params) { $step.params.Clone() } else { @{} }
 
-    # Pass output from dependencies: inject image_url from prior step
+    # Pass output from dependencies: auto-inject URL from prior step
     $deps = $step.dependsOn
     if ($deps -and $deps.Count -gt 0) {
         $lastDep = $deps[-1]
         $priorResult = $stepResults[$lastDep]
         if ($priorResult) {
-            # If prior step produced images, pass first image URL
+            # Rule 1: If prior step produced images[], inject images[0].url as image_url
             if ($priorResult.images -and $priorResult.images.Count -gt 0) {
                 if (-not $body.ContainsKey('image_url')) {
                     $body['image_url'] = $priorResult.images[0].url
                 }
             }
-            # If prior step produced video, pass video URL
-            elseif ($priorResult.video -and $priorResult.video.url) {
+            # Rule 2: If prior step produced image.url (e.g. aura-sr upscale), inject as image_url
+            elseif ($priorResult.image -and $priorResult.image.url) {
                 if (-not $body.ContainsKey('image_url')) {
-                    $body['image_url'] = $priorResult.video.url
+                    $body['image_url'] = $priorResult.image.url
+                }
+            }
+            # Rule 3: If prior step produced frame.url (e.g. extract-frame), inject as image_url
+            elseif ($priorResult.frame -and $priorResult.frame.url) {
+                if (-not $body.ContainsKey('image_url')) {
+                    $body['image_url'] = $priorResult.frame.url
+                }
+            }
+            # Rule 4: If prior step produced video.url, inject as video_url
+            elseif ($priorResult.video -and $priorResult.video.url) {
+                if (-not $body.ContainsKey('video_url')) {
+                    $body['video_url'] = $priorResult.video.url
                 }
             }
         }

@@ -83,5 +83,20 @@ Describe 'Get-FalRequests' {
                 $Method -eq 'DELETE' -and $Uri -match 'req-abc123'
             }
         }
+
+        It 'URL-encodes the Delete request ID in the DELETE endpoint path' {
+            $global:capturedDeleteUri = $null
+            Mock Invoke-RestMethod {
+                $global:capturedDeleteUri = $Uri
+                return [PSCustomObject]@{ success = $true }
+            } -ModuleName FalAi
+
+            $result = & "$PSScriptRoot/../../scripts/Get-FalRequests.ps1" -Delete 'req/with spaces&special=chars'
+            $result.RequestId | Should -Be 'req/with spaces&special=chars'
+            $result.Success   | Should -Be $true
+
+            $global:capturedDeleteUri.AbsoluteUri | Should -Match 'req%2Fwith%20spaces%26special%3Dchars'
+            Remove-Variable -Name capturedDeleteUri -Scope Global -ErrorAction SilentlyContinue
+        }
     }
 }

@@ -355,7 +355,7 @@ Generate text from a prompt using a language model.
 **Reference output path:** `$node.output`
 
 **Chains from:** Any step — `llm` typically starts a workflow or follows another text node.
-**Chains to:** text-concat, merge-text, generate (passes output as `prompt`).
+**Chains to:** text-concat, merge-text. Text output is available in the returned results (`output`) for manual wiring into downstream `prompt` parameters; the engine does not auto-inject text outputs.
 
 > **Note:** Text-only. Use `vision-llm` when you need to analyze an image.
 
@@ -390,8 +390,8 @@ Analyze one or more images and produce a text description or answer.
 
 **Reference output path:** `$node.output`
 
-**Chains from:** generate, upscale, edit — any step producing an image URL.
-**Chains to:** text-concat, merge-text, generate (passes output as `prompt`).
+**Chains from:** Steps that produce an image URL (e.g., generate, upscale, edit). The workflow engine exposes a single `image_url` value from dependencies; it does **not** automatically populate the `image_urls` array, so you must explicitly map the upstream `image_url`(s) into the `image_urls` parameter in your step definition.
+**Chains to:** text-concat, merge-text. Text output is available in the returned results (`output`) for manual wiring into downstream `prompt` parameters; the engine does not auto-inject text outputs.
 
 > **Warning:** ONLY use `vision-llm` when you need to analyze an image. For
 > all text-only tasks use the plain `llm` step — it is faster and cheaper.
@@ -412,8 +412,8 @@ Concatenate exactly two text values into one.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `text1` | string | ✅ | — | First text (static string or `$node.output` reference) |
-| `text2` | string | ✅ | — | Second text (typically a `$node.output` reference) |
+| `text1` | string | ✅ | — | First text (static string or prior step output injected in PowerShell) |
+| `text2` | string | ✅ | — | Second text (static string or prior step output injected in PowerShell) |
 
 **Output:**
 
@@ -423,13 +423,15 @@ Concatenate exactly two text values into one.
 
 **Reference output path:** `$node.results`
 
-**Chains from:** llm, vision-llm — receives `$node.output` as `text1` or `text2`.
-**Chains to:** merge-text, generate (passes `results` as `prompt`).
+**Chains from:** llm, vision-llm — receives prior step text output inserted in PowerShell as `text1` or `text2`.
+**Chains to:** merge-text, llm. Text output (`results`) is available for manual wiring into downstream `prompt` parameters; the engine does not auto-inject text outputs.
 
 **Common pattern — Label + dynamic value:**
 
+> **Note:** `$step.output`-style placeholders are not resolved by `New-FalWorkflow.ps1`. Read the previous step's output in PowerShell and insert it into `text2` when building the `params` object.
+
 ```json
-{ "text1": "Cinematic scene: ", "text2": "$llm_step.output" }
+{ "text1": "Cinematic scene: ", "text2": "<prior_step_output>" }
 ```
 
 ---
@@ -448,7 +450,7 @@ Merge an array of text values using a separator.
 
 | Parameter | Type | Required | Default | Description |
 |-----------|------|----------|---------|-------------|
-| `texts` | array | ✅ | — | Array of text values or `$node.output` references |
+| `texts` | array | ✅ | — | Array of text values to merge |
 | `separator` | string | | `""` | String inserted between each value |
 
 **Output:**
@@ -459,14 +461,16 @@ Merge an array of text values using a separator.
 
 **Reference output path:** `$node.text`
 
-**Chains from:** llm, vision-llm, text-concat — receives output references in the `texts` array.
-**Chains to:** generate (passes `text` as `prompt`), llm (passes `text` as `prompt`).
+**Chains from:** llm, vision-llm, text-concat — receives prior step text output inserted in PowerShell in the `texts` array.
+**Chains to:** generate, llm, video-gen. Text output (`text`) is available for manual wiring into downstream `prompt` parameters; the engine does not auto-inject text outputs.
 
 **Common pattern — Combine labeled expert outputs:**
 
+> **Note:** `$step.output`-style placeholders are not resolved by `New-FalWorkflow.ps1`. Read each prior step's output in PowerShell and build the `texts` array before calling `New-FalWorkflow`.
+
 ```json
 {
-  "texts": ["$expert1.results", "$expert2.results", "$expert3.results"],
+  "texts": ["<expert1_output>", "<expert2_output>", "<expert3_output>"],
   "separator": "\n\n"
 }
 ```
@@ -481,19 +485,23 @@ Source output → Target input compatibility:
 
 | Source Step | Output Format | Compatible Targets |
 |------------|---------------|--------------------|
-| generate | `images[0].url` | upscale, edit, animate, restyle, vision-llm |
-| upscale | `image.url` | animate, edit, restyle, vision-llm |
-| edit | `images[0].url` | upscale, animate, restyle, vision-llm |
-| restyle | `images[0].url` | upscale, animate, vision-llm |
+| generate | `images[0].url` | upscale, edit, animate, restyle |
+| upscale | `image.url` | animate, edit, restyle |
+| edit | `images[0].url` | upscale, animate, restyle |
+| restyle | `images[0].url` | upscale, animate |
 | animate | `video.url` | extract-frame, merge-videos, merge-audio-video |
 | video-gen | `video.url` | extract-frame, merge-videos, merge-audio-video |
 | extract-frame | `frame.url` (image) | upscale, edit, restyle, animate |
 | merge-videos | `video.url` | merge-audio-video, *(terminal)* |
 | merge-audio-video | `video.url` | *(terminal)* |
-| llm | `output` (text) | text-concat, merge-text, generate, video-gen |
-| vision-llm | `output` (text) | text-concat, merge-text, generate, video-gen |
-| text-concat | `results` (text) | merge-text, generate, llm |
-| merge-text | `text` (text) | generate, llm, video-gen |
+| llm | `output` (text) | text-concat, merge-text, generate (manual prompt), video-gen (manual prompt) |
+| vision-llm | `output` (text) | text-concat, merge-text, generate (manual prompt), video-gen (manual prompt) |
+| text-concat | `results` (text) | merge-text, generate (manual prompt), llm (manual prompt) |
+| merge-text | `text` (text) | generate (manual prompt), llm (manual prompt), video-gen (manual prompt) |
+
+> **Note:** "(manual prompt)" means the text output must be extracted in PowerShell from the prior step's
+> result and supplied explicitly as the `prompt` parameter in the next step's `params`. The engine
+> does **not** auto-inject text outputs into `prompt` fields.
 
 ### Auto-Injection Rules
 

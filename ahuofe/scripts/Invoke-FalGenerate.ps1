@@ -17,42 +17,26 @@
 .PARAMETER ImageUrl
     Input image URL for image-to-image or image-to-video models.
 .PARAMETER FilePath
-    Local file to auto-upload to fal.ai CDN before generation. Automatically
-    calls Send-FalFile and sets ImageUrl internally. Eliminates the manual
-    upload step for image-to-image or image-to-video workflows.
-    When both -FilePath and -ImageUrl are specified, -FilePath takes precedence.
+    Local file to auto-upload to fal.ai CDN before generation.
+    Takes precedence over -ImageUrl when both are specified.
 .PARAMETER Strength
     Strength for img2img models (0.0-1.0).
 .PARAMETER NumInferenceSteps
     Number of inference steps.
 .PARAMETER GuidanceScale
     Classifier-free guidance scale.
-.PARAMETER EnableSafetyChecker
-    Enable the safety checker.
 .PARAMETER Queue
     Use queue mode (submit, poll, retrieve) instead of synchronous.
 .PARAMETER Async
-    Submit to the queue and return the RequestId immediately without waiting
-    for the job to complete. Useful for long-running video generation jobs.
-    Use Get-QueueStatus.ps1 to check progress later.
+    Submit to the queue and return the RequestId immediately.
 .PARAMETER Lifecycle
     Expiration time in seconds for generated files on the fal.ai CDN.
-    Passed through to the queue submission payload. Only meaningful when
-    using -Queue or -Async mode.
 .EXAMPLE
     .\Invoke-FalGenerate.ps1 -Prompt "A serene mountain landscape"
 .EXAMPLE
     .\Invoke-FalGenerate.ps1 -Prompt "Ocean waves" -Model "fal-ai/flux/schnell" -Queue
 .EXAMPLE
-    .\Invoke-FalGenerate.ps1 -Prompt "Zoom in" -Model "fal-ai/kling-video/v2.6/pro/image-to-video" -ImageUrl "https://example.com/img.jpg" -Queue
-.EXAMPLE
-    .\Invoke-FalGenerate.ps1 -Prompt "Animate this photo" -Model "fal-ai/kling-video/v2.6/pro/image-to-video" -FilePath ".\photo.jpg" -Queue
-.EXAMPLE
-    $requestId = .\Invoke-FalGenerate.ps1 -Prompt "Epic battle" -Model "fal-ai/veo3.1" -Async
-    # Returns immediately: "abc123-def456"
-    # Check later: .\Get-QueueStatus.ps1 -RequestId $requestId -Model "fal-ai/veo3.1"
-.EXAMPLE
-    .\Invoke-FalGenerate.ps1 -Prompt "Sunset scene" -Model "fal-ai/flux/dev" -Lifecycle 3600 -Queue
+    .\Invoke-FalGenerate.ps1 -Prompt "Animate this" -FilePath ".\photo.jpg" -Queue
 #>
 [CmdletBinding()]
 param(
@@ -132,7 +116,12 @@ if ($PSBoundParameters.ContainsKey('Lifecycle'))           { $body.x_fal_lifecyc
 if ($Async) {
     Write-Host "Submitting to queue (async): $Model..." -ForegroundColor Cyan
     $submitResult = Invoke-FalApi -Method POST -Endpoint $Model -Body $body -BaseUrl 'https://queue.fal.run'
-    return $submitResult.request_id
+    $requestId = $submitResult.request_id
+    if (-not $requestId) {
+        $msg = ConvertTo-FalError $submitResult
+        throw "Queue submission failed: $msg"
+    }
+    return $requestId
 }
 elseif ($Queue) {
     Write-Host "Submitting to queue: $Model..." -ForegroundColor Cyan

@@ -77,9 +77,10 @@ Describe 'Invoke-FalGenerate' {
     Context 'Error handling' {
         It 'Throws when FAL_KEY is not set' {
             $env:FAL_KEY = $null
-            Push-Location $env:TEMP
+            $tempRoot = [System.IO.Path]::GetTempPath()
+            Push-Location $tempRoot
             try {
-                $envFile = Join-Path $env:TEMP '.env'
+                $envFile = Join-Path $tempRoot '.env'
                 if (Test-Path $envFile) { Remove-Item $envFile -Force }
                 { & $script:generateScript -Prompt 'should fail' } | Should -Throw '*FAL_KEY*'
             }
@@ -127,6 +128,14 @@ Describe 'Invoke-FalGenerate' {
             Should -Invoke Invoke-RestMethod -ModuleName FalAi -Times 1 -ParameterFilter {
                 $Uri -match 'queue\.fal\.run' -and $Method -eq 'POST'
             }
+        }
+
+        It 'Throws when queue submission returns no request_id' {
+            Mock Invoke-RestMethod {
+                return [PSCustomObject]@{ detail = 'Internal Server Error' }
+            } -ModuleName FalAi
+
+            { & $script:generateScript -Prompt 'async job' -Async } | Should -Throw '*Queue submission failed*'
         }
     }
 

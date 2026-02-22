@@ -88,6 +88,8 @@ if ($Operation -eq 'inpaint') {
         -Prompt   $Prompt `
         -Model    $resolvedModel `
         -Strength $Strength
+    $result | Add-Member -NotePropertyName Operation -NotePropertyValue $Operation -Force
+    $result | Add-Member -NotePropertyName Model -NotePropertyValue $resolvedModel -Force
     return $result
 }
 

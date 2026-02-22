@@ -402,8 +402,8 @@ or combine text values within a workflow.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `text1` | string | First text value (may be a static string or `$node.output` reference) |
-| `text2` | string | Second text value (typically a `$node.output` reference) |
+| `text1` | string | First text value (static string or prior step output injected in PowerShell) |
+| `text2` | string | Second text value (static string or prior step output injected in PowerShell) |
 
 **Output Schema:**
 
@@ -414,7 +414,7 @@ or combine text values within a workflow.
 **Reference output path:** `$node.results`
 
 **Use cases:**
-- Add a label or prefix to a dynamic value: `text1 = "Scene: "`, `text2 = $llm.output`
+- Add a label or prefix to a dynamic value: set `text1` to a static prefix and `text2` to a prior step's output (extracted in PowerShell)
 - Combine a static suffix with generated text
 
 ---
@@ -431,7 +431,7 @@ or combine text values within a workflow.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `texts` | array | Array of text values or `$node.output` references to merge |
+| `texts` | array | Array of text values to merge |
 
 **Optional Parameters:**
 
@@ -506,20 +506,20 @@ outside the workflow engine for quality checkpoints.
 
 | Source Node | Output Type | Compatible Targets |
 |-------------|-------------|--------------------|
-| text-to-image | `images[0].url` | upscale, inpaint, edit, image-to-video, vision-llm |
+| text-to-image | `images[0].url` | upscale, inpaint, edit, image-to-video |
 | text-to-video | `video.url` | extract-frame, merge-videos, merge-audio-video |
 | image-to-video | `video.url` | extract-frame, merge-videos, merge-audio-video |
-| upscale | `image.url` | inpaint, edit, image-to-video, vision-llm |
-| inpaint | `images[0].url` | upscale, edit, image-to-video, vision-llm |
-| edit | `images[0].url` | upscale, inpaint, image-to-video, vision-llm |
+| upscale | `image.url` | inpaint, edit, image-to-video |
+| inpaint | `images[0].url` | upscale, edit, image-to-video |
+| edit | `images[0].url` | upscale, inpaint, image-to-video |
 | extract-frame | `frame.url` (image) | upscale, edit, restyle, animate (image-to-video) |
 | merge-videos | `video.url` | merge-audio-video, *(terminal)* |
 | merge-audio-video | `video.url` | *(terminal)* |
-| llm | `output` (text) | text-concat, merge-text, generate (as prompt), text-to-video (as prompt) |
-| vision-llm | `output` (text) | text-concat, merge-text, generate (as prompt), text-to-video (as prompt) |
-| text-concat | `results` (text) | merge-text, generate (as prompt), llm (as prompt) |
-| merge-text | `text` (text) | generate (as prompt), llm (as prompt), text-to-video (as prompt) |
+| llm | `output` (text) | text-concat, merge-text, text-to-image (manual prompt), text-to-video (manual prompt) |
+| vision-llm | `output` (text) | text-concat, merge-text, text-to-image (manual prompt), text-to-video (manual prompt) |
+| text-concat | `results` (text) | merge-text, text-to-image (manual prompt), llm (manual prompt) |
+| merge-text | `text` (text) | text-to-image (manual prompt), llm (manual prompt), text-to-video (manual prompt) |
 
 Video nodes produce `video.url` which cannot chain to image-based nodes directly.
 Use `extract-frame` to bridge a video step into an image-based step.
-Text nodes produce string values which feed into prompt parameters of generator nodes.
+Text nodes produce string values that you can wire into prompt parameters of compatible generator or LLM nodes when defining workflows. The engine only auto-injects `image_url` outputs; it does not automatically inject text outputs into `prompt` parameters.
