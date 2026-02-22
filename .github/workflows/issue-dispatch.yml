@@ -1,0 +1,156 @@
+name: Issue Dispatch
+
+on:
+  issues:
+    types: [opened, labeled]
+
+jobs:
+  dispatch:
+    name: Auto-Assign Agent
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Triage issue
+        id: triage
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issue = context.payload.issue;
+            const issueNumber = issue.number;
+
+            // Skip if already assigned
+            if (issue.assignees && issue.assignees.length > 0) {
+              core.info(`Issue #${issueNumber} already assigned, skipping.`);
+              return;
+            }
+
+            // Skip if opt-out label is present
+            const hasOptOut = issue.labels.some(l => l.name === 'no-auto-dispatch');
+            if (hasOptOut) {
+              core.info(`Issue #${issueNumber} has no-auto-dispatch label, skipping.`);
+              return;
+            }
+
+            // Query issue type via GraphQL
+            const { repository } = await github.graphql(`
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $number) {
+                    issueType { name }
+                  }
+                }
+              }
+            `, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              number: issueNumber,
+            });
+
+            const issueType = repository.issue.issueType?.name;
+            core.info(`Issue #${issueNumber} type: ${issueType || 'none'}`);
+
+            // Only dispatch Task and Bug issues — skip Epics and Features (planning items)
+            const dispatchableTypes = ['Task', 'Bug'];
+            if (!issueType || !dispatchableTypes.includes(issueType)) {
+              core.info(`Issue #${issueNumber} is type "${issueType}" — not dispatchable, skipping.`);
+              return;
+            }
+
+            // For labeled events, only proceed if the label is 'auto-flow'
+            if (context.payload.action === 'labeled') {
+              const labelName = context.payload.label?.name;
+              if (labelName !== 'auto-flow') {
+                core.info(`Label "${labelName}" is not auto-flow, skipping.`);
+                return;
+              }
+            }
+
+            // Signal that this issue should be dispatched
+            core.setOutput('should_dispatch', 'true');
+            core.setOutput('issue_node_id', issue.node_id);
+            core.info(`Issue #${issueNumber} is eligible for auto-dispatch.`);
+
+      # Assign Copilot coding agent using gh api graphql with a PAT.
+      # The Copilot assignment API requires a user token — GITHUB_TOKEN (installation token) cannot
+      # assign Copilot. Uses gh api graphql directly to ensure the GraphQL-Features header is sent
+      # correctly. See: https://docs.github.com/en/copilot/how-tos/use-copilot-agents/coding-agent/create-a-pr#assigning-an-issue-to-copilot-via-the-github-api
+      - name: Assign Copilot
+        if: steps.triage.outputs.should_dispatch == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.ANOKYE_LABS_PLUGINS_COPILOT_DISPATCH_PAT }}
+        run: |
+          ISSUE_NODE_ID="${{ steps.triage.outputs.issue_node_id }}"
+          REPO_NODE_ID="${{ github.event.repository.node_id }}"
+          COPILOT_BOT_ID="BOT_kgDOC9w8XQ"
+          ISSUE_NUMBER="${{ github.event.issue.number }}"
+
+          echo "Assigning Copilot to issue #${ISSUE_NUMBER}..."
+          echo "Issue node ID: ${ISSUE_NODE_ID}"
+          echo "Repo node ID: ${REPO_NODE_ID}"
+
+          gh api graphql \
+            -H 'GraphQL-Features: issues_copilot_assignment_api_support,coding_agent_model_selection' \
+            -f query="
+              mutation {
+                addAssigneesToAssignable(input: {
+                  assignableId: \"${ISSUE_NODE_ID}\"
+                  assigneeIds: [\"${COPILOT_BOT_ID}\"]
+                  agentAssignment: {
+                    targetRepositoryId: \"${REPO_NODE_ID}\"
+                    baseRef: \"main\"
+                  }
+                }) {
+                  assignable {
+                    ... on Issue {
+                      number
+                      assignees(first: 5) { nodes { login } }
+                    }
+                  }
+                }
+              }
+            "
+
+          echo "Successfully assigned Copilot to issue #${ISSUE_NUMBER}"
+
+      # Add label using GITHUB_TOKEN (doesn't need user token)
+      - name: Add agent/assigned label
+        if: always() && steps.triage.outputs.should_dispatch == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.payload.issue.number;
+
+            try {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                labels: ['agent/assigned'],
+              });
+              core.info(`Added agent/assigned label to issue #${issueNumber}`);
+            } catch (e) {
+              // Label may not exist yet — create it first
+              if (e.status === 404 || e.message.includes('Label does not exist')) {
+                try {
+                  await github.rest.issues.createLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: 'agent/assigned',
+                    color: '0e8a16',
+                    description: 'Issue has been auto-dispatched to an agent',
+                  });
+                  await github.rest.issues.addLabels({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: issueNumber,
+                    labels: ['agent/assigned'],
+                  });
+                  core.info(`Created and added agent/assigned label to issue #${issueNumber}`);
+                } catch (e2) {
+                  core.warning(`Failed to create/add label: ${e2.message}`);
+                }
+              } else {
+                core.warning(`Failed to add label: ${e.message}`);
+              }
+            }
