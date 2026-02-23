@@ -14,42 +14,22 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Get repo ID, owner info, and type IDs
-$query = @"
-query {
-  repository(owner: `"$Owner`", name: `"$Repo`") {
-    id
-    owner {
-      __typename
-      ... on Organization {
-        login
-        issueTypes(first: 25) {
-          nodes { id name }
-        }
-      }
-      ... on User {
-        login
-      }
-    }
-  }
-  viewer {
-    login
-  }
-}
-"@
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+. "$PSScriptRoot\_Get-RepoContext.ps1"
 
-$result = gh api graphql -f query="$query" | ConvertFrom-Json
-$repoId = $result.data.repository.id
-$repoOwnerLogin = $result.data.repository.owner.login
-$ownerType = $result.data.repository.owner.__typename
-$authenticatedUser = $result.data.viewer.login
+# Get repo ID, owner info, and type IDs
+$ctx = Get-RepoContext -Owner $Owner -Repo $Repo
+$repoId = $ctx.RepoId
+$repoOwnerLogin = $ctx.OwnerLogin
+$ownerType = $ctx.OwnerType
+$authenticatedUser = $ctx.ViewerLogin
 
 # Check if organization has issue types
 if ($ownerType -eq "Organization") {
-    $typeId = ($result.data.repository.owner.issueTypes.nodes | Where-Object { $_.name -eq $TypeName }).id
+    $typeId = ($ctx.IssueTypes | Where-Object { $_.name -eq $TypeName }).id
     
     if (-not $typeId) {
-        Write-Error "Issue type '$TypeName' not found. Available: $($result.data.repository.owner.issueTypes.nodes.name -join ', ')"
+        Write-Error "Issue type '$TypeName' not found. Available: $($ctx.IssueTypes.name -join ', ')"
         return
     }
 } else {
@@ -80,7 +60,7 @@ mutation {
 }
 "@
 
-$result = gh api graphql -f query="$mutation" | ConvertFrom-Json
+$result = Invoke-GraphQL -Query $mutation
 $issue = $result.data.createIssue.issue
 
 Write-Host "✓ Created #$($issue.number) [$($issue.issueType.name)] $($issue.title)" -ForegroundColor Green
@@ -97,7 +77,7 @@ query {
   }
 }
 "@
-    $labelResult = gh api graphql -f query="$labelQuery" | ConvertFrom-Json
+    $labelResult = Invoke-GraphQL -Query $labelQuery
     $labelIds = $Labels | ForEach-Object {
         $name = $_
         ($labelResult.data.repository.labels.nodes | Where-Object { $_.name -eq $name }).id
@@ -117,7 +97,7 @@ mutation {
   }
 }
 "@
-        gh api graphql -f query="$labelMutation" | Out-Null
+        Invoke-GraphQL -Query $labelMutation | Out-Null
         $allLabelNodes = $labelResult.data.repository.labels.nodes
         $appliedLabels = $allLabelNodes | Where-Object { $_.id -in $labelIds } | ForEach-Object { $_.name }
         $missing = $Labels | Where-Object { $_ -notin ($allLabelNodes.name) }

@@ -37,6 +37,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # Query for issue timeline and linked PRs
 $query = @"
 query {
@@ -89,7 +91,7 @@ query {
 }
 "@
 
-$result = gh api graphql -f query="$query" | ConvertFrom-Json
+$result = Invoke-GraphQL -Query $query
 $issue = $result.data.repository.issue
 
 # Collect linked PRs

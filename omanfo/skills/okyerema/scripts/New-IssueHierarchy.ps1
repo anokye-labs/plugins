@@ -10,36 +10,13 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+. "$PSScriptRoot\_Get-RepoContext.ps1"
+
 # Get repo ID and type IDs
-$query = @"
-query {
-  repository(owner: `"$Owner`", name: `"$Repo`") {
-    id
-    owner {
-      ... on Organization {
-        issueTypes(first: 25) {
-          nodes { id name }
-        }
-      }
-    }
-  }
-}
-"@
-
-$rawResult = gh api graphql -f query="$query" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GraphQL query failed: $rawResult"
-    exit 1
-}
-
-$result = $rawResult | ConvertFrom-Json
-if ($result.errors) {
-    Write-Error "GraphQL errors: $($result.errors | ConvertTo-Json -Compress)"
-    exit 1
-}
-
-$repoId = $result.data.repository.id
-$issueTypes = $result.data.repository.owner.issueTypes.nodes
+$ctx = Get-RepoContext -Owner $Owner -Repo $Repo
+$repoId = $ctx.RepoId
+$issueTypes = $ctx.IssueTypes
 
 Write-Host "Repository: $Owner/$Repo" -ForegroundColor Cyan
 Write-Host "Available issue types: $($issueTypes.name -join ', ')" -ForegroundColor Gray
@@ -80,18 +57,7 @@ mutation {
 }
 "@
     
-    $rawCreateResult = gh api graphql -f query="$mutation" 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to create issue '$Title': $rawCreateResult"
-        return $null
-    }
-    
-    $createResult = $rawCreateResult | ConvertFrom-Json
-    if ($createResult.errors) {
-        Write-Error "GraphQL errors creating issue '$Title': $($createResult.errors | ConvertTo-Json -Compress)"
-        return $null
-    }
-    
+    $createResult = Invoke-GraphQL -Query $mutation
     $issue = $createResult.data.createIssue.issue
     
     Write-Host "${Indent}✓ Created #$($issue.number) [$($issue.issueType.name)] $($issue.title)" -ForegroundColor Green
@@ -114,7 +80,7 @@ query {
   }
 }
 "@
-        $childResult = gh api graphql -f query="$childQuery" | ConvertFrom-Json
+        $childResult = Invoke-GraphQL -Query $childQuery
         $childId = $childResult.data.repository.issue.id
         
         # Add as sub-issue
@@ -130,17 +96,11 @@ mutation {
 }
 "@
         
-        $rawAddResult = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$addMutation" 2>&1
-        if ($LASTEXITCODE -eq 0) {
-            $addResult = $rawAddResult | ConvertFrom-Json
-            if (-not $addResult.errors) {
-                Write-Host "${Indent}  → Linked #$childNum as sub-issue" -ForegroundColor Gray
-            } else {
-                $errorJson = $addResult.errors | ConvertTo-Json -Compress
-                Write-Host "${Indent}  ⚠ Failed to link #$childNum`: $errorJson" -ForegroundColor Yellow
-            }
-        } else {
-            Write-Host "${Indent}  ⚠ Failed to link #$childNum`: $rawAddResult" -ForegroundColor Yellow
+        try {
+            $addResult = Invoke-GraphQL -Query $addMutation -Headers @{"GraphQL-Features" = "sub_issues"}
+            Write-Host "${Indent}  → Linked #$childNum as sub-issue" -ForegroundColor Gray
+        } catch {
+            Write-Host "${Indent}  ⚠ Failed to link #$childNum`: $_" -ForegroundColor Yellow
         }
     }
 }
