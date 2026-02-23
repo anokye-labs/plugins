@@ -229,6 +229,22 @@ jobs:
             const prNumber = parseInt('${{ needs.resolve-pr.outputs.pr_number }}', 10);
             const prNodeId = '${{ needs.resolve-pr.outputs.pr_node_id }}';
 
+            // Merge main into PR branch — triggers synchronize event so
+            // validate-plugin.yml and require-linked-issue.yml fire as github-actions[bot],
+            // producing required status checks on the PR HEAD SHA.
+            try {
+              await github.rest.pulls.updateBranch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+              core.info(`Merged main into PR #${prNumber} branch.`);
+              // Wait for push to propagate before marking ready
+              await new Promise(r => setTimeout(r, 5000));
+            } catch (e) {
+              core.info(`Branch update (may already be up-to-date): ${e.message}`);
+            }
+
             // Mark draft PRs ready for review — Copilot creates PRs as drafts,
             // and the require-linked-issue workflow may not have run due to approval gates.
             const { data: pr } = await github.rest.pulls.get({
