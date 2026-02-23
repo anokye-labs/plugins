@@ -10,6 +10,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # Get parent issue ID
 $parentQuery = @"
 query {
@@ -22,17 +24,7 @@ query {
 }
 "@
 
-$rawResult = gh api graphql -f query="$parentQuery" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GraphQL query failed for parent issue #${ParentNumber}: $rawResult"
-    exit 1
-}
-
-$result = $rawResult | ConvertFrom-Json
-if ($result.errors) {
-    Write-Error "GraphQL errors querying parent issue #${ParentNumber}: $($result.errors | ConvertTo-Json -Compress)"
-    exit 1
-}
+$result = Invoke-GraphQL -Query $parentQuery
 
 $parentId = $result.data.repository.issue.id
 $parentTitle = $result.data.repository.issue.title
@@ -53,18 +45,8 @@ query {
 }
 "@
     
-    $rawChildResult = gh api graphql -f query="$childQuery" 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "GraphQL query failed for child issue #${num}: $rawChildResult"
-        exit 1
-    }
-    
-    $childResult = $rawChildResult | ConvertFrom-Json
-    if ($childResult.errors) {
-        Write-Error "GraphQL errors querying child issue #${num}: $($childResult.errors | ConvertTo-Json -Compress)"
-        exit 1
-    }
-    
+    $childResult = Invoke-GraphQL -Query $childQuery
+
     $childIds += [PSCustomObject]@{
         Number = $num
         Id = $childResult.data.repository.issue.id
@@ -89,19 +71,13 @@ mutation {
 }
 "@
     
-    $rawAddResult = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$addMutation" 2>&1
-    if ($LASTEXITCODE -eq 0) {
-        $addResult = $rawAddResult | ConvertFrom-Json
-        if ($addResult.errors) {
-            Write-Host "  ⚠ Failed to add #$($child.Number): $($addResult.errors | ConvertTo-Json -Compress)" -ForegroundColor Yellow
-            $failedCount++
-        } else {
-            Write-Host "  ✓ Added #$($child.Number) - $($child.Title)" -ForegroundColor Gray
-            $successCount++
-            $successfulNumbers += $child.Number
-        }
-    } else {
-        Write-Host "  ⚠ Failed to add #$($child.Number): $rawAddResult" -ForegroundColor Yellow
+    try {
+        $addResult = Invoke-GraphQL -Query $addMutation -Headers @{"GraphQL-Features" = "sub_issues"}
+        Write-Host "  ✓ Added #$($child.Number) - $($child.Title)" -ForegroundColor Gray
+        $successCount++
+        $successfulNumbers += $child.Number
+    } catch {
+        Write-Host "  ⚠ Failed to add #$($child.Number): $_" -ForegroundColor Yellow
         $failedCount++
     }
 }

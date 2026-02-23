@@ -51,6 +51,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # Constants
 $PREVIEW_MAX_LENGTH = 200
 
@@ -120,10 +122,36 @@ $severityPatterns = @{
 # Fetch thread(s)
 if ($ThreadId) {
     # Fetch specific thread
-    $result = gh api graphql -f query="
-    {
-      node(id: `"$ThreadId`") {
-        ... on PullRequestReviewThread {
+    $nodeQuery = @"
+{
+  node(id: `"$ThreadId`") {
+    ... on PullRequestReviewThread {
+      id
+      isResolved
+      path
+      line
+      comments(first: 10) {
+        nodes {
+          author { login }
+          body
+          createdAt
+        }
+      }
+    }
+  }
+}
+"@
+    $result = Invoke-GraphQL -Query $nodeQuery
+
+    $threads = @($result.data.node)
+} elseif ($ThreadIndex -ge 0) {
+    # Fetch all unresolved and pick by index
+    $indexQuery = @"
+{
+  repository(owner: `"$Owner`", name: `"$Repo`") {
+    pullRequest(number: $PullNumber) {
+      reviewThreads(first: 100) {
+        nodes {
           id
           isResolved
           path
@@ -137,33 +165,11 @@ if ($ThreadId) {
           }
         }
       }
-    }" | ConvertFrom-Json
-    
-    $threads = @($result.data.node)
-} elseif ($ThreadIndex -ge 0) {
-    # Fetch all unresolved and pick by index
-    $result = gh api graphql -f query="
-    {
-      repository(owner: `"$Owner`", name: `"$Repo`") {
-        pullRequest(number: $PullNumber) {
-          reviewThreads(first: 100) {
-            nodes {
-              id
-              isResolved
-              path
-              line
-              comments(first: 10) {
-                nodes {
-                  author { login }
-                  body
-                  createdAt
-                }
-              }
-            }
-          }
-        }
-      }
-    }" | ConvertFrom-Json
+    }
+  }
+}
+"@
+    $result = Invoke-GraphQL -Query $indexQuery
     
     $unresolved = $result.data.repository.pullRequest.reviewThreads.nodes | Where-Object { -not $_.isResolved }
     if ($ThreadIndex -ge $unresolved.Count) {
@@ -173,28 +179,30 @@ if ($ThreadId) {
     $threads = @($unresolved[$ThreadIndex])
 } else {
     # Fetch all unresolved threads
-    $result = gh api graphql -f query="
-    {
-      repository(owner: `"$Owner`", name: `"$Repo`") {
-        pullRequest(number: $PullNumber) {
-          reviewThreads(first: 100) {
+    $allQuery = @"
+{
+  repository(owner: `"$Owner`", name: `"$Repo`") {
+    pullRequest(number: $PullNumber) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
+          path
+          line
+          comments(first: 10) {
             nodes {
-              id
-              isResolved
-              path
-              line
-              comments(first: 10) {
-                nodes {
-                  author { login }
-                  body
-                  createdAt
-                }
-              }
+              author { login }
+              body
+              createdAt
             }
           }
         }
       }
-    }" | ConvertFrom-Json
+    }
+  }
+}
+"@
+    $result = Invoke-GraphQL -Query $allQuery
     
     $threads = $result.data.repository.pullRequest.reviewThreads.nodes | Where-Object { -not $_.isResolved }
 }

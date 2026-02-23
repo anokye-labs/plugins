@@ -67,6 +67,9 @@
     FunctionsToExport = @(
         # Logging
         'Write-AgentLog',
+
+        # GraphQL
+        'Invoke-GraphQL',
         
         # Error Handling
         'Invoke-WithRetry',

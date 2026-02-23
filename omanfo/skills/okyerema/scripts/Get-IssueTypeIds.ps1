@@ -6,6 +6,8 @@ param(
     [string]$Owner
 )
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 $query = @"
 query {
   organization(login: `"$Owner`") {
@@ -16,7 +18,7 @@ query {
 }
 "@
 
-$result = gh api graphql -f query="$query" | ConvertFrom-Json
+$result = Invoke-GraphQL -Query $query
 
 $types = @{}
 foreach ($type in $result.data.organization.issueTypes.nodes) {
