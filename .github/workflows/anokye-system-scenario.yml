@@ -1,0 +1,106 @@
+name: Anokye-System Scenario Tests
+
+on:
+  schedule:
+    - cron: '0 2 * * *'  # nightly at 02:00 UTC
+  workflow_dispatch:
+
+jobs:
+  scenario:
+    name: Run Scenario Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    env:
+      E2E_TEST_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: omanfo/tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: omanfo/tests
+        run: npm ci
+
+      - name: Authenticate gh CLI
+        run: gh auth setup-git
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run integration tests
+        id: integration
+        working-directory: omanfo/tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npm run test:integration 2>&1 | tee /tmp/integration.log
+          RESULT="${PIPESTATUS[0]}"
+          echo "exit_code=$RESULT" >> $GITHUB_OUTPUT
+
+      - name: Run E2E tests
+        id: e2e
+        working-directory: omanfo/tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+        run: |
+          npm run test:e2e 2>&1 | tee /tmp/e2e.log
+          RESULT="${PIPESTATUS[0]}"
+          echo "exit_code=$RESULT" >> $GITHUB_OUTPUT
+
+      - name: Publish summary
+        if: always()
+        run: |
+          INTEGRATION_EXIT="${{ steps.integration.outputs.exit_code }}"
+          E2E_EXIT="${{ steps.e2e.outputs.exit_code }}"
+
+          if [ "$INTEGRATION_EXIT" = "0" ]; then
+            INTEGRATION_STATUS="✅ Passed"
+          else
+            INTEGRATION_STATUS="❌ Failed"
+          fi
+
+          if [ -z "${{ secrets.COPILOT_TOKEN }}" ]; then
+            E2E_STATUS="⏭️ Skipped (COPILOT_TOKEN not set)"
+          elif [ "$E2E_EXIT" = "0" ]; then
+            E2E_STATUS="✅ Passed"
+          else
+            E2E_STATUS="❌ Failed"
+          fi
+
+          {
+            echo "## Anokye-System Scenario Test Results"
+            echo ""
+            echo "| Layer | Result |"
+            echo "|-------|--------|"
+            echo "| Integration tests | $INTEGRATION_STATUS |"
+            echo "| E2E tests | $E2E_STATUS |"
+            echo ""
+            echo "### Integration test log"
+            echo '```'
+            cat /tmp/integration.log || echo "(no output)"
+            echo '```'
+            echo ""
+            echo "### E2E test log"
+            echo '```'
+            cat /tmp/e2e.log || echo "(no output)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # Fail the job if integration tests failed (E2E skips are acceptable)
+          if [ "$INTEGRATION_EXIT" != "0" ]; then
+            exit 1
+          fi
+          if [ -n "${{ secrets.COPILOT_TOKEN }}" ] && [ "$E2E_EXIT" != "0" ]; then
+            exit 1
+          fi

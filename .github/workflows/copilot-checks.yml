@@ -1,24 +1,33 @@
 name: Copilot PR Checks
 
 # Bridge workflow: runs required checks for Copilot-authored PRs.
-# Using pull_request_target ensures this runs in the context of the base repo (with write permissions),
-# bypassing "action required" approval gates for PRs from bot accounts.
+# Two trigger paths:
+# 1. pull_request_target — fires when a trusted actor (human/bot) triggers a PR event
+# 2. workflow_dispatch — fired by auto-enqueue.yml for Copilot draft PRs that are stuck
+#    in action_required. GITHUB_TOKEN can trigger workflow_dispatch (Sept 2022 exception).
 
 on:
   pull_request_target:
     branches: [main]
     types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process (used by auto-enqueue scheduled sweep)'
+        required: true
+        type: number
 
 jobs:
   # ── Gate: only run for Copilot PRs ────────────────────────────────────
   resolve-pr:
     name: Resolve PR
     runs-on: ubuntu-latest
-    # Gate on BOTH branch prefix AND actor identity to prevent untrusted code execution.
-    # Branch name alone is insufficient — any user can create a copilot/* branch.
+    # For pull_request_target: gate on branch prefix AND actor identity.
+    # For workflow_dispatch: always run (auto-enqueue already verified eligibility).
     if: >
-      startsWith(github.head_ref, 'copilot/')
-      && contains(fromJSON('["Copilot","copilot-swe-agent[bot]"]'), github.event.pull_request.user.login)
+      github.event_name == 'workflow_dispatch'
+      || (startsWith(github.head_ref, 'copilot/')
+          && contains(fromJSON('["Copilot","copilot-swe-agent[bot]"]'), github.event.pull_request.user.login))
     outputs:
       pr_number: ${{ steps.pr.outputs.number }}
       pr_node_id: ${{ steps.pr.outputs.node_id }}
@@ -28,13 +37,40 @@ jobs:
     steps:
       - name: Set PR context
         id: pr
-        run: |
-          echo "number=${{ github.event.pull_request.number }}" >> $GITHUB_OUTPUT
-          echo "node_id=${{ github.event.pull_request.node_id }}" >> $GITHUB_OUTPUT
-          echo "head_sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
-          echo "head_ref=${{ github.event.pull_request.head.ref }}" >> $GITHUB_OUTPUT
-          echo "skip=false" >> $GITHUB_OUTPUT
-          echo "Found PR #${{ github.event.pull_request.number }} from branch ${{ github.event.pull_request.head.ref }} by ${{ github.event.pull_request.user.login }}"
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'workflow_dispatch') {
+              const prNumber = parseInt('${{ inputs.pr_number }}', 10);
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+
+              // Verify this is a Copilot PR on a copilot/* branch
+              if (!pr.head.ref.startsWith('copilot/') ||
+                  !['Copilot', 'copilot-swe-agent[bot]'].includes(pr.user.login)) {
+                core.setOutput('skip', 'true');
+                core.info(`PR #${prNumber} is not a Copilot PR, skipping.`);
+                return;
+              }
+
+              core.setOutput('number', String(pr.number));
+              core.setOutput('node_id', pr.node_id);
+              core.setOutput('head_sha', pr.head.sha);
+              core.setOutput('head_ref', pr.head.ref);
+              core.setOutput('skip', 'false');
+              core.info(`[dispatch] PR #${pr.number} from ${pr.head.ref} by ${pr.user.login}`);
+            } else {
+              // pull_request_target path
+              core.setOutput('number', String(context.payload.pull_request.number));
+              core.setOutput('node_id', context.payload.pull_request.node_id);
+              core.setOutput('head_sha', context.payload.pull_request.head.sha);
+              core.setOutput('head_ref', context.payload.pull_request.head.ref);
+              core.setOutput('skip', 'false');
+              core.info(`[event] PR #${context.payload.pull_request.number} from ${context.payload.pull_request.head.ref} by ${context.payload.pull_request.user.login}`);
+            }
 
   # ── Required check: Static Validation ─────────────────────────────────
   validate:
@@ -192,6 +228,22 @@ jobs:
           script: |
             const prNumber = parseInt('${{ needs.resolve-pr.outputs.pr_number }}', 10);
             const prNodeId = '${{ needs.resolve-pr.outputs.pr_node_id }}';
+
+            // Merge main into PR branch — triggers synchronize event so
+            // validate-plugin.yml and require-linked-issue.yml fire as github-actions[bot],
+            // producing required status checks on the PR HEAD SHA.
+            try {
+              await github.rest.pulls.updateBranch({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+              core.info(`Merged main into PR #${prNumber} branch.`);
+              // Wait for push to propagate before marking ready
+              await new Promise(r => setTimeout(r, 5000));
+            } catch (e) {
+              core.info(`Branch update (may already be up-to-date): ${e.message}`);
+            }
 
             // Mark draft PRs ready for review — Copilot creates PRs as drafts,
             // and the require-linked-issue workflow may not have run due to approval gates.
