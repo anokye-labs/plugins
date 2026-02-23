@@ -171,31 +171,10 @@ for the specification.
 ### GraphQL via gh CLI
 All structured GitHub operations go through `gh api graphql -f query="..."`.
 
-### PowerShell Helper Scripts
-Located at `omanfo/skills/okyerema/scripts/`:
-
-| Script | Purpose |
-|--------|---------|
-| `Get-IssueTypeIds.ps1` | Retrieve org issue type IDs |
-| `New-IssueWithType.ps1` | Create issue with proper type |
-| `Update-IssueHierarchy.ps1` | Build sub-issue relationships |
-| `Test-Hierarchy.ps1` | Verify parent-child via GraphQL |
-| `Get-UnresolvedThreads.ps1` | List unresolved PR review threads |
-| `Reply-ReviewThread.ps1` | Reply to thread, optionally resolve |
-| `Resolve-ReviewThreads.ps1` | Bulk resolve/unresolve threads |
-| `Get-Sitrep.ps1` | Tactical status dashboard |
-| `Get-PRHealth.ps1` | PR health monitoring |
-| `Get-HierarchyHealth.ps1` | Issue hierarchy validation |
-
-### Skill References
-Load on-demand from `omanfo/skills/okyerema/references/`:
-- `agentic-workflows.md` — gh-aw specification, templates, decision tree
-- `issue-types.md` — type creation, lookup, assignment
-- `relationships.md` — sub-issue hierarchy queries
-- `projects.md` — Projects V2 GraphQL API
-- `pr-reviews.md` — thread management workflow
-- `labels.md` — when and how to use labels
-- `errors.md` — known failure patterns and fixes
+### PowerShell Helper Scripts and Skill References
+All available scripts and on-demand reference guides are defined in the
+**Okyerema skill** (`omanfo/skills/okyerema/SKILL.md`). Load the skill for
+the full inventory.
 
 </tools_config>
 

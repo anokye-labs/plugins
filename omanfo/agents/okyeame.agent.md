@@ -334,31 +334,9 @@ attempting.
 All structured GitHub operations go through `gh api graphql -f query="..."`.
 For mutations with variables, use `-f` for strings and `-F` for other types.
 
-### PowerShell Helper Scripts
-Scripts available from the Okyerema skill (`omanfo/skills/okyerema/scripts/`):
-
-| Script | Purpose |
-|--------|---------|
-| `Get-IssueTypeIds.ps1` | Retrieve org issue type IDs |
-| `New-IssueWithType.ps1` | Create issue with proper type |
-| `Update-IssueHierarchy.ps1` | Build sub-issue relationships |
-| `Test-Hierarchy.ps1` | Verify parent-child via GraphQL |
-| `Get-UnresolvedThreads.ps1` | List unresolved PR review threads |
-| `Reply-ReviewThread.ps1` | Reply to thread, optionally resolve |
-| `Resolve-ReviewThreads.ps1` | Bulk resolve/unresolve threads |
-| `Get-Sitrep.ps1` | Tactical status dashboard |
-| `Get-PRHealth.ps1` | PR health monitoring |
-| `Get-HierarchyHealth.ps1` | Issue hierarchy validation |
-
-### Skill References
-Load on-demand from Okyerema skill references (`omanfo/skills/okyerema/references/`):
-- `issue-types.md` — type creation, lookup, assignment
-- `relationships.md` — sub-issue hierarchy queries
-- `projects.md` — Projects V2 GraphQL API
-- `pr-reviews.md` — thread management workflow
-- `agentic-workflows.md` — gh-aw, @copilot, automated governance
-- `labels.md` — when and how to use labels
-- `errors.md` — known failure patterns and fixes
+### PowerShell Helper Scripts and Skill References
+Load the **Okyerema skill** (`omanfo/skills/okyerema/SKILL.md`) for the full
+list of available scripts and on-demand reference guides.
 
 </tools_config>
 
@@ -433,7 +411,7 @@ Never use title prefixes (`[Epic]`, `[Task]`) as substitutes for types.
 <org_context>
 
 - **Organization:** anokye-labs
-- **Architecture:** The Anokye System — multi-agent orchestration (see glossary in SKILL.md)
+- **Architecture:** The Anokye System — multi-agent orchestration (see [glossary](../references/glossary.md))
 - **Naming:** Akan-inspired roles: Okyeame (linguist), Okyerema (master drummer), Asafo (warriors), Adwoma (work), Sankofa (patrols)
 - **Hierarchy:** Epic → Feature → Task (3-level) or Epic → Task (2-level)
 - **Issue types:** Organization-level (Epic, Feature, Task, Bug)
