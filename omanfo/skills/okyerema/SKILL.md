@@ -221,6 +221,9 @@ gh api repos/{owner}/{repo}/issues/{number}/assignees \
 # Using gh issue edit command (wraps REST API)
 # NOTE: @ prefix is REQUIRED for CLI (casing doesn't matter: @copilot or @Copilot)
 gh issue edit {number} --add-assignee "@copilot"
+
+# ❌ WITHOUT @ prefix fails with "copilot not found"
+# gh issue edit {number} --add-assignee "copilot"  → ERROR: 'copilot' not found
 ```
 
 **What Does NOT Work:**

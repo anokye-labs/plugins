@@ -76,11 +76,15 @@ gh api repos/{owner}/{repo}/issues/{num}/assignees \
 # Or using gh CLI wrapper (also uses REST internally)
 # NOTE: @ prefix is REQUIRED for CLI (casing doesn't matter: @copilot or @Copilot)
 gh issue edit {num} --add-assignee "@copilot"
+
+# ❌ WITHOUT @ prefix fails with "'copilot' not found"
+# gh issue edit {num} --add-assignee "copilot"  → ERROR: 'copilot' not found
 ```
 
 **Prerequisites:**
 - Copilot coding agent must be enabled at the organization level before assignment will work
 - Copilot does NOT appear in standard `/assignees` or `/collaborators` API endpoints (org-level enablement is required)
+- **Do not pre-validate Copilot availability** — assignment scripts must attempt directly and handle errors gracefully, as there is no reliable API to check whether Copilot is enabled before attempting
 
 **Why REST is Required:**
 - Copilot's node ID (e.g., `BOT_kgDOC9w8XQ`) is a BOT type, not a User type
