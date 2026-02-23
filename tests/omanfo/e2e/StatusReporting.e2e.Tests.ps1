@@ -1,15 +1,16 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    E2E tests for status reporting slash commands via Copilot CLI.
+    E2E tests for status reporting slash commands via CLI provider (copilot or claude).
 
 .DESCRIPTION
     Tests /sitrep, /health, /prcheck, /whatsleft, and work selection commands
-    through copilot prompts and verifies outputs.
+    through AI CLI prompts and verifies outputs.
 
 .NOTES
-    Dependencies: copilot CLI on PATH, gh authenticated
+    Dependencies: copilot or claude CLI on PATH, gh authenticated
     Environment: $env:E2E_TEST_REPO or defaults to anokye-labs/plugins
+                 $env:E2E_CLI_PROVIDER or defaults to copilot
 #>
 
 [CmdletBinding()]
@@ -21,15 +22,23 @@ BeforeAll {
     $script:RunId = Get-Date -Format "yyyyMMdd-HHmmss"
     $script:CreatedIssues = @()
     $script:TestPRNumber = $null
-    
-    # Verify prerequisites
-    $copilotCmd = Get-Command copilot -ErrorAction SilentlyContinue
-    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
-    
-    if (-not $copilotCmd) {
-        throw "Copilot CLI not found on PATH"
+
+    # Load shared CLI test harness
+    $harnessPath = Join-Path $PSScriptRoot '..' '..' '..' 'shared' 'CLITestHarness' 'CLITestHarness.psm1'
+    if (Test-Path $harnessPath) {
+        Import-Module $harnessPath -Force
     }
-    
+
+    # Determine provider from environment (set by Run-E2ETests.ps1 or manually)
+    $script:Provider = $env:E2E_CLI_PROVIDER ?? 'copilot'
+
+    # Verify prerequisites
+    $providerCheck = Test-ProviderAvailable -Provider $script:Provider -SkipAuthCheck
+    if (-not $providerCheck.Available) {
+        throw "$script:Provider CLI not found on PATH. Install from: $($providerCheck.InstallUrl)"
+    }
+
+    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
     if (-not $ghCmd) {
         throw "GitHub CLI (gh) not found on PATH"
     }
@@ -47,20 +56,21 @@ BeforeAll {
     
     Write-Host "🧪 E2E Status Reporting Test Configuration:" -ForegroundColor Cyan
     Write-Host "   Repository: $script:TestRepo" -ForegroundColor Gray
+    Write-Host "   Provider: $script:Provider" -ForegroundColor Gray
     Write-Host "   Run ID: $script:RunId" -ForegroundColor Gray
     Write-Host ""
     
     # Setup: Create a few test issues for status reporting
     Write-Host "📝 Setting up test issues..." -ForegroundColor Cyan
     
-    # Let copilot create test issues
+    # Let the CLI provider create test issues
     $setupPrompt = @"
 Create a Feature issue in $script:TestRepo titled 'E2E-$script:RunId: Status Test Feature' with two Task sub-issues:
 - Task 1: Implement feature component
 - Task 2: Add tests for feature
 "@
     
-    $setupOutput = copilot -p $setupPrompt --allow-all-tools -s 2>&1 | Out-String
+    $setupOutput = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $setupPrompt).Output
     $allMatches = [regex]::Matches($setupOutput, '#(\d+)')
     foreach ($match in $allMatches) {
         $script:CreatedIssues += $match.Groups[1].Value
@@ -74,7 +84,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should execute /sitrep and return status" {
             $prompt = "/sitrep for $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should contain key status fields
@@ -86,7 +96,7 @@ Describe "Status Reporting E2E Tests" {
                 $testIssue = $script:CreatedIssues[0]
                 $prompt = "/sitrep for issue #$testIssue in $script:TestRepo"
                 
-                $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+                $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
                 
                 $output | Should -Not -BeNullOrEmpty
             }
@@ -97,7 +107,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should execute /health and return hierarchy health" {
             $prompt = "/health check for $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should contain health metrics
@@ -107,7 +117,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should identify test issues in health check" {
             $prompt = "Check hierarchy health for issues containing 'E2E-$script:RunId' in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -117,7 +127,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should execute /whatsleft and list remaining work" {
             $prompt = "/whatsleft in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should list open issues or indicate completion
@@ -129,7 +139,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should identify ready issues" {
             $prompt = "What issues are ready to work on in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should identify ready or blocked issues
@@ -139,7 +149,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should identify blocked issues" {
             $prompt = "Show me blocked issues in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -147,7 +157,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should suggest next work item" {
             $prompt = "What should I work on next in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should provide recommendation
@@ -159,7 +169,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should query stalled work" {
             $prompt = "Show me stalled work in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -167,7 +177,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should query orphaned issues" {
             $prompt = "Find orphaned issues in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -175,7 +185,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should check DAG status" {
             $prompt = "Check DAG status for $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should mention cycles or health
@@ -188,7 +198,7 @@ Describe "Status Reporting E2E Tests" {
             $prompt = "/prcheck for the current branch in $script:TestRepo"
             
             # This might fail gracefully or indicate no PR
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -201,7 +211,7 @@ Describe "Status Reporting E2E Tests" {
                 $prNum = $prs[0].number
                 $prompt = "/prcheck for PR #$prNum in $script:TestRepo"
                 
-                $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+                $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
                 
                 $output | Should -Not -BeNullOrEmpty
                 $output | Should -Match "(status|check|review|thread|approval)" -Because "PR check should show PR status"
@@ -215,7 +225,7 @@ Describe "Status Reporting E2E Tests" {
                 $testIssue = $script:CreatedIssues[0]
                 $prompt = "/context for issue #$testIssue in $script:TestRepo"
                 
-                $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+                $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
                 
                 $output | Should -Not -BeNullOrEmpty
                 # Should provide context about the issue
@@ -226,7 +236,7 @@ Describe "Status Reporting E2E Tests" {
         It "Should handle /recap request" {
             $prompt = "/recap recent activity in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }

@@ -1,15 +1,16 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    E2E tests for PR workflow operations via Copilot CLI.
+    E2E tests for PR workflow operations via CLI provider (copilot or claude).
 
 .DESCRIPTION
     Tests PR status, health checks, timeline queries, and thread operations
-    through copilot prompts.
+    through AI CLI prompts.
 
 .NOTES
-    Dependencies: copilot CLI on PATH, gh authenticated, git configured
+    Dependencies: copilot or claude CLI on PATH, gh authenticated, git configured
     Environment: $env:E2E_TEST_REPO or defaults to anokye-labs/plugins
+                 $env:E2E_CLI_PROVIDER or defaults to copilot
     Note: Some tests require an existing open PR or will be skipped
 #>
 
@@ -22,16 +23,25 @@ BeforeAll {
     $script:RunId = Get-Date -Format "yyyyMMdd-HHmmss"
     $script:CreatedIssues = @()
     $script:TestPR = $null
-    
+
+    # Load shared CLI test harness
+    $harnessPath = Join-Path $PSScriptRoot '..' '..' '..' 'shared' 'CLITestHarness' 'CLITestHarness.psm1'
+    if (Test-Path $harnessPath) {
+        Import-Module $harnessPath -Force
+    }
+
+    # Determine provider from environment (set by Run-E2ETests.ps1 or manually)
+    $script:Provider = $env:E2E_CLI_PROVIDER ?? 'copilot'
+
     # Verify prerequisites
-    $copilotCmd = Get-Command copilot -ErrorAction SilentlyContinue
+    $providerCheck = Test-ProviderAvailable -Provider $script:Provider -SkipAuthCheck
+    if (-not $providerCheck.Available) {
+        throw "$script:Provider CLI not found on PATH. Install from: $($providerCheck.InstallUrl)"
+    }
+
     $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
     $gitCmd = Get-Command git -ErrorAction SilentlyContinue
-    
-    if (-not $copilotCmd) {
-        throw "Copilot CLI not found on PATH"
-    }
-    
+
     if (-not $ghCmd) {
         throw "GitHub CLI (gh) not found on PATH"
     }
@@ -53,6 +63,7 @@ BeforeAll {
     
     Write-Host "🧪 E2E PR Workflow Test Configuration:" -ForegroundColor Cyan
     Write-Host "   Repository: $script:TestRepo" -ForegroundColor Gray
+    Write-Host "   Provider: $script:Provider" -ForegroundColor Gray
     Write-Host "   Run ID: $script:RunId" -ForegroundColor Gray
     Write-Host ""
     
@@ -76,7 +87,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "What is the status of PR #$prNum in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(status|state|open|draft|check|review)" -Because "Should report PR status"
@@ -86,7 +97,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Check CI status for PR #$prNum in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(check|ci|build|test|pass|fail|pending)" -Because "Should report check status"
@@ -96,7 +107,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "How many approvals does PR #$prNum have in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(approval|review|approve)" -Because "Should report approval status"
@@ -108,7 +119,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Run health check for PR #$prNum in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should include health metrics
@@ -119,7 +130,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Should I merge PR #$prNum in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(merge|ready|wait|block|approve)" -Because "Should provide merge recommendation"
@@ -131,7 +142,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Show timeline for PR #$prNum in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             # Should show events
@@ -142,7 +153,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Summarize recent activity on PR #$prNum in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -153,7 +164,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Show unresolved review threads for PR #$prNum in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(thread|review|unresolved|resolved|comment)" -Because "Should list thread status"
@@ -163,7 +174,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Analyze review thread severity for PR #$prNum in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -172,7 +183,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "How many automated vs human review threads in PR #$prNum in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(automated|human|bot|thread)" -Because "Should categorize thread sources"
@@ -190,7 +201,7 @@ Describe "PR Workflow E2E Tests" {
                     $pr2 = $prList[1].number
                     $prompt = "Compare PR #$pr1 and PR #$pr2 in $script:TestRepo"
                     
-                    $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+                    $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
                     
                     $output | Should -Not -BeNullOrEmpty
                 }
@@ -203,7 +214,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "What are the next steps for PR #$prNum in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(next|step|action|need|should)" -Because "Should suggest next actions"
@@ -213,7 +224,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "What is blocking PR #$prNum from merging in $script:TestRepo?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -225,7 +236,7 @@ Describe "PR Workflow E2E Tests" {
                 $issueNum = $script:CreatedIssues[0]
                 $prompt = "Find PR associated with issue #$issueNum in $script:TestRepo"
                 
-                $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+                $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
                 
                 $output | Should -Not -BeNullOrEmpty
             }
@@ -234,7 +245,7 @@ Describe "PR Workflow E2E Tests" {
         It "Should list recent PRs" {
             $prompt = "List the 5 most recent PRs in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(PR|pull request|#\d+)" -Because "Should list PR numbers"
@@ -243,7 +254,7 @@ Describe "PR Workflow E2E Tests" {
         It "Should filter PRs by author" {
             $prompt = "Show PRs by copilot[bot] in $script:TestRepo"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
         }
@@ -254,7 +265,7 @@ Describe "PR Workflow E2E Tests" {
             $prNum = $script:TestPR.number
             $prompt = "Does PR #$prNum in $script:TestRepo have merge conflicts?"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $output | Should -Not -BeNullOrEmpty
             $output | Should -Match "(conflict|merge|mergeable)" -Because "Should report conflict status"

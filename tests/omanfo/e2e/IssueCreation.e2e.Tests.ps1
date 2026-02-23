@@ -1,15 +1,16 @@
 #!/usr/bin/env pwsh
 <#
 .SYNOPSIS
-    E2E tests for issue creation capabilities via Copilot CLI.
+    E2E tests for issue creation capabilities via CLI provider (copilot or claude).
 
 .DESCRIPTION
-    Tests creating issues with types through copilot prompts and verifies
-    state via GitHub API. Requires Copilot CLI, gh authenticated, and network access.
+    Tests creating issues with types through AI CLI prompts and verifies
+    state via GitHub API. Requires a supported CLI provider, gh authenticated, and network access.
 
 .NOTES
-    Dependencies: copilot CLI on PATH, gh authenticated
+    Dependencies: copilot or claude CLI on PATH, gh authenticated
     Environment: $env:E2E_TEST_REPO or defaults to anokye-labs/plugins
+                 $env:E2E_CLI_PROVIDER or defaults to copilot
 #>
 
 [CmdletBinding()]
@@ -20,15 +21,23 @@ BeforeAll {
     $script:TestRepo = $env:E2E_TEST_REPO ?? "anokye-labs/plugins"
     $script:RunId = Get-Date -Format "yyyyMMdd-HHmmss"
     $script:CreatedIssues = @()
-    
-    # Verify prerequisites
-    $copilotCmd = Get-Command copilot -ErrorAction SilentlyContinue
-    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
-    
-    if (-not $copilotCmd) {
-        throw "Copilot CLI not found on PATH. Install from: https://github.com/github/copilot-cli"
+
+    # Load shared CLI test harness
+    $harnessPath = Join-Path $PSScriptRoot '..' '..' '..' 'shared' 'CLITestHarness' 'CLITestHarness.psm1'
+    if (Test-Path $harnessPath) {
+        Import-Module $harnessPath -Force
     }
-    
+
+    # Determine provider from environment (set by Run-E2ETests.ps1 or manually)
+    $script:Provider = $env:E2E_CLI_PROVIDER ?? 'copilot'
+
+    # Verify prerequisites
+    $providerCheck = Test-ProviderAvailable -Provider $script:Provider -SkipAuthCheck
+    if (-not $providerCheck.Available) {
+        throw "$script:Provider CLI not found on PATH. Install from: $($providerCheck.InstallUrl)"
+    }
+
+    $ghCmd = Get-Command gh -ErrorAction SilentlyContinue
     if (-not $ghCmd) {
         throw "GitHub CLI (gh) not found on PATH. Install from: https://cli.github.com"
     }
@@ -46,22 +55,23 @@ BeforeAll {
     
     Write-Host "🧪 E2E Test Configuration:" -ForegroundColor Cyan
     Write-Host "   Repository: $script:TestRepo" -ForegroundColor Gray
+    Write-Host "   Provider: $script:Provider" -ForegroundColor Gray
     Write-Host "   Run ID: $script:RunId" -ForegroundColor Gray
     Write-Host ""
 }
 
 Describe "Issue Creation E2E Tests" {
     Context "Create Task Issue" {
-        It "Should create a Task issue via Copilot prompt" {
+        It "Should create a Task issue via CLI prompt" {
             $title = "E2E-$script:RunId: Test Task Creation"
             $prompt = "Create a Task issue titled '$title' in $script:TestRepo with body 'Test task for E2E validation'"
             
-            # Execute copilot command
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            # Execute CLI prompt
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             # Look for issue number in output (format: #123)
             $issueMatch = $output -match '#(\d+)'
-            $issueMatch | Should -Be $true -Because "Copilot should create issue and report number"
+            $issueMatch | Should -Be $true -Because "CLI provider should create issue and report number"
             
             if ($issueMatch) {
                 $issueNum = $matches[1]
@@ -81,11 +91,11 @@ Describe "Issue Creation E2E Tests" {
     }
     
     Context "Create Bug Issue" {
-        It "Should create a Bug issue via Copilot prompt" {
+        It "Should create a Bug issue via CLI prompt" {
             $title = "E2E-$script:RunId: Test Bug Report"
             $prompt = "Create a Bug issue titled '$title' in $script:TestRepo describing a test bug for E2E validation"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $issueMatch = $output -match '#(\d+)'
             $issueMatch | Should -Be $true
@@ -106,11 +116,11 @@ Describe "Issue Creation E2E Tests" {
     }
     
     Context "Create Feature Issue" {
-        It "Should create a Feature issue via Copilot prompt" {
+        It "Should create a Feature issue via CLI prompt" {
             $title = "E2E-$script:RunId: Test Feature Creation"
             $prompt = "Create a Feature issue titled '$title' in $script:TestRepo with description 'Test feature for E2E validation'"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $issueMatch = $output -match '#(\d+)'
             $issueMatch | Should -Be $true
@@ -131,11 +141,11 @@ Describe "Issue Creation E2E Tests" {
     }
     
     Context "Create Epic Issue" {
-        It "Should create an Epic issue via Copilot prompt" {
+        It "Should create an Epic issue via CLI prompt" {
             $title = "E2E-$script:RunId: Test Epic Creation"
             $prompt = "Create an Epic issue titled '$title' in $script:TestRepo describing a test epic for E2E validation"
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             $issueMatch = $output -match '#(\d+)'
             $issueMatch | Should -Be $true
@@ -164,7 +174,7 @@ Create three Task issues in $script:TestRepo with the prefix 'E2E-$script:RunId:
 3. Task 3 - Third test task
 "@
             
-            $output = copilot -p $prompt --allow-all-tools -s 2>&1 | Out-String
+            $output = (Invoke-CLIPrompt -Provider $script:Provider -Prompt $prompt).Output
             
             # Look for multiple issue numbers
             $allMatches = [regex]::Matches($output, '#(\d+)')
