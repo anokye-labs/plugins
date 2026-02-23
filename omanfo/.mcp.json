@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "omanfo": {
+      "command": "gh",
+      "args": ["mcp", "serve"],
+      "tools": ["*"]
+    }
+  }
+}
