@@ -17,6 +17,7 @@ Describe "OkyeremanAgentRunner Module" {
     It "Should export all expected functions" {
         $expectedFunctions = @(
             'Write-AgentLog',
+            'Invoke-GraphQL',
             'Invoke-WithRetry',
             'New-AgentError',
             'Get-IssueContext',
@@ -70,6 +71,158 @@ Describe "Logging Functions" {
         It "Should include agent name when provided" {
             $result = Write-AgentLog -Message "Test" -Agent "TestAgent" -AsObject
             $result.Agent | Should -Be "TestAgent"
+        }
+    }
+}
+
+Describe "GraphQL Functions" {
+    Context "Invoke-GraphQL" {
+        It "Should have required Query parameter" {
+            $cmd = Get-Command Invoke-GraphQL
+            $cmd.Parameters.Keys | Should -Contain 'Query'
+        }
+
+        It "Should have SubIssues switch parameter" {
+            $cmd = Get-Command Invoke-GraphQL
+            $cmd.Parameters.Keys | Should -Contain 'SubIssues'
+        }
+
+        It "Should have AdditionalHeaders parameter" {
+            $cmd = Get-Command Invoke-GraphQL
+            $cmd.Parameters.Keys | Should -Contain 'AdditionalHeaders'
+        }
+
+        It "Should have retry parameters" {
+            $cmd = Get-Command Invoke-GraphQL
+            $cmd.Parameters.Keys | Should -Contain 'MaxRetries'
+            $cmd.Parameters.Keys | Should -Contain 'InitialDelaySeconds'
+            $cmd.Parameters.Keys | Should -Contain 'BackoffMultiplier'
+            $cmd.Parameters.Keys | Should -Contain 'MaxDelaySeconds'
+        }
+
+        It "Should return parsed JSON when gh succeeds" {
+            # Mock gh to return a simple JSON response
+            Mock gh {
+                $global:LASTEXITCODE = 0
+                '{"data":{"viewer":{"login":"testuser"}}}'
+            } -ModuleName OkyeremanAgentRunner
+
+            $result = Invoke-GraphQL -Query 'query { viewer { login } }'
+            $result.data.viewer.login | Should -Be 'testuser'
+        }
+
+        It "Should throw when gh exits with non-zero code" {
+            Mock gh {
+                $global:LASTEXITCODE = 1
+                'gh: some error'
+            } -ModuleName OkyeremanAgentRunner
+
+            { Invoke-GraphQL -Query 'query { viewer { login } }' -MaxRetries 0 } | Should -Throw
+        }
+
+        It "Should throw when response contains GraphQL errors" {
+            Mock gh {
+                $global:LASTEXITCODE = 0
+                '{"errors":[{"message":"Field does not exist"}]}'
+            } -ModuleName OkyeremanAgentRunner
+
+            { Invoke-GraphQL -Query 'query { bad { field } }' -MaxRetries 0 } | Should -Throw -ExpectedMessage '*GraphQL errors*'
+        }
+
+        It "Should retry on transient failure and succeed" {
+            $script:callCount = 0
+            Mock gh {
+                $script:callCount++
+                if ($script:callCount -lt 2) {
+                    $global:LASTEXITCODE = 1
+                    'transient error'
+                }
+                else {
+                    $global:LASTEXITCODE = 0
+                    '{"data":{"viewer":{"login":"ok"}}}'
+                }
+            } -ModuleName OkyeremanAgentRunner
+
+            $result = Invoke-GraphQL -Query 'query { viewer { login } }' -MaxRetries 3 -InitialDelaySeconds 0
+            $result.data.viewer.login | Should -Be 'ok'
+            $script:callCount | Should -BeGreaterThan 1
+        }
+
+        It "Should throw after exhausting retries" {
+            Mock gh {
+                $global:LASTEXITCODE = 1
+                'persistent error'
+            } -ModuleName OkyeremanAgentRunner
+
+            { Invoke-GraphQL -Query 'query { viewer { login } }' -MaxRetries 2 -InitialDelaySeconds 0 } | Should -Throw
+        }
+
+        It "Should pass GraphQL-Features header when SubIssues is set" {
+            $script:capturedArgs = $null
+            Mock gh {
+                param([Parameter(ValueFromRemainingArguments)][string[]]$args)
+                $script:capturedArgs = $args
+                $global:LASTEXITCODE = 0
+                '{"data":{}}'
+            } -ModuleName OkyeremanAgentRunner
+
+            Invoke-GraphQL -Query 'query { viewer { login } }' -SubIssues
+            $script:capturedArgs -join ' ' | Should -Match 'GraphQL-Features'
+            $script:capturedArgs -join ' ' | Should -Match 'sub_issues'
+        }
+
+        It "Should pass additional headers when provided" {
+            $script:capturedArgs = $null
+            Mock gh {
+                param([Parameter(ValueFromRemainingArguments)][string[]]$args)
+                $script:capturedArgs = $args
+                $global:LASTEXITCODE = 0
+                '{"data":{}}'
+            } -ModuleName OkyeremanAgentRunner
+
+            Invoke-GraphQL -Query 'query { viewer { login } }' -AdditionalHeaders @{ 'X-Test' = 'value' }
+            $script:capturedArgs -join ' ' | Should -Match 'X-Test'
+        }
+
+        It "Should detect rate limit in error text and retry" {
+            $script:callCount = 0
+            Mock gh {
+                $script:callCount++
+                if ($script:callCount -lt 2) {
+                    $global:LASTEXITCODE = 1
+                    'You have exceeded a secondary rate limit'
+                }
+                else {
+                    $global:LASTEXITCODE = 0
+                    '{"data":{"viewer":{"login":"recovered"}}}'
+                }
+            } -ModuleName OkyeremanAgentRunner
+
+            # Override Start-Sleep to avoid waiting in tests
+            Mock Start-Sleep {} -ModuleName OkyeremanAgentRunner
+
+            $result = Invoke-GraphQL -Query 'query { viewer { login } }' -MaxRetries 3 -InitialDelaySeconds 0
+            $result.data.viewer.login | Should -Be 'recovered'
+        }
+
+        It "Should detect rate limit in GraphQL errors array and retry" {
+            $script:callCount = 0
+            Mock gh {
+                $script:callCount++
+                if ($script:callCount -lt 2) {
+                    $global:LASTEXITCODE = 0
+                    '{"errors":[{"message":"You have exceeded a secondary rate limit"}]}'
+                }
+                else {
+                    $global:LASTEXITCODE = 0
+                    '{"data":{"viewer":{"login":"recovered"}}}'
+                }
+            } -ModuleName OkyeremanAgentRunner
+
+            Mock Start-Sleep {} -ModuleName OkyeremanAgentRunner
+
+            $result = Invoke-GraphQL -Query 'query { viewer { login } }' -MaxRetries 3 -InitialDelaySeconds 0
+            $result.data.viewer.login | Should -Be 'recovered'
         }
     }
 }
