@@ -55,6 +55,9 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+. "$PSScriptRoot\_Get-RepoContext.ps1"
+
 # --- Run readiness check if not provided ---
 
 if (-not $ReadinessReport) {
@@ -87,40 +90,17 @@ Write-Host ""
 
 # --- Resolve org issue type IDs ---
 
-$query = @"
-query {
-  repository(owner: "$Owner", name: "$Repo") {
-    id
-    owner {
-      __typename
-      ... on Organization {
-        issueTypes(first: 25) {
-          nodes { id name }
-        }
-      }
-    }
-  }
-  viewer { login }
-}
-"@
-
-$rawResult = gh api graphql -f query="$query" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GraphQL query failed: $rawResult"
-    return
-}
-$metaResult = $rawResult | ConvertFrom-Json
-$repoId = $metaResult.data.repository.id
-$authenticatedUser = $metaResult.data.viewer.login
-$ownerType = $metaResult.data.repository.owner.__typename
+$ctx = Get-RepoContext -Owner $Owner -Repo $Repo
+$repoId = $ctx.RepoId
+$authenticatedUser = $ctx.ViewerLogin
+$ownerType = $ctx.OwnerType
 
 $epicTypeId = $null
 $taskTypeId = $null
 
 if ($ownerType -eq "Organization") {
-    $types = $metaResult.data.repository.owner.issueTypes.nodes
-    $epicTypeId = ($types | Where-Object { $_.name -eq "Epic" }).id
-    $taskTypeId  = ($types | Where-Object { $_.name -eq "Task" }).id
+    $epicTypeId = ($ctx.IssueTypes | Where-Object { $_.name -eq "Epic" }).id
+    $taskTypeId  = ($ctx.IssueTypes | Where-Object { $_.name -eq "Task" }).id
 }
 
 # --- Helper: create a single issue via GraphQL ---
@@ -149,17 +129,7 @@ mutation {
 }
 "@
 
-    $raw = gh api graphql -f query="$mutation" 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Error "Failed to create issue '$Title': $raw"
-        return $null
-    }
-    $issueResult = $raw | ConvertFrom-Json
-    if ($issueResult.errors) {
-        Write-Error "GraphQL error creating '$Title': $($issueResult.errors | ConvertTo-Json -Compress)"
-        return $null
-    }
-
+    $issueResult = Invoke-GraphQL -Query $mutation
     $newIssue = $issueResult.data.createIssue.issue
 
     # Assign to copilot (Task) or authenticated user (Epic) via REST
@@ -187,9 +157,10 @@ mutation {
   }
 }
 "@
-    $raw = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$mutation" 2>&1
-    if ($LASTEXITCODE -ne 0) {
-        Write-Warning "Could not link sub-issue: $raw"
+    try {
+        Invoke-GraphQL -Query $mutation -Headers @{"GraphQL-Features" = "sub_issues"} | Out-Null
+    } catch {
+        Write-Warning "Could not link sub-issue: $_"
     }
 }
 
@@ -338,7 +309,7 @@ query {
   }
 }
 "@
-    $rawParent = gh api graphql -f query="$parentQuery" | ConvertFrom-Json
+    $rawParent = Invoke-GraphQL -Query $parentQuery
     $epicIssue = $rawParent.data.repository.issue
     Write-Host "🔗 Using existing issue #$($epicIssue.number) as parent Epic: $($epicIssue.title)" -ForegroundColor Cyan
 } else {

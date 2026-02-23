@@ -13,52 +13,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Helper function for retrying GraphQL operations
-function Invoke-GraphQLWithRetry {
-    param(
-        [string]$Query,
-        [hashtable]$Headers = @{},
-        [int]$MaxAttempts = 3,
-        [int]$DelayMs = 1000
-    )
-    
-    $attempt = 0
-    while ($attempt -lt $MaxAttempts) {
-        $attempt++
-        try {
-            $headerArgs = @()
-            foreach ($key in $Headers.Keys) {
-                $headerArgs += "-H"
-                $headerArgs += "$key`: $($Headers[$key])"
-            }
-            
-            if ($headerArgs.Count -gt 0) {
-                $result = gh api graphql @headerArgs -f query="$Query" 2>&1
-            } else {
-                $result = gh api graphql -f query="$Query" 2>&1
-            }
-            
-            if ($LASTEXITCODE -ne 0) {
-                throw "GraphQL command failed with exit code $LASTEXITCODE`: $result"
-            }
-            
-            $parsed = $result | ConvertFrom-Json
-            if ($parsed.errors) {
-                $errorMsg = ($parsed.errors | ForEach-Object { $_.message }) -join '; '
-                throw "GraphQL errors: $errorMsg"
-            }
-            
-            return $parsed
-        }
-        catch {
-            if ($attempt -ge $MaxAttempts) {
-                throw
-            }
-            Write-Warning "Attempt $attempt failed: $($_.Exception.Message). Retrying in ${DelayMs}ms..."
-            Start-Sleep -Milliseconds $DelayMs
-        }
-    }
-}
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
 
 Write-Host "=== Adding Issues to Project ===" -ForegroundColor Cyan
 Write-Host "Organization: $Owner" -ForegroundColor Gray
@@ -99,7 +54,7 @@ query {
 }
 "@
 
-$projectResult = Invoke-GraphQLWithRetry -Query $projectQuery -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs
+$projectResult = Invoke-GraphQL -Query $projectQuery -MaxAttempts $RetryAttempts -RetryDelayMs $RetryDelayMs
 $project = $projectResult.data.organization.projectV2
 
 if (-not $project) {
@@ -164,7 +119,7 @@ query {
 "@
     
     try {
-        $issueResult = Invoke-GraphQLWithRetry -Query $issueQuery -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs
+        $issueResult = Invoke-GraphQL -Query $issueQuery -MaxAttempts $RetryAttempts -RetryDelayMs $RetryDelayMs
         $issue = $issueResult.data.repository.issue
         
         if (-not $issue) {
@@ -212,7 +167,7 @@ mutation {
 "@
     
     try {
-        $addResult = Invoke-GraphQLWithRetry -Query $addMutation -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs
+        $addResult = Invoke-GraphQL -Query $addMutation -MaxAttempts $RetryAttempts -RetryDelayMs $RetryDelayMs
         $itemId = $addResult.data.addProjectV2ItemById.item.id
         
         $addedItems += [PSCustomObject]@{
@@ -277,7 +232,7 @@ mutation {
 "@
             
             try {
-                Invoke-GraphQLWithRetry -Query $updateMutation -MaxAttempts $RetryAttempts -DelayMs $RetryDelayMs | Out-Null
+                Invoke-GraphQL -Query $updateMutation -MaxAttempts $RetryAttempts -RetryDelayMs $RetryDelayMs | Out-Null
                 $fieldUpdateCount++
                 Write-Host "  ✓ Set $fieldName = $($field.Value) for #$($item.Number)" -ForegroundColor Gray
                 Start-Sleep -Milliseconds 300

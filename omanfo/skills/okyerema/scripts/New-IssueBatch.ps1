@@ -9,6 +9,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # Get repo ID and type IDs once (optimization)
 $query = @"
 query {
@@ -28,17 +30,7 @@ query {
 }
 "@
 
-$rawResult = gh api graphql -f query="$query" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GraphQL query failed: $rawResult"
-    exit 1
-}
-
-$result = $rawResult | ConvertFrom-Json
-if ($result.errors) {
-    Write-Error "GraphQL errors: $($result.errors | ConvertTo-Json -Compress)"
-    exit 1
-}
+$result = Invoke-GraphQL -Query $query
 
 $repoId = $result.data.repository.id
 $issueTypes = $result.data.repository.owner.issueTypes.nodes
@@ -91,20 +83,7 @@ mutation {
 "@
     
     try {
-        $rawCreateResult = gh api graphql -f query="$mutation" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Host "  ✗ Failed to create issue '$title' [$typeName]: $rawCreateResult" -ForegroundColor Red
-            $failedCount++
-            continue
-        }
-        
-        $createResult = $rawCreateResult | ConvertFrom-Json
-        if ($createResult.errors) {
-            Write-Host "  ✗ Failed to create issue '$title' [$typeName]: $($createResult.errors | ConvertTo-Json -Compress)" -ForegroundColor Red
-            $failedCount++
-            continue
-        }
-        
+        $createResult = Invoke-GraphQL -Query $mutation
         $issue = $createResult.data.createIssue.issue
         
         Write-Host "  ✓ Created #$($issue.number) [$($issue.issueType.name)] $($issue.title)" -ForegroundColor Green
@@ -130,7 +109,7 @@ mutation {
   }
 }
 "@
-                gh api graphql -f query="$labelMutation" | Out-Null
+                Invoke-GraphQL -Query $labelMutation | Out-Null
                 $appliedLabels = $availableLabels | Where-Object { $_.id -in $labelIds } | ForEach-Object { $_.name }
                 Write-Host "    + Labels: $($appliedLabels -join ', ')" -ForegroundColor Gray
             }
