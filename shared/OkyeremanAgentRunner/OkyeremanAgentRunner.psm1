@@ -99,6 +99,153 @@ function Write-AgentLog {
 
 #endregion
 
+#region GraphQL
+
+<#
+.SYNOPSIS
+    Invokes a GitHub GraphQL API call with retry logic and rate-limit handling.
+
+.DESCRIPTION
+    Wraps `gh api graphql` with exponential backoff retry logic, automatic
+    `GraphQL-Features: sub_issues` header injection when needed, rate-limit
+    detection (429 / secondary rate limit), and structured error output.
+
+.PARAMETER Query
+    The GraphQL query or mutation string.
+
+.PARAMETER SubIssues
+    If set, injects the `GraphQL-Features: sub_issues` header required for
+    sub-issue API operations.
+
+.PARAMETER AdditionalHeaders
+    A hashtable of additional HTTP headers to pass to `gh api graphql`.
+
+.PARAMETER MaxRetries
+    Maximum number of retry attempts on transient errors. Default is 3.
+
+.PARAMETER InitialDelaySeconds
+    Initial delay in seconds before the first retry. Default is 2.
+
+.PARAMETER BackoffMultiplier
+    Multiplier applied to the delay after each retry. Default is 2.
+
+.PARAMETER MaxDelaySeconds
+    Maximum delay between retries in seconds. Default is 60.
+
+.EXAMPLE
+    $result = Invoke-GraphQL -Query 'query { viewer { login } }'
+
+.EXAMPLE
+    $result = Invoke-GraphQL -Query $subIssueQuery -SubIssues
+
+.EXAMPLE
+    $result = Invoke-GraphQL -Query $mutation -AdditionalHeaders @{ 'X-Custom': 'value' }
+#>
+function Invoke-GraphQL {
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory)]
+        [string]$Query,
+
+        [Parameter()]
+        [switch]$SubIssues,
+
+        [Parameter()]
+        [hashtable]$AdditionalHeaders = @{},
+
+        [Parameter()]
+        [int]$MaxRetries = 3,
+
+        [Parameter()]
+        [int]$InitialDelaySeconds = 2,
+
+        [Parameter()]
+        [double]$BackoffMultiplier = 2,
+
+        [Parameter()]
+        [int]$MaxDelaySeconds = 60
+    )
+
+    $attempt = 0
+    $delay = $InitialDelaySeconds
+    # Pattern to detect rate-limit responses from the GitHub API
+    $rateLimitPattern = '429|rate limit|secondary rate limit|too many requests'
+
+    while ($attempt -le $MaxRetries) {
+        $attempt++
+
+        try {
+            # Build header arguments
+            $headerArgs = @()
+            if ($SubIssues) {
+                $headerArgs += '-H'
+                $headerArgs += 'GraphQL-Features: sub_issues'
+            }
+            foreach ($key in $AdditionalHeaders.Keys) {
+                $headerArgs += '-H'
+                $headerArgs += "$key`: $($AdditionalHeaders[$key])"
+            }
+
+            # Invoke gh api graphql
+            if ($headerArgs.Count -gt 0) {
+                $rawResult = gh api graphql @headerArgs -f query="$Query" 2>&1
+            }
+            else {
+                $rawResult = gh api graphql -f query="$Query" 2>&1
+            }
+
+            if ($LASTEXITCODE -ne 0) {
+                $errorText = $rawResult | Out-String
+
+                # Detect rate limiting from exit-code path
+                if ($errorText -match $rateLimitPattern) {
+                    throw [System.Exception]::new("rate limit: $errorText")
+                }
+
+                throw [System.Exception]::new("GraphQL command failed (exit $LASTEXITCODE): $errorText")
+            }
+
+            $parsed = $rawResult | ConvertFrom-Json
+
+            # Surface GraphQL-level errors
+            if ($parsed.errors) {
+                $errorMsg = ($parsed.errors | ForEach-Object { $_.message }) -join '; '
+
+                # Detect secondary rate limit in GraphQL error messages
+                if ($errorMsg -match $rateLimitPattern) {
+                    throw [System.Exception]::new("rate limit: $errorMsg")
+                }
+
+                throw [System.Exception]::new("GraphQL errors: $errorMsg")
+            }
+
+            return $parsed
+        }
+        catch {
+            $errorMessage = $_.Exception.Message
+            $isRateLimit = $errorMessage -match $rateLimitPattern
+
+            if ($attempt -gt $MaxRetries) {
+                Write-AgentLog "All $MaxRetries retry attempt(s) exhausted: $errorMessage" -Level Error -Quiet
+                throw
+            }
+
+            if ($isRateLimit) {
+                $retryAfter = 60
+                Write-AgentLog "Rate limit detected. Waiting ${retryAfter}s before retry (attempt $attempt/$MaxRetries)..." -Level Warn -Quiet
+                Start-Sleep -Seconds $retryAfter
+            }
+            else {
+                Write-AgentLog "Attempt $attempt failed: $errorMessage. Retrying in ${delay}s..." -Level Warn -Quiet
+                Start-Sleep -Seconds $delay
+                $delay = [Math]::Min($delay * $BackoffMultiplier, $MaxDelaySeconds)
+            }
+        }
+    }
+}
+
+#endregion
+
 #region Error Handling
 
 <#
@@ -956,6 +1103,9 @@ function Get-CorrelationId {
 Export-ModuleMember -Function @(
     # Logging
     'Write-AgentLog',
+
+    # GraphQL
+    'Invoke-GraphQL',
     
     # Error Handling
     'Invoke-WithRetry',
