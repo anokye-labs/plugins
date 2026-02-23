@@ -209,7 +209,14 @@ jobs:
           $config.Run.Exit = $true
           Invoke-Pester -Configuration $config
 
-  # ── Auto-approve + enqueue ────────────────────────────────────────────
+      - name: Run scripts unit tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests/scripts/unit'
+          $config.Output.Verbosity = 'Detailed'
+          $config.Run.Exit = $true
+          Invoke-Pester -Configuration $config
   # NOTE: This job deliberately does NOT checkout PR code. It only uses
   # GitHub API calls (which run base-branch code from actions/github-script)
   # so write permissions here are safe.

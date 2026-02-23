@@ -38,6 +38,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # --- Query open issues, recent commits, and optionally a PR ---
 
 $prFragment = ""
@@ -122,17 +124,7 @@ query {
 }
 "@
 
-$rawResult = gh api graphql -f query="$query" 2>&1
-if ($LASTEXITCODE -ne 0) {
-    Write-Error "GraphQL query failed: $rawResult"
-    return
-}
-$result = $rawResult | ConvertFrom-Json
-
-if ($result.errors) {
-    Write-Error "GraphQL errors: $($result.errors | ConvertTo-Json -Compress)"
-    return
-}
+$result = Invoke-GraphQL -Query $query
 
 $repoData = $result.data.repository
 

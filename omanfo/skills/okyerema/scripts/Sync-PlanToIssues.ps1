@@ -48,6 +48,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # Validate files exist
 if (-not (Test-Path $PlanFile)) {
     Write-Error "Plan file not found: $PlanFile"
@@ -281,15 +283,10 @@ mutation {
 }
 "@
         
-        $rawResult = gh api graphql -f query="$mutation" 2>&1
-        if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Failed to update #$($issue.number): $rawResult"
-            continue
-        }
-        
-        $result = $rawResult | ConvertFrom-Json
-        if ($result.errors) {
-            Write-Warning "GraphQL errors updating #$($issue.number): $($result.errors | ConvertTo-Json -Compress)"
+        try {
+            $result = Invoke-GraphQL -Query $mutation
+        } catch {
+            Write-Warning "Failed to update #$($issue.number): $_"
             continue
         }
         

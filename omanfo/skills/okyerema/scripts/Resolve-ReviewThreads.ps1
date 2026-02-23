@@ -38,6 +38,8 @@ param(
     [switch]$All
 )
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 $action = if ($Unresolve) { "unresolveReviewThread" } else { "resolveReviewThread" }
 $verb = if ($Unresolve) { "unresolve" } else { "resolve" }
 $pastTense = if ($Unresolve) { "Unresolved" } else { "Resolved" }
@@ -49,20 +51,23 @@ if (-not $ThreadIds) {
         exit 1
     }
 
-    $result = gh api graphql -f query="
-    {
-      repository(owner: `"$Owner`", name: `"$Repo`") {
-        pullRequest(number: $PullNumber) {
-          reviewThreads(first: 100) {
-            totalCount
-            nodes {
-              id
-              isResolved
-            }
-          }
+    $fetchQuery = @"
+{
+  repository(owner: `"$Owner`", name: `"$Repo`") {
+    pullRequest(number: $PullNumber) {
+      reviewThreads(first: 100) {
+        totalCount
+        nodes {
+          id
+          isResolved
         }
       }
-    }" | ConvertFrom-Json
+    }
+  }
+}
+"@
+
+    $result = Invoke-GraphQL -Query $fetchQuery
 
     $threads = $result.data.repository.pullRequest.reviewThreads.nodes
     $targetResolved = if ($Unresolve) { $true } else { $false }
@@ -81,12 +86,14 @@ if (-not $ThreadIds) {
 Write-Host "Will $verb $($ThreadIds.Count) thread(s)" -ForegroundColor Cyan
 
 foreach ($id in $ThreadIds) {
-    gh api graphql -f query="
-    mutation {
-      $action(input: { threadId: `"$id`" }) {
-        thread { isResolved }
-      }
-    }" | Out-Null
+    $resolveMutation = @"
+mutation {
+  $action(input: { threadId: `"$id`" }) {
+    thread { isResolved }
+  }
+}
+"@
+    Invoke-GraphQL -Query $resolveMutation | Out-Null
     Write-Host "  $pastTense $id" -ForegroundColor Green
 }
 
