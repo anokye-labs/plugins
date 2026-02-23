@@ -2,7 +2,7 @@ name: Auto Enqueue
 
 on:
   workflow_run:
-    workflows: ["Validate Plugin", "Require Linked Issue"]
+    workflows: ["Validate Plugin", "Require Linked Issue", "Copilot PR Checks"]
     types: [completed]
   # Sweep all open PRs periodically — catches PRs that missed event-driven enqueue
   # (e.g., triage resolved threads after checks passed, race conditions, late approvals)
@@ -14,8 +14,14 @@ on:
 jobs:
   auto-enqueue:
     name: Auto Enqueue
-    # For workflow_run: only proceed on success. For schedule/dispatch: always run.
-    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    # For workflow_run: proceed on success, or on action_required for Copilot PR Checks.
+    # For schedule/dispatch: always run.
+    if: >-
+      ${{ github.event_name == 'schedule'
+       || github.event_name == 'workflow_dispatch'
+       || github.event.workflow_run.conclusion == 'success'
+       || (github.event.workflow_run.name == 'Copilot PR Checks'
+           && github.event.workflow_run.conclusion == 'action_required') }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
