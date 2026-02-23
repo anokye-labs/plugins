@@ -74,6 +74,18 @@ jobs:
               });
               core.info(`Posted completion comment on issue #${issue.number}`);
 
+              // Close the issue (workaround for merge queue breaking auto-close)
+              if (issue.state === 'OPEN') {
+                await github.rest.issues.update({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: issue.number,
+                  state: 'closed',
+                  state_reason: 'completed',
+                });
+                core.info(`Closed issue #${issue.number} as completed.`);
+              }
+
               // Check if the issue has a parent and whether all sibling sub-issues are closed
               try {
                 const parentResult = await github.graphql(`
@@ -130,10 +142,17 @@ jobs:
                       `All ${allSubIssues.length} sub-issue(s) under this issue are now closed.`,
                       `Last completed: #${issue.number} via PR #${prNumber}.`,
                       '',
-                      'This issue may be ready for closure.',
+                      'Closing this issue as all sub-issues are done.',
                     ].join('\n'),
                   });
-                  core.info(`All sub-issues of parent #${parent.number} are closed — posted notification.`);
+                  await github.rest.issues.update({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: parent.number,
+                    state: 'closed',
+                    state_reason: 'completed',
+                  });
+                  core.info(`Closed parent #${parent.number} — all sub-issues done.`);
                 } else {
                   core.info(`Parent #${parent.number} still has ${openSubIssues.length} open sub-issue(s): ${openSubIssues.map(s => '#' + s.number).join(', ')}`);
                 }
