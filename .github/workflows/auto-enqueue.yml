@@ -53,9 +53,11 @@ jobs:
               // For workflow_run events, only process the PR that triggered it
               if (targetSha && pr.head.sha !== targetSha) continue;
 
-              // Copilot draft PRs: dispatch copilot-checks.yml to validate and activate.
+              // Copilot PRs (draft or non-draft): dispatch copilot-checks.yml to validate and activate.
               // GITHUB_TOKEN can trigger workflow_dispatch (Sept 2022 exception).
-              if (pr.draft && pr.head.ref.startsWith('copilot/')
+              // Non-draft Copilot PRs still need dispatch because synchronize events from
+              // Copilot conflict-resolution pushes get action_required.
+              if (pr.head.ref.startsWith('copilot/')
                   && ['Copilot', 'copilot-swe-agent[bot]'].includes(pr.user.login)) {
                 // Verify the PR has a linked issue before dispatching
                 const linked = await github.graphql(`
@@ -69,8 +71,26 @@ jobs:
                 `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number });
 
                 if (linked.repository.pullRequest.closingIssuesReferences.totalCount === 0) {
-                  core.info(`PR #${pr.number}: Copilot draft with no linked issue, skipping.`);
+                  core.info(`PR #${pr.number}: Copilot PR with no linked issue, skipping.`);
                   continue;
+                }
+
+                // Skip if already enqueued in merge queue
+                if (pr.auto_merge) {
+                  // Check if required checks already pass on HEAD
+                  const { data: checkData } = await github.rest.checks.listForRef({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    ref: pr.head.sha,
+                    per_page: 100,
+                  });
+                  const allPassed = requiredChecks.every(name =>
+                    latestConclusion(checkData.check_runs, name) === 'success'
+                  );
+                  if (allPassed) {
+                    core.info(`PR #${pr.number}: Copilot PR already has passing checks, skipping dispatch.`);
+                    continue;
+                  }
                 }
 
                 try {
@@ -82,7 +102,7 @@ jobs:
                     inputs: { pr_number: String(pr.number) },
                   });
                   dispatched++;
-                  core.info(`PR #${pr.number}: dispatched copilot-checks.yml for Copilot draft PR.`);
+                  core.info(`PR #${pr.number}: dispatched copilot-checks.yml for Copilot PR.`);
                 } catch (e) {
                   core.info(`PR #${pr.number}: dispatch failed: ${e.message}`);
                 }
