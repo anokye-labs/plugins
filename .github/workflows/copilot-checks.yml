@@ -238,7 +238,6 @@ jobs:
             const prNodeId = '${{ needs.resolve-pr.outputs.pr_node_id }}';
 
             // Merge main into PR branch so it's up-to-date before merging.
-            let hasConflict = false;
             try {
               await github.rest.pulls.updateBranch({
                 owner: context.repo.owner,
@@ -248,27 +247,6 @@ jobs:
               core.info(`Merged main into PR #${prNumber} branch.`);
               await new Promise(r => setTimeout(r, 5000));
             } catch (e) {
-              if (e.status === 422 && e.message.includes('merge conflict')) {
-                hasConflict = true;
-                core.info(`PR #${prNumber} has merge conflicts — requesting Copilot resolution.`);
-                // Ask Copilot to resolve the conflict via @mention
-                const marker = '<!-- copilot-conflict-resolution -->';
-                const { data: comments } = await github.rest.issues.listComments({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  issue_number: prNumber,
-                  per_page: 50,
-                });
-                if (!comments.some(c => c.body.includes(marker))) {
-                  await github.rest.issues.createComment({
-                    owner: context.repo.owner,
-                    repo: context.repo.repo,
-                    issue_number: prNumber,
-                    body: `${marker}\n@copilot This PR has merge conflicts with \`main\`. Please resolve the conflicts and push a fix commit.`,
-                  });
-                }
-                return; // Stop here — Copilot will push a fix, next sweep retries
-              }
               core.info(`Branch update (may already be up-to-date): ${e.message}`);
             }
 
