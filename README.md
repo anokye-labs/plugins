@@ -91,6 +91,16 @@ The README is the first thing a developer sees. If it says *"install this plugin
 - **Adwoma** — Work. GitHub Issues as the single source of truth.
 - **Sankofa** — Return and get it. Automated health patrols.
 
+## Copilot Auto-Flow Pipeline
+
+Copilot-authored PRs in this repository follow a fully automated end-to-end pipeline:
+
+1. **Issue created** → assigned to @copilot
+2. **Copilot opens a PR** → transitions to Ready for Review
+3. **`copilot-checks` workflow fires** → runs static validation, unit tests, and auto-approves
+4. **Auto-enqueue dispatch** → PR is enqueued into the merge queue via GraphQL
+5. **Merge queue** → required checks run and the PR merges automatically
+
 ## Installation
 
 ### Quick Start: Marketplace Installation (Recommended)
