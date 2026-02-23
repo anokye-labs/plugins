@@ -46,6 +46,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # Helper function to escape strings for GraphQL
 function Escape-GraphQLString {
     param([string]$text)
@@ -78,7 +80,7 @@ query {
 }
 "@
     
-    $result = gh api graphql -f query="$query" | ConvertFrom-Json
+    $result = Invoke-GraphQL -Query $query
     $issue = $result.data.repository.issue
     
     $dependencies = @{
@@ -147,12 +149,7 @@ query {
 }
 "@
     
-    $result = gh api graphql -f query="$query" | ConvertFrom-Json
-    if ($result.errors) {
-        Write-Error "Failed to get issue #${Number}: $($result.errors | ConvertTo-Json -Compress)"
-        return $null
-    }
-    
+    $result = Invoke-GraphQL -Query $query
     return $result.data.repository.issue
 }
 
@@ -241,12 +238,8 @@ mutation {
 }
 "@
         
-        $result = gh api graphql -f query="$mutation" | ConvertFrom-Json
-        if ($result.errors) {
-            Write-Error "Failed to add dependency comment: $($result.errors | ConvertTo-Json -Compress)"
-            return
-        }
-        
+        $result = Invoke-GraphQL -Query $mutation
+
         Write-Host "✓ Added dependencies to #${IssueNumber}" -ForegroundColor Green
         if ($newBlockedBy.Count -gt 0) {
             Write-Host "  Blocked by: #$($newBlockedBy -join ', #')" -ForegroundColor Gray

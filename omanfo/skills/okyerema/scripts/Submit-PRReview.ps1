@@ -60,6 +60,8 @@ param(
 
 $ErrorActionPreference = "Stop"
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # Get latest commit if not specified
 if (-not $CommitId) {
     $query = @"
@@ -75,7 +77,7 @@ query {
   }
 }
 "@
-    $result = gh api graphql -f query="$query" | ConvertFrom-Json
+    $result = Invoke-GraphQL -Query $query
     $CommitId = $result.data.repository.pullRequest.commits.nodes[0].commit.oid
     Write-Host "Using latest commit: $CommitId" -ForegroundColor Gray
 }
@@ -154,7 +156,7 @@ query {
 }
 "@
 
-$prResult = gh api graphql -f query="$prQuery" | ConvertFrom-Json
+$prResult = Invoke-GraphQL -Query $prQuery
 $prId = $prResult.data.repository.pullRequest.id
 
 # Update mutation with PR ID
@@ -162,7 +164,7 @@ $mutation = $mutation.Replace('pullRequestId: ""', "pullRequestId: `"$prId`"")
 
 # Execute mutation
 try {
-    $result = gh api graphql -f query="$mutation" | ConvertFrom-Json
+    $result = Invoke-GraphQL -Query $mutation
     $review = $result.data.addPullRequestReview.pullRequestReview
     
     Write-Host "`n✓ Review submitted successfully" -ForegroundColor Green

@@ -31,7 +31,9 @@ param(
     [switch]$Brief
 )
 
-$result = gh api graphql -f query="
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
+$query = @"
 {
   repository(owner: `"$Owner`", name: `"$Repo`") {
     pullRequest(number: $PullNumber) {
@@ -57,7 +59,10 @@ $result = gh api graphql -f query="
       }
     }
   }
-}" | ConvertFrom-Json
+}
+"@
+
+$result = Invoke-GraphQL -Query $query
 
 $threads = $result.data.repository.pullRequest.reviewThreads.nodes
 

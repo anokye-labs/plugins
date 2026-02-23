@@ -39,21 +39,25 @@ param(
     [switch]$Resolve
 )
 
+. "$PSScriptRoot\_Invoke-GraphQL.ps1"
+
 # If no ThreadId, look it up by index
 if (-not $ThreadId -and $ThreadIndex -ge 0) {
-    $result = gh api graphql -f query="
-    {
-      repository(owner: `"$Owner`", name: `"$Repo`") {
-        pullRequest(number: $PullNumber) {
-          reviewThreads(first: 100) {
-            nodes {
-              id
-              isResolved
-            }
-          }
+    $lookupQuery = @"
+{
+  repository(owner: `"$Owner`", name: `"$Repo`") {
+    pullRequest(number: $PullNumber) {
+      reviewThreads(first: 100) {
+        nodes {
+          id
+          isResolved
         }
       }
-    }" | ConvertFrom-Json
+    }
+  }
+}
+"@
+    $result = Invoke-GraphQL -Query $lookupQuery
 
     $unresolved = $result.data.repository.pullRequest.reviewThreads.nodes | Where-Object { -not $_.isResolved }
     if ($ThreadIndex -ge $unresolved.Count) {
@@ -73,7 +77,7 @@ if (-not $ThreadId) {
 $escapedBody = $Body.Replace('\', '\\').Replace('"', '\"').Replace("`n", '\n')
 
 # Reply
-$replyResult = gh api graphql -f query="
+$replyMutation = @"
 mutation {
   addPullRequestReviewThreadReply(input: {
     pullRequestReviewThreadId: `"$ThreadId`"
@@ -83,18 +87,22 @@ mutation {
       url
     }
   }
-}" | ConvertFrom-Json
+}
+"@
+$replyResult = Invoke-GraphQL -Query $replyMutation
 
 $url = $replyResult.data.addPullRequestReviewThreadReply.comment.url
 Write-Host "Replied: $url" -ForegroundColor Green
 
 # Optionally resolve
 if ($Resolve) {
-    gh api graphql -f query="
-    mutation {
-      resolveReviewThread(input: { threadId: `"$ThreadId`" }) {
-        thread { isResolved }
-      }
-    }" | Out-Null
+    $resolveMutation = @"
+mutation {
+  resolveReviewThread(input: { threadId: `"$ThreadId`" }) {
+    thread { isResolved }
+  }
+}
+"@
+    Invoke-GraphQL -Query $resolveMutation | Out-Null
     Write-Host "Thread resolved" -ForegroundColor Green
 }
