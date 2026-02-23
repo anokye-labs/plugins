@@ -193,7 +193,8 @@ jobs:
             const prNumber = parseInt('${{ needs.resolve-pr.outputs.pr_number }}', 10);
             const prNodeId = '${{ needs.resolve-pr.outputs.pr_node_id }}';
 
-            // Skip if PR is still a draft
+            // Mark draft PRs ready for review — Copilot creates PRs as drafts,
+            // and the require-linked-issue workflow may not have run due to approval gates.
             const { data: pr } = await github.rest.pulls.get({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -201,8 +202,20 @@ jobs:
             });
 
             if (pr.draft) {
-              core.info(`PR #${prNumber} is still a draft, skipping approve.`);
-              return;
+              core.info(`PR #${prNumber} is a draft — marking ready for review.`);
+              try {
+                await github.graphql(`
+                  mutation($id: ID!) {
+                    markPullRequestReadyForReview(input: { pullRequestId: $id }) {
+                      pullRequest { number isDraft }
+                    }
+                  }
+                `, { id: prNodeId });
+                core.info(`PR #${prNumber} marked ready for review.`);
+              } catch (e) {
+                core.info(`Could not mark ready: ${e.message}`);
+                return;
+              }
             }
 
             // Approve if not already approved
@@ -235,8 +248,60 @@ jobs:
               core.info(`Auto-merge: ${e.message}`);
             }
 
-            // Check for unresolved threads before enqueue
-            const threads = await github.graphql(`
+            // Auto-resolve bot review threads — automated review bots (code-quality,
+            // Devin review) leave informational comments that create unresolved threads,
+            // blocking the merge queue. Resolve them so auto-enqueue can proceed.
+            // GraphQL author.login omits the [bot] suffix shown in the UI.
+            // Keep both forms so the match works regardless of API surface.
+            const botLogins = new Set([
+              'github-code-quality[bot]',  'github-code-quality',
+              'devin-ai-integration[bot]', 'devin-ai-integration',
+              'github-advanced-security[bot]', 'github-advanced-security',
+            ]);
+
+            const threadData = await github.graphql(`
+              query($owner:String!,$repo:String!,$pr:Int!) {
+                repository(owner:$owner,name:$repo) {
+                  pullRequest(number:$pr) {
+                    reviewThreads(first:100) {
+                      nodes {
+                        id
+                        isResolved
+                        comments(first:1) {
+                          nodes { author { login } }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { owner: context.repo.owner, repo: context.repo.repo, pr: prNumber });
+
+            const unresolvedBotThreads = threadData.repository.pullRequest.reviewThreads.nodes
+              .filter(t => !t.isResolved && t.comments.nodes.length > 0
+                && botLogins.has(t.comments.nodes[0].author.login));
+
+            for (const thread of unresolvedBotThreads) {
+              try {
+                await github.graphql(`
+                  mutation($id: ID!) {
+                    resolveReviewThread(input: { threadId: $id }) {
+                      thread { isResolved }
+                    }
+                  }
+                `, { id: thread.id });
+                core.info(`Resolved bot thread ${thread.id} (by ${thread.comments.nodes[0].author.login})`);
+              } catch (e) {
+                core.info(`Could not resolve thread ${thread.id}: ${e.message}`);
+              }
+            }
+
+            if (unresolvedBotThreads.length > 0) {
+              core.info(`Resolved ${unresolvedBotThreads.length} bot review thread(s).`);
+            }
+
+            // Re-check for remaining unresolved threads (human comments)
+            const remainingThreads = await github.graphql(`
               query($owner:String!,$repo:String!,$pr:Int!) {
                 repository(owner:$owner,name:$repo) {
                   pullRequest(number:$pr) {
@@ -246,8 +311,8 @@ jobs:
               }
             `, { owner: context.repo.owner, repo: context.repo.repo, pr: prNumber });
 
-            if (threads.repository.pullRequest.reviewThreads.nodes.some(t => !t.isResolved)) {
-              core.info('Unresolved review threads — skipping enqueue.');
+            if (remainingThreads.repository.pullRequest.reviewThreads.nodes.some(t => !t.isResolved)) {
+              core.info('Unresolved human review threads — skipping enqueue.');
               return;
             }
 

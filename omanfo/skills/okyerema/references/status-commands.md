@@ -153,6 +153,50 @@ Quick-access commands that surface project state. Scripts return structured data
 
 ---
 
+### `/readiness` — Repo Automation Readiness
+
+| | |
+|---|---|
+| **Priority** | P2 |
+| **Trigger** | `/readiness`, "is this repo configured", "what's missing", "onboard this repo" |
+| **Queries** | copilot-instructions.md, .github/aw/, GitHub Projects, issue types, CI/CD workflows |
+| **Script** | `scripts/Get-RepoReadiness.ps1` |
+
+**Output format:**
+```
+🚀 Repo Readiness: anokye-labs/my-repo
+
+✅ copilot-instructions.md: present (72 lines)
+❌ Agentic workflows: missing (.github/aw/ directory not found)
+✅ GitHub Project: 1 active project(s): Sprint Board
+✅ Issue types: in use (12/15 sampled issues typed, ~80%)
+✅ CI/CD workflows: present (3 workflow file(s) in .github/workflows/)
+
+💯 Readiness score: 80/100
+
+🔧 Gaps to address (1):
+   • AgenticWorkflows
+
+💡 Run Initialize-RepoAutomation.ps1 to create issues for each gap.
+```
+
+**Checks performed (with weights):**
+- 🔍 `.github/copilot-instructions.md` exists and has ≥50 lines (25 pts)
+- 🔍 `.github/aw/` directory with compiled `.lock.yml` agentic workflows (20 pts)
+- 🔍 Active GitHub Project V2 linked to the repository (20 pts)
+- 🔍 Organization issue types in use (vs labels-as-types anti-pattern) (20 pts)
+- 🔍 CI/CD workflow `.yml` files in `.github/workflows/` (15 pts)
+
+**Onboarding checklist for `/context`:**
+
+When running `/context` in a new or unfamiliar repo, always append a readiness summary:
+```
+🚀 Readiness: N/100 | Gaps: CopilotInstructions, AgenticWorkflows
+   💡 Run: Initialize-RepoAutomation.ps1 -Owner {owner} -Repo {repo}
+```
+
+---
+
 ### `/progress [root-number]` — DAG Completion Report
 
 | | |
@@ -273,8 +317,10 @@ PR #12:
 | `Get-Sitrep.ps1` | `/sitrep` | P0 | ✅ Implemented |
 | `Get-PRHealth.ps1` | `/prcheck` | P0 | ✅ Implemented |
 | `Get-HierarchyHealth.ps1` | `/health` | P1 | ✅ Implemented |
-| *(agent-driven)* | `/context` | P0 | Agent introspection |
+| `Get-RepoReadiness.ps1` | `/readiness` | P2 | ✅ Implemented |
+| *(agent-driven)* | `/context` | P0 | Agent introspection + readiness summary |
 | `Get-DagCompletionReport.ps1` | `/progress` | P1 | ✅ Implemented |
+| *(agent-driven)* | `/recap` | P1 | Agent synthesis |
 | *(agent-driven)* | `/whatsleft` | P1 | Agent + hierarchy query |
 | *(agent-driven)* | `/board` | P2 | Agent + projects API |
 | *(agent-driven)* | `/watch` | P2 | Agent polling loop |

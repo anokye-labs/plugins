@@ -8,12 +8,14 @@ on:
   # (e.g., triage resolved threads after checks passed, race conditions, late approvals)
   schedule:
     - cron: '*/15 * * * *'
+  # Allow manual trigger for testing / unblocking stuck PRs
+  workflow_dispatch:
 
 jobs:
   auto-enqueue:
     name: Auto Enqueue
-    # For workflow_run: only proceed on success. For schedule: always run.
-    if: ${{ github.event_name == 'schedule' || github.event.workflow_run.conclusion == 'success' }}
+    # For workflow_run: only proceed on success. For schedule/dispatch: always run.
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -91,29 +93,60 @@ jobs:
                 continue;
               }
 
-              // Paginate review threads to check for unresolved conversations
-              let hasUnresolved = false;
-              let cursor = null;
-              do {
-                const threads = await github.graphql(`
-                  query($owner:String!,$repo:String!,$pr:Int!,$cursor:String) {
-                    repository(owner:$owner,name:$repo) {
-                      pullRequest(number:$pr) {
-                        reviewThreads(first:100,after:$cursor) {
-                          nodes { isResolved }
-                          pageInfo { hasNextPage endCursor }
+              // Auto-resolve bot review threads before checking for unresolved conversations.
+              // Automated review bots leave informational comments that block the merge queue.
+              // GraphQL author.login omits the [bot] suffix shown in the UI.
+              // Keep both forms so the match works regardless of API surface.
+              const botLogins = new Set([
+                'github-code-quality[bot]',  'github-code-quality',
+                'devin-ai-integration[bot]', 'devin-ai-integration',
+                'github-advanced-security[bot]', 'github-advanced-security',
+              ]);
+
+              const threadData = await github.graphql(`
+                query($owner:String!,$repo:String!,$pr:Int!) {
+                  repository(owner:$owner,name:$repo) {
+                    pullRequest(number:$pr) {
+                      reviewThreads(first:100) {
+                        nodes {
+                          id
+                          isResolved
+                          comments(first:1) {
+                            nodes { author { login } }
+                          }
                         }
                       }
                     }
                   }
-                `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number, cursor });
-                const page = threads.repository.pullRequest.reviewThreads;
-                if (page.nodes.some(t => !t.isResolved)) { hasUnresolved = true; break; }
-                cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
-              } while (cursor);
+                }
+              `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number });
+
+              const unresolvedBotThreads = threadData.repository.pullRequest.reviewThreads.nodes
+                .filter(t => !t.isResolved && t.comments.nodes.length > 0
+                  && botLogins.has(t.comments.nodes[0].author.login));
+
+              for (const thread of unresolvedBotThreads) {
+                try {
+                  await github.graphql(`
+                    mutation($id: ID!) {
+                      resolveReviewThread(input: { threadId: $id }) {
+                        thread { isResolved }
+                      }
+                    }
+                  `, { id: thread.id });
+                  core.info(`PR #${pr.number}: resolved bot thread (by ${thread.comments.nodes[0].author.login})`);
+                } catch (e) {
+                  core.info(`PR #${pr.number}: could not resolve thread: ${e.message}`);
+                }
+              }
+
+              // Check for remaining unresolved threads (human comments only)
+              const hasUnresolved = threadData.repository.pullRequest.reviewThreads.nodes
+                .some(t => !t.isResolved && (t.comments.nodes.length === 0
+                  || !botLogins.has(t.comments.nodes[0].author.login)));
 
               if (hasUnresolved) {
-                core.info(`PR #${pr.number}: has unresolved review threads, skipping.`);
+                core.info(`PR #${pr.number}: has unresolved human review threads, skipping.`);
                 continue;
               }
 
