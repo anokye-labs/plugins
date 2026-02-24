@@ -7,7 +7,7 @@ on:
   # Sweep all open PRs periodically — catches PRs that missed event-driven enqueue
   # (e.g., triage resolved threads after checks passed, race conditions, late approvals)
   schedule:
-    - cron: '*/15 * * * *'
+    - cron: '*/3 * * * *'
   # Allow manual trigger for testing / unblocking stuck PRs
   workflow_dispatch:
 
