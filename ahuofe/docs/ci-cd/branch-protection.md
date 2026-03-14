@@ -8,12 +8,13 @@ Enable **"Require status checks to pass before merging"** with the following che
 
 | Workflow | Job Name | Required |
 |----------|----------|----------|
-| `test-plugin.yml` | `Run Pester Tests` | ✅ Yes |
-| `doc-sync.yml` | `Validate Documentation` | ✅ Yes |
-| `performance-check.yml` | `Performance Benchmark` | ⚠️ Optional |
-| `media-workflow.yml` | `Generate & Validate Media` | ⚠️ Optional |
+| `validate-plugin.yml` | `Pester Unit Tests` | ✅ Yes |
+| `validate-plugin.yml` | `Pester E2E Tests` | ✅ Yes |
+| `validate-plugin.yml` | `Dependency Audit` | ✅ Yes |
+| `validate-plugin.yml` | `Validate` (structure, lint) | ✅ Yes |
+| `require-linked-issue.yml` | `Require Linked Issue` | ✅ Yes |
 
-> **Note:** `performance-check` and `media-workflow` require the `FAL_KEY` secret and are optional because they depend on external API availability.
+> **Note:** Unit tests enforce a 70% line coverage threshold. E2E tests are fully mocked and require no API keys. Dependency audit fails on high/critical npm vulnerabilities.
 
 ## Required Reviewers
 

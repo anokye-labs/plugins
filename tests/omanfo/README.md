@@ -47,8 +47,8 @@ The runner discovers test files based on naming conventions:
 
 ## Overview
 
-- **Total Tests**: 116+ tests
-- **Test Files**: 6 unit test files + smoke tests, organized by capability area
+- **Total Tests**: 140+ tests
+- **Test Files**: 7 unit test files + smoke tests, organized by capability area
 - **Fixture Files**: 6 mock JSON and markdown files
 - **Coverage**: All 28 Okyerema scripts
 
@@ -90,6 +90,18 @@ Tests for work prioritization and issue selection:
 - **Get-BlockedIssues** (4 tests) - Blocked issue tracking
 - **Get-OrphanedIssues** (4 tests) - Orphaned issue detection
 - **Get-StalledWork** (4 tests) - Stale issue identification
+
+### InvokeGraphQL.Unit.Tests.ps1 (25 tests)
+Tests for the shared `_Invoke-GraphQL.ps1` helper:
+- **Basic success path** (2 tests) - Valid JSON parsing, single invocation
+- **Retry on transient error** (2 tests) - Retry-then-succeed, invocation count
+- **Exponential backoff with jitter** (3 tests) - Delay ranges, doubling, minimum floor
+- **Non-retryable errors** (4 tests) - NOT_FOUND, FORBIDDEN, UNAUTHORIZED, INSUFFICIENT_SCOPES
+- **Validation errors** (4 tests) - Variable defined, parse/syntax errors, invalid values
+- **Max attempts exhausted** (3 tests) - Final throw, invocation count, sleep count
+- **GraphQL errors in response** (3 tests) - Error extraction, message joining, retryability
+- **Custom headers** (3 tests) - Header passing, formatting, empty headers
+- **Non-zero exit code** (1 test) - Exit code handling
 
 ### PlanMaterialization.Tests.ps1 (8 tests)
 Tests for plan-to-issue materialization:
@@ -204,7 +216,7 @@ Mock gh {
 
 ## Coverage
 
-All 28 Okyerema scripts have corresponding tests:
+All 28 Okyerema scripts plus shared helpers have corresponding tests:
 - ✅ Get-IssueTypeIds
 - ✅ New-IssueWithType
 - ✅ Update-IssueHierarchy
@@ -233,6 +245,7 @@ All 28 Okyerema scripts have corresponding tests:
 - ✅ New-IssueHierarchy
 - ✅ Add-IssuesToProject
 - ✅ Invoke-PRCompletion
+- ✅ Invoke-GraphQL (shared helper)
 
 ## Requirements
 

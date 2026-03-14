@@ -318,6 +318,44 @@ jobs:
 
           $summary >> $env:GITHUB_STEP_SUMMARY
 
+      - name: Enforce coverage threshold
+        shell: pwsh
+        run: |
+          $coverageFile = './coverage/omanfo-coverage.xml'
+          $threshold = 70
+
+          if (-not (Test-Path $coverageFile)) {
+            Write-Host "Coverage file not found — skipping threshold check." -ForegroundColor Yellow
+            exit 0
+          }
+
+          [xml]$xml = Get-Content $coverageFile
+          $counter = $xml.report.counter | Where-Object { $_.type -eq 'LINE' }
+
+          if (-not $counter) {
+            Write-Host "No LINE counters in coverage report — skipping threshold check." -ForegroundColor Yellow
+            exit 0
+          }
+
+          $missed = [int]$counter.missed
+          $covered = [int]$counter.covered
+          $total = $missed + $covered
+
+          if ($total -eq 0) {
+            Write-Host "No lines measured — skipping threshold check." -ForegroundColor Yellow
+            exit 0
+          }
+
+          $pct = [math]::Round(($covered / $total) * 100, 2)
+          Write-Host "Line coverage: $pct% ($covered / $total lines)" -ForegroundColor Cyan
+
+          if ($pct -lt $threshold) {
+            Write-Host "FAILED: Coverage $pct% is below the $threshold% threshold." -ForegroundColor Red
+            exit 1
+          } else {
+            Write-Host "PASSED: Coverage $pct% meets the $threshold% threshold." -ForegroundColor Green
+          }
+
       - name: Run scripts unit tests
         shell: pwsh
         run: |
@@ -401,3 +439,58 @@ jobs:
           } else {
             Write-Host "No Error-severity issues found." -ForegroundColor Green
           }
+
+  e2e-tests:
+    name: Pester E2E Tests
+    runs-on: windows-latest
+    needs: [validate]
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force
+
+      - name: Run ahuofe E2E tests
+        shell: pwsh
+        run: |
+          Invoke-Pester ahuofe/tests/e2e/ -CI -Output Detailed
+
+      - name: Run omanfo E2E tests
+        shell: pwsh
+        run: |
+          Invoke-Pester tests/omanfo/e2e/ -CI -Output Detailed
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Audit ahuofe pipeline dependencies
+        continue-on-error: false
+        run: |
+          cd ahuofe/pipeline
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
+
+      - name: Audit omanfo test dependencies
+        continue-on-error: false
+        run: |
+          cd omanfo/tests
+          npm ci --ignore-scripts
+          npm audit --audit-level=high
