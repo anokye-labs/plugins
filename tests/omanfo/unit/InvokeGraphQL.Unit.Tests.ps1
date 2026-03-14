@@ -316,5 +316,10 @@ Describe "Invoke-GraphQL" {
 
             { Invoke-GraphQL -Query "{ repo }" -MaxAttempts 1 -BaseDelayMs 1 } | Should -Throw "*exit code*"
         }
+
+        AfterAll {
+            # Reset LASTEXITCODE to avoid polluting subsequent test files
+            $global:LASTEXITCODE = 0
+        }
     }
 }

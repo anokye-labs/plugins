@@ -461,10 +461,8 @@ jobs:
         run: |
           Invoke-Pester ahuofe/tests/e2e/ -CI -Output Detailed
 
-      - name: Run omanfo E2E tests
-        shell: pwsh
-        run: |
-          Invoke-Pester tests/omanfo/e2e/ -CI -Output Detailed
+      # Note: omanfo E2E tests (tests/omanfo/e2e/) require the copilot CLI
+      # binary and are not mocked — they run in the nightly workflow instead.
 
   dependency-audit:
     name: Dependency Audit
