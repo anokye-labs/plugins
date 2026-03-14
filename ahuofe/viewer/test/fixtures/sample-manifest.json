@@ -1,0 +1,28 @@
+{
+  "id": "gen-003",
+  "timestamp": "2026-03-13T10:30:00Z",
+  "parent": "gen-002",
+  "model": "fal-ai/flux-pro",
+  "stage": "review",
+  "entity": "okyeame",
+  "pr": 42,
+  "commit": "abc1234",
+  "images": [
+    {
+      "id": "front-view",
+      "title": "Front View",
+      "file": "okyeame--front-view.png",
+      "width": 1024,
+      "height": 1024,
+      "driftScore": 92
+    },
+    {
+      "id": "side-view",
+      "title": "Side View",
+      "file": "okyeame--side-view.png",
+      "width": 1024,
+      "height": 1024,
+      "driftScore": 87
+    }
+  ]
+}

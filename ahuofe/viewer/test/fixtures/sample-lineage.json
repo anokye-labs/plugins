@@ -1,0 +1,34 @@
+{
+  "generations": [
+    {
+      "id": "gen-001",
+      "timestamp": "2026-03-13T08:00:00Z",
+      "parent": null,
+      "entity": "okyeame",
+      "stage": "draft",
+      "pr": 42,
+      "commit": "def5678",
+      "imageCount": 2
+    },
+    {
+      "id": "gen-002",
+      "timestamp": "2026-03-13T09:15:00Z",
+      "parent": "gen-001",
+      "entity": "okyeame",
+      "stage": "draft",
+      "pr": 42,
+      "commit": "ghi9012",
+      "imageCount": 2
+    },
+    {
+      "id": "gen-003",
+      "timestamp": "2026-03-13T10:30:00Z",
+      "parent": "gen-002",
+      "entity": "okyeame",
+      "stage": "review",
+      "pr": 42,
+      "commit": "abc1234",
+      "imageCount": 2
+    }
+  ]
+}

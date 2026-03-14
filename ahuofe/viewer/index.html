@@ -1,0 +1,1080 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ahuofe — Lineage Browser</title>
+<style>
+  :root {
+    --bg: #0D0D0D;
+    --bg-surface: #1a1a1a;
+    --bg-hover: #252525;
+    --bg-card: #161616;
+    --green: #32E975;
+    --purple: #9966FF;
+    --text: #e0e0e0;
+    --text-dim: #888;
+    --text-bright: #ffffff;
+    --border: #333;
+    --radius: 8px;
+    --strip-height: 110px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; overflow: hidden; height: 100vh; display: flex; flex-direction: column; }
+
+  /* -- Top Nav ------------------------------------------------ */
+  .nav { display: flex; align-items: center; justify-content: space-between; padding: 6px 16px; background: var(--bg-surface); border-bottom: 1px solid var(--border); height: 44px; flex-shrink: 0; z-index: 100; }
+  .nav-title { font-size: 14px; font-weight: 600; color: var(--text-bright); white-space: nowrap; }
+  .nav-title span { color: var(--green); }
+  .nav-center { display: flex; align-items: center; gap: 8px; }
+  .nav-tabs { display: flex; gap: 4px; }
+  .nav-tab { padding: 4px 12px; background: transparent; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-dim); cursor: pointer; font-size: 12px; transition: all 0.2s; }
+  .nav-tab:hover { border-color: var(--text-dim); color: var(--text); }
+  .nav-tab.active { background: var(--green); color: var(--bg); border-color: var(--green); font-weight: 600; }
+  .nav-actions { display: flex; gap: 6px; align-items: center; }
+  .btn { padding: 4px 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-surface); color: var(--text); cursor: pointer; font-size: 12px; transition: all 0.2s; white-space: nowrap; }
+  .btn:hover { border-color: var(--green); color: var(--green); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  select.nav-select { padding: 4px 8px; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); font-size: 12px; cursor: pointer; }
+
+  /* -- PR badge ----------------------------------------------- */
+  .pr-badge { font-size: 11px; color: var(--purple); background: rgba(153,102,255,0.15); padding: 2px 10px; border-radius: 10px; font-weight: 600; }
+
+  /* -- Entity filter ------------------------------------------ */
+  .entity-filter { display: flex; align-items: center; gap: 4px; }
+  .entity-filter label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+
+  /* -- Stage badge -------------------------------------------- */
+  .stage-badge { display: inline-block; padding: 1px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+  .stage-badge.draft { background: rgba(255,180,0,0.15); color: #ffb400; }
+  .stage-badge.review { background: rgba(153,102,255,0.15); color: #9966FF; }
+  .stage-badge.final, .stage-badge.finalized { background: rgba(50,233,117,0.15); color: #32E975; }
+
+  /* -- Generation Nav ----------------------------------------- */
+  .gen-nav { display: flex; align-items: center; gap: 6px; }
+  .gen-nav label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; }
+  .gen-nav-btn { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); color: var(--text-dim); cursor: pointer; font-size: 14px; transition: all 0.2s; }
+  .gen-nav-btn:hover { border-color: var(--green); color: var(--green); }
+  .gen-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+  #genSelect { min-width: 280px; }
+
+  /* -- Commit scrubber ---------------------------------------- */
+  .scrubber-bar { display: flex; align-items: center; gap: 8px; padding: 4px 16px; background: var(--bg-surface); border-bottom: 1px solid var(--border); flex-shrink: 0; }
+  .scrubber-bar label { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 1px; white-space: nowrap; }
+  .scrubber-bar input[type="range"] { flex: 1; accent-color: var(--green); }
+  .scrubber-bar .scrubber-label { font-size: 11px; color: var(--text); min-width: 80px; text-align: right; }
+
+  /* -- Main content area -------------------------------------- */
+  .main { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+
+  /* -- Gallery Mode ------------------------------------------- */
+  .gallery { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+  .gallery.hidden { display: none; }
+
+  /* -- 3D Vertical Carousel ----------------------------------- */
+  .carousel-wrap { flex: 1; min-height: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; perspective: 1200px; position: relative; overflow: hidden; }
+  .carousel { position: relative; width: 100%; height: 100%; transform-style: preserve-3d; }
+  .carousel-row { position: absolute; left: 0; right: 0; top: 0; display: flex; align-items: center; justify-content: center; gap: 6px; padding: 0 16px; transition: transform 0.55s cubic-bezier(0.22, 0.61, 0.36, 1), opacity 0.55s cubic-bezier(0.22, 0.61, 0.36, 1); cursor: pointer; will-change: transform, opacity; }
+  .carousel-row.center { cursor: default; }
+  .carousel-row img { border-radius: 6px; object-fit: cover; display: block; border: 2px solid transparent; transition: width 0.55s cubic-bezier(0.22, 0.61, 0.36, 1), height 0.55s cubic-bezier(0.22, 0.61, 0.36, 1), border-color 0.3s; will-change: width, height; }
+  .carousel-row.center img { border-color: rgba(50,233,117,0.3); }
+  .carousel-row:not(.center):hover img { border-color: var(--border); }
+  .carousel-row-badge { position: absolute; left: -2px; top: 50%; transform: translateY(-50%); background: rgba(0,0,0,0.75); padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; color: var(--green); white-space: nowrap; pointer-events: none; z-index: 2; border: 1px solid var(--border); transition: border-color 0.3s; }
+  .carousel-row.center .carousel-row-badge { border-color: var(--green); }
+
+  /* -- Carousel nav arrows ------------------------------------ */
+  .carousel-nav { position: absolute; left: 50%; transform: translateX(-50%); width: 120px; height: 36px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 20px; color: var(--text-dim); transition: color 0.2s; z-index: 20; background: rgba(0,0,0,0.4); border-radius: var(--radius); }
+  .carousel-nav:hover { color: var(--green); }
+  .carousel-nav.prev { top: 8px; }
+  .carousel-nav.next { bottom: 8px; }
+
+  /* -- Gen info bar ------------------------------------------- */
+  .gen-info { display: flex; align-items: center; gap: 12px; padding: 5px 16px; border-top: 1px solid var(--border); background: var(--bg-surface); flex-shrink: 0; min-height: 28px; }
+  .gen-info-id { font-size: 13px; font-weight: 600; color: var(--green); }
+  .gen-info-model { font-size: 11px; color: var(--purple); background: rgba(153,102,255,0.15); padding: 1px 8px; border-radius: 10px; }
+  .gen-info-note { font-size: 12px; color: var(--text); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .gen-info-meta { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+
+  /* -- Thumbnail strip ---------------------------------------- */
+  .thumb-strip { height: var(--strip-height); flex-shrink: 0; display: flex; align-items: center; justify-content: center; padding: 0 12px; gap: 6px; overflow-x: auto; overflow-y: hidden; background: var(--bg-surface); border-top: 1px solid var(--border); }
+  .thumb { flex: 0 0 auto; width: 148px; height: 84px; border-radius: 6px; overflow: hidden; cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s, transform 0.15s, opacity 0.2s; opacity: 0.6; position: relative; }
+  .thumb:hover { opacity: 1; transform: translateY(-2px); }
+  .thumb.active { border-color: var(--green); opacity: 1; box-shadow: 0 0 12px rgba(50,233,117,0.25); }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb-label { position: absolute; bottom: 0; left: 0; right: 0; padding: 2px 6px; background: linear-gradient(transparent, rgba(0,0,0,0.85)); font-size: 9px; color: var(--text); text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .thumb .drift-pill { position: absolute; top: 4px; right: 4px; font-size: 9px; padding: 1px 5px; border-radius: 8px; background: rgba(0,0,0,0.7); color: var(--green); }
+
+  /* -- Hero image overlay ------------------------------------- */
+  .hero-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 190; flex-direction: column; align-items: center; justify-content: center; }
+  .hero-overlay.active { display: flex; }
+  .hero-inner { position: relative; max-width: 94%; max-height: 85vh; display: flex; align-items: center; justify-content: center; }
+  .hero-inner img { max-width: 100%; max-height: 80vh; object-fit: contain; }
+  .hero-label { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); text-align: center; pointer-events: none; z-index: 191; }
+  .hero-label-period { font-size: 11px; color: var(--purple); text-transform: uppercase; letter-spacing: 2px; }
+  .hero-label-title { font-size: 15px; color: var(--text-bright); font-weight: 600; }
+  .hero-label-drift { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+  .hero-nav { position: fixed; top: 50%; transform: translateY(-50%); width: 44px; height: 70px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; color: var(--text-dim); transition: color 0.2s; background: rgba(0,0,0,0.5); border-radius: var(--radius); z-index: 192; }
+  .hero-nav:hover { color: var(--green); }
+  .hero-nav.prev { left: 12px; }
+  .hero-nav.next { right: 12px; }
+  .hero-counter { position: fixed; top: 12px; right: 16px; font-size: 12px; color: var(--text-dim); z-index: 191; }
+  .hero-close { position: fixed; top: 12px; left: 16px; z-index: 192; }
+
+  /* -- Drift report overlay ----------------------------------- */
+  .drift-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 250; flex-direction: column; align-items: center; justify-content: center; padding: 24px; }
+  .drift-overlay.active { display: flex; }
+  .drift-overlay-inner { max-width: 700px; width: 100%; background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px; }
+  .drift-overlay-inner h3 { font-size: 15px; color: var(--text-bright); margin-bottom: 12px; }
+  .drift-score-big { font-size: 48px; font-weight: 700; color: var(--green); text-align: center; margin: 16px 0; }
+  .drift-meta { font-size: 12px; color: var(--text-dim); text-align: center; }
+
+  /* -- Side-by-side diff -------------------------------------- */
+  .diff-view { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 220; flex-direction: column; }
+  .diff-view.active { display: flex; }
+  .diff-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 16px; background: var(--bg-surface); border-bottom: 1px solid var(--border); }
+  .diff-header h3 { font-size: 14px; color: var(--text-bright); }
+  .diff-panes { flex: 1; display: flex; min-height: 0; }
+  .diff-pane { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+  .diff-pane + .diff-pane { border-left: 1px solid var(--border); }
+  .diff-pane img { max-width: 100%; max-height: 70vh; object-fit: contain; border-radius: 6px; }
+  .diff-pane-label { font-size: 12px; color: var(--text-dim); margin-top: 8px; text-align: center; }
+
+  /* -- Slideshow Mode ----------------------------------------- */
+  .slideshow { position: absolute; inset: 0; background: var(--bg); display: none; z-index: 50; }
+  .slideshow.active { display: block; }
+  .slide-container { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+  .slide-img { position: absolute; max-width: 95%; max-height: 90%; object-fit: contain; transition: opacity 1.5s ease-in-out; opacity: 0; }
+  .slide-img.visible { opacity: 1; }
+  .slide-info { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); text-align: center; opacity: 0; transition: opacity 0.5s; pointer-events: none; }
+  .slideshow:hover .slide-info { opacity: 1; }
+  .slide-info h3 { font-size: 16px; color: var(--text-bright); margin-bottom: 2px; }
+  .slide-info .period-name { font-size: 12px; color: var(--purple); margin-bottom: 2px; }
+  .slide-counter { position: absolute; top: 16px; right: 20px; font-size: 12px; color: var(--text-dim); opacity: 0; transition: opacity 0.5s; }
+  .slideshow:hover .slide-counter { opacity: 1; }
+  .slide-controls { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); display: flex; gap: 10px; opacity: 0; transition: opacity 0.5s; }
+  .slideshow:hover .slide-controls { opacity: 1; }
+  .slide-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 70px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 22px; color: var(--text-dim); opacity: 0; transition: opacity 0.3s, color 0.2s; }
+  .slideshow:hover .slide-nav { opacity: 1; }
+  .slide-nav:hover { color: var(--green); }
+  .slide-nav.prev { left: 16px; }
+  .slide-nav.next { right: 16px; }
+  .slide-progress { position: absolute; bottom: 0; left: 0; height: 2px; background: var(--green); transition: width linear; opacity: 0.6; }
+
+  /* -- Image Detail Overlay ----------------------------------- */
+  .detail-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.96); z-index: 200; flex-direction: column; }
+  .detail-overlay.active { display: flex; align-items: center; justify-content: center; }
+  .detail-content { width: 94%; max-width: 1400px; max-height: 94vh; display: flex; flex-direction: column; gap: 10px; }
+  .detail-header { display: flex; justify-content: space-between; align-items: center; }
+  .detail-header h2 { font-size: 16px; color: var(--text-bright); }
+  .detail-header h2 span { color: var(--purple); font-weight: 400; }
+  .detail-img-wrap { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; background: var(--bg); border-radius: var(--radius); overflow: hidden; }
+  .detail-img-wrap img { max-width: 100%; max-height: 80vh; object-fit: contain; }
+  .detail-prompt { background: var(--bg-surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px; font-size: 12px; line-height: 1.5; color: var(--text); max-height: 90px; overflow-y: auto; }
+  .detail-nav-hint { font-size: 11px; color: var(--text-dim); text-align: center; margin-top: 4px; }
+
+  /* -- Toast -------------------------------------------------- */
+  .toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 18px; background: var(--bg-surface); border: 1px solid var(--green); border-radius: var(--radius); color: var(--green); font-size: 12px; z-index: 300; opacity: 0; transform: translateY(10px); transition: all 0.3s; }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { border-color: #ff4444; color: #ff4444; }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav class="nav">
+  <div class="nav-title"><span>&#9679;</span> Ahuofe <span id="prBadge" class="pr-badge" style="display:none"></span></div>
+  <div class="nav-center">
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-mode="gallery">Gallery</button>
+      <button class="nav-tab" data-mode="slideshow">Slideshow</button>
+    </div>
+    <div class="gen-nav">
+      <label>Gen:</label>
+      <button class="gen-nav-btn" id="prevGenBtn" title="Previous generation">&#8249;</button>
+      <select class="nav-select" id="genSelect"></select>
+      <button class="gen-nav-btn" id="nextGenBtn" title="Next generation">&#8250;</button>
+    </div>
+    <div class="entity-filter">
+      <label>Entity:</label>
+      <select class="nav-select" id="entitySelect"><option value="">All</option></select>
+    </div>
+  </div>
+  <div class="nav-actions">
+    <select class="nav-select" id="speedSelect" title="Slideshow speed">
+      <option value="3000">3s</option>
+      <option value="5000" selected>5s</option>
+      <option value="8000">8s</option>
+      <option value="12000">12s</option>
+    </select>
+    <button class="btn" id="fullscreenBtn" title="Fullscreen">&#x26F6;</button>
+    <button class="btn" id="diffBtn" title="Side-by-side diff">Diff</button>
+  </div>
+</nav>
+
+<!-- Commit Scrubber -->
+<div class="scrubber-bar" id="scrubberBar" style="display:none">
+  <label>Commit:</label>
+  <input type="range" id="commitScrubber" min="0" max="0" value="0">
+  <span class="scrubber-label" id="scrubberLabel">--</span>
+</div>
+
+<!-- Main Content -->
+<div class="main">
+  <!-- Gallery Mode: 3D carousel of generations -->
+  <div class="gallery" id="galleryView">
+    <div class="carousel-wrap" id="carouselWrap">
+      <div class="carousel" id="carousel"></div>
+      <div class="carousel-nav prev" id="carouselPrev">&#9650;</div>
+      <div class="carousel-nav next" id="carouselNext">&#9660;</div>
+    </div>
+    <div class="gen-info" id="genInfo"></div>
+    <div class="thumb-strip" id="thumbStrip"></div>
+  </div>
+
+  <!-- Hero overlay (shown when clicking a thumbnail) -->
+  <div class="hero-overlay" id="heroOverlay">
+    <div class="hero-inner" id="heroInner"></div>
+    <div class="hero-nav prev" id="heroPrev">&#8249;</div>
+    <div class="hero-nav next" id="heroNext">&#8250;</div>
+    <div class="hero-counter" id="heroCounter"></div>
+    <button class="btn hero-close" id="heroClose">&#10005; Close</button>
+    <div class="hero-label" id="heroLabel"></div>
+  </div>
+
+  <!-- Slideshow Mode -->
+  <section class="slideshow" id="slideshowView">
+    <div class="slide-container" id="slideContainer"></div>
+    <div class="slide-nav prev" id="slidePrev">&#8249;</div>
+    <div class="slide-nav next" id="slideNext">&#8250;</div>
+    <div class="slide-counter" id="slideCounter"></div>
+    <div class="slide-info" id="slideInfo">
+      <div class="period-name" id="slidePeriod"></div>
+      <h3 id="slideTitle"></h3>
+    </div>
+    <div class="slide-controls">
+      <button class="btn" id="playPauseBtn">&#9208; Pause</button>
+    </div>
+    <div class="slide-progress" id="slideProgress"></div>
+  </section>
+</div>
+
+<!-- Image Detail Overlay -->
+<div class="detail-overlay" id="detailOverlay">
+  <div class="detail-content">
+    <div class="detail-header">
+      <h2 id="detailTitle"></h2>
+      <button class="btn" id="detailClose">&#10005; Close</button>
+    </div>
+    <div class="detail-img-wrap">
+      <img id="detailImage" src="" alt="">
+    </div>
+    <div class="detail-prompt" id="detailPrompt"></div>
+    <div class="detail-nav-hint">&#8592; &#8594; to navigate &middot; Esc to close</div>
+  </div>
+</div>
+
+<!-- Drift Report Overlay -->
+<div class="drift-overlay" id="driftOverlay">
+  <div class="drift-overlay-inner">
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <h3>Drift Report</h3>
+      <button class="btn" id="driftClose">&#10005; Close</button>
+    </div>
+    <div class="drift-score-big" id="driftScoreBig">--</div>
+    <div class="drift-meta" id="driftMeta"></div>
+  </div>
+</div>
+
+<!-- Side-by-side Diff -->
+<div class="diff-view" id="diffView">
+  <div class="diff-header">
+    <h3>Side-by-Side Comparison</h3>
+    <button class="btn" id="diffClose">&#10005; Close</button>
+  </div>
+  <div class="diff-panes">
+    <div class="diff-pane" id="diffLeft">
+      <img id="diffLeftImg" src="" alt="">
+      <div class="diff-pane-label" id="diffLeftLabel"></div>
+    </div>
+    <div class="diff-pane" id="diffRight">
+      <img id="diffRightImg" src="" alt="">
+      <div class="diff-pane-label" id="diffRightLabel"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Embed widget script -->
+<script type="module" src="embed.js"></script>
+
+<script type="module">
+import { parseParams } from './url-params.js';
+import {
+  fetchManifest,
+  buildGenerationList,
+  filterByPr,
+  filterByEntity,
+  filterByStage,
+  sortByTimestamp,
+} from './manifest-loader.js';
+
+(function() {
+  // -- URL params ----------------------------------------------------------
+  const params = parseParams(location.search);
+
+  // -- State ---------------------------------------------------------------
+  let lineageData = null;
+  let generations = [];
+  let filteredGenerations = [];
+  let currentGenId = null;
+  let currentManifest = null;
+  let allImages = [];
+  let selectedImageIdx = 0;
+  let currentSlide = 0;
+  let slideInterval = null;
+  let slideSpeed = 5000;
+  let isPlaying = false;
+  let currentMode = 'gallery';
+  let manifestCache = {};
+  let carouselGenIds = [];
+  let carouselCenterIdx = 0;
+  let entities = new Set();
+
+  // -- DOM refs ------------------------------------------------------------
+  const galleryView = document.getElementById('galleryView');
+  const slideshowView = document.getElementById('slideshowView');
+  const carousel = document.getElementById('carousel');
+  const carouselWrap = document.getElementById('carouselWrap');
+  const heroOverlay = document.getElementById('heroOverlay');
+  const heroInner = document.getElementById('heroInner');
+  const heroLabel = document.getElementById('heroLabel');
+  const thumbStrip = document.getElementById('thumbStrip');
+  const genInfo = document.getElementById('genInfo');
+  const slideContainer = document.getElementById('slideContainer');
+  const slideCounter = document.getElementById('slideCounter');
+  const slideTitle = document.getElementById('slideTitle');
+  const slidePeriod = document.getElementById('slidePeriod');
+  const slideProgress = document.getElementById('slideProgress');
+  const playPauseBtn = document.getElementById('playPauseBtn');
+  const genSelect = document.getElementById('genSelect');
+  const entitySelect = document.getElementById('entitySelect');
+  const detailOverlay = document.getElementById('detailOverlay');
+  const detailTitle = document.getElementById('detailTitle');
+  const detailImage = document.getElementById('detailImage');
+  const detailPrompt = document.getElementById('detailPrompt');
+  const toast = document.getElementById('toast');
+  const prBadge = document.getElementById('prBadge');
+  const commitScrubber = document.getElementById('commitScrubber');
+  const scrubberBar = document.getElementById('scrubberBar');
+  const scrubberLabel = document.getElementById('scrubberLabel');
+  const driftOverlay = document.getElementById('driftOverlay');
+  const diffView = document.getElementById('diffView');
+
+  // -- PR badge ------------------------------------------------------------
+  if (params.pr) {
+    prBadge.textContent = 'PR #' + params.pr;
+    prBadge.style.display = 'inline-block';
+  }
+
+  // -- Toast ---------------------------------------------------------------
+  function showToast(msg, isError = false) {
+    toast.textContent = msg;
+    toast.className = 'toast show' + (isError ? ' error' : '');
+    setTimeout(() => toast.className = 'toast', 3500);
+  }
+
+  // -- Manifest / lineage loading ------------------------------------------
+  async function loadLineage() {
+    lineageData = await fetchManifest('lineage.json');
+    if (!lineageData) lineageData = { generations: [] };
+    generations = buildGenerationList(lineageData);
+
+    // Collect entities
+    entities = new Set();
+    for (const g of generations) {
+      if (g.entity) entities.add(g.entity);
+    }
+    populateEntityFilter();
+
+    applyFilters();
+  }
+
+  function applyFilters() {
+    let result = generations;
+    result = filterByPr(result, params.pr);
+    const selectedEntity = entitySelect.value || params.entity || null;
+    result = filterByEntity(result, selectedEntity);
+    filteredGenerations = sortByTimestamp(result, 'asc');
+
+    populateGenSelector();
+    populateScrubber();
+  }
+
+  async function loadManifest(genId) {
+    if (!manifestCache[genId]) {
+      const data = await fetchManifest(genId + '/manifest.json');
+      if (data) manifestCache[genId] = data;
+    }
+    return manifestCache[genId] || null;
+  }
+
+  // -- Entity filter -------------------------------------------------------
+  function populateEntityFilter() {
+    const current = entitySelect.value;
+    entitySelect.innerHTML = '<option value="">All</option>';
+    for (const e of entities) {
+      const opt = document.createElement('option');
+      opt.value = e;
+      opt.textContent = e;
+      entitySelect.appendChild(opt);
+    }
+    if (params.entity) entitySelect.value = params.entity;
+    else if (current) entitySelect.value = current;
+  }
+
+  entitySelect.addEventListener('change', () => {
+    applyFilters();
+    if (filteredGenerations.length > 0) {
+      const latest = filteredGenerations[filteredGenerations.length - 1];
+      genSelect.value = latest.id;
+      currentGenId = latest.id;
+      loadGeneration(latest.id);
+    }
+  });
+
+  // -- Generation selector -------------------------------------------------
+  function populateGenSelector() {
+    genSelect.innerHTML = '';
+    filteredGenerations.slice().reverse().forEach(g => {
+      const opt = document.createElement('option');
+      opt.value = g.id;
+      const time = g.timestamp ? new Date(g.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '';
+      const entity = g.entity || '';
+      const stage = g.stage || '';
+      opt.textContent = `${g.id} · ${entity} · ${stage} · ${time}`;
+      genSelect.appendChild(opt);
+    });
+    if (currentGenId) genSelect.value = currentGenId;
+    updateGenNavBtns();
+  }
+
+  function updateGenNavBtns() {
+    const opts = Array.from(genSelect.options);
+    const idx = opts.findIndex(o => o.value === genSelect.value);
+    document.getElementById('prevGenBtn').disabled = idx >= opts.length - 1;
+    document.getElementById('nextGenBtn').disabled = idx <= 0;
+  }
+
+  genSelect.addEventListener('change', async () => {
+    currentGenId = genSelect.value;
+    await loadGeneration(currentGenId);
+  });
+
+  document.getElementById('prevGenBtn').addEventListener('click', async () => {
+    const opts = Array.from(genSelect.options);
+    const idx = opts.findIndex(o => o.value === genSelect.value);
+    if (idx < opts.length - 1) {
+      genSelect.value = opts[idx + 1].value;
+      currentGenId = genSelect.value;
+      await loadGeneration(currentGenId);
+    }
+  });
+
+  document.getElementById('nextGenBtn').addEventListener('click', async () => {
+    const opts = Array.from(genSelect.options);
+    const idx = opts.findIndex(o => o.value === genSelect.value);
+    if (idx > 0) {
+      genSelect.value = opts[idx - 1].value;
+      currentGenId = genSelect.value;
+      await loadGeneration(currentGenId);
+    }
+  });
+
+  // -- Commit scrubber -----------------------------------------------------
+  function populateScrubber() {
+    if (filteredGenerations.length < 2) {
+      scrubberBar.style.display = 'none';
+      return;
+    }
+    scrubberBar.style.display = 'flex';
+    commitScrubber.min = '0';
+    commitScrubber.max = String(filteredGenerations.length - 1);
+    const idx = filteredGenerations.findIndex(g => g.id === currentGenId);
+    commitScrubber.value = String(Math.max(0, idx));
+    updateScrubberLabel();
+  }
+
+  function updateScrubberLabel() {
+    const idx = parseInt(commitScrubber.value, 10);
+    const g = filteredGenerations[idx];
+    if (g) {
+      scrubberLabel.textContent = g.commit ? g.commit.substring(0, 7) : g.id;
+    } else {
+      scrubberLabel.textContent = '--';
+    }
+  }
+
+  commitScrubber.addEventListener('input', async () => {
+    updateScrubberLabel();
+    const idx = parseInt(commitScrubber.value, 10);
+    const g = filteredGenerations[idx];
+    if (g) {
+      genSelect.value = g.id;
+      currentGenId = g.id;
+      await loadGeneration(g.id);
+    }
+  });
+
+  // -- Load generation -----------------------------------------------------
+  async function loadGeneration(id) {
+    currentGenId = id;
+    currentManifest = await loadManifest(id);
+    flattenImages();
+    renderGenInfo();
+    renderThumbs();
+
+    // Update carousel center
+    const idx = carouselGenIds.indexOf(id);
+    if (idx >= 0) {
+      carouselCenterIdx = idx;
+      positionCarousel();
+    }
+
+    // Update scrubber position
+    const sIdx = filteredGenerations.findIndex(g => g.id === id);
+    if (sIdx >= 0) {
+      commitScrubber.value = String(sIdx);
+      updateScrubberLabel();
+    }
+
+    buildSlides();
+    updateGenNavBtns();
+  }
+
+  function flattenImages() {
+    allImages = [];
+    if (!currentManifest) return;
+
+    // Support both legacy (periods) and new (images) manifest shapes
+    if (Array.isArray(currentManifest.images)) {
+      for (const img of currentManifest.images) {
+        if (img.file) {
+          allImages.push({
+            ...img,
+            entityName: currentManifest.entity || '',
+            stage: currentManifest.stage || '',
+            url: currentManifest.id + '/' + img.file,
+          });
+        }
+      }
+    } else if (Array.isArray(currentManifest.periods)) {
+      for (const period of currentManifest.periods) {
+        for (const img of period.images) {
+          if (img.file) {
+            allImages.push({
+              ...img,
+              entityName: period.name || '',
+              periodId: period.id,
+              url: currentManifest.id + '/' + img.file,
+            });
+          }
+        }
+      }
+    }
+  }
+
+  // -- Tab switching -------------------------------------------------------
+  document.querySelectorAll('.nav-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+      tab.classList.add('active');
+      currentMode = tab.dataset.mode;
+      galleryView.classList.toggle('hidden', currentMode !== 'gallery');
+      slideshowView.classList.toggle('active', currentMode === 'slideshow');
+      if (currentMode === 'slideshow') startSlideshow();
+      else stopSlideshow();
+    });
+  });
+
+  // -- Gen Info Bar --------------------------------------------------------
+  function renderGenInfo() {
+    if (!currentManifest) { genInfo.innerHTML = ''; return; }
+    const time = currentManifest.timestamp
+      ? new Date(currentManifest.timestamp).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : '';
+    const imgCount = allImages.length;
+    const stage = currentManifest.stage || '';
+    const stageBadge = stage
+      ? `<span class="stage-badge ${stage}">${stage}</span>`
+      : '';
+
+    genInfo.innerHTML = `
+      <span class="gen-info-id">${currentManifest.id}</span>
+      <span class="gen-info-model">${currentManifest.model || 'unknown'}</span>
+      ${stageBadge}
+      <span class="gen-info-note">${currentManifest.entity || ''}</span>
+      <span class="gen-info-meta">${time} &middot; ${imgCount} imgs${currentManifest.parent ? ' &middot; from ' + currentManifest.parent : ''}</span>
+    `;
+  }
+
+  // -- Vertical Carousel ---------------------------------------------------
+  async function buildCarousel() {
+    await Promise.all(filteredGenerations.map(async g => {
+      if (!manifestCache[g.id]) {
+        try { manifestCache[g.id] = await loadManifest(g.id); } catch(e) {}
+      }
+    }));
+
+    carouselGenIds = filteredGenerations.slice().reverse().map(g => g.id);
+    carouselCenterIdx = carouselGenIds.indexOf(currentGenId);
+    if (carouselCenterIdx < 0) carouselCenterIdx = 0;
+
+    carousel.innerHTML = '';
+    for (const genId of carouselGenIds) {
+      const manifest = manifestCache[genId];
+      if (!manifest) continue;
+
+      const imgs = [];
+      if (Array.isArray(manifest.images)) {
+        for (const img of manifest.images) {
+          if (img.file) imgs.push({ url: genId + '/' + img.file, title: img.title || img.id, driftScore: img.driftScore });
+        }
+      } else if (Array.isArray(manifest.periods)) {
+        for (const p of manifest.periods) {
+          for (const img of p.images) {
+            if (img.file) imgs.push({ url: genId + '/' + img.file, title: img.title, periodName: p.name });
+          }
+        }
+      }
+
+      const row = document.createElement('div');
+      row.className = 'carousel-row';
+      row.dataset.gen = genId;
+
+      const badge = document.createElement('div');
+      badge.className = 'carousel-row-badge';
+      const genMeta = filteredGenerations.find(g => g.id === genId);
+      const stageLabel = genMeta?.stage ? ` [${genMeta.stage}]` : '';
+      badge.textContent = genId + stageLabel;
+      row.appendChild(badge);
+
+      for (const img of imgs) {
+        const imgEl = document.createElement('img');
+        imgEl.src = img.url;
+        imgEl.alt = img.title;
+        imgEl.loading = 'lazy';
+        imgEl.dataset.gen = genId;
+        imgEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (row.classList.contains('center')) {
+            const idx = allImages.findIndex(a => a.url === img.url);
+            if (idx >= 0) openHero(idx);
+          }
+        });
+        row.appendChild(imgEl);
+      }
+
+      row.addEventListener('click', async () => {
+        const idx = carouselGenIds.indexOf(genId);
+        if (idx === carouselCenterIdx) return;
+        carouselCenterIdx = idx;
+        genSelect.value = genId;
+        currentGenId = genId;
+        await loadGeneration(genId);
+      });
+
+      carousel.appendChild(row);
+    }
+
+    positionCarousel();
+  }
+
+  function positionCarousel() {
+    const rows = carousel.querySelectorAll('.carousel-row');
+    if (rows.length === 0) return;
+
+    const wrapRect = carouselWrap.getBoundingClientRect();
+    const wrapH = wrapRect.height;
+    const wrapW = wrapRect.width;
+
+    const centerRow = rows[carouselCenterIdx];
+    const numImgs = centerRow ? centerRow.querySelectorAll('img').length : 4;
+
+    const padX = 56;
+    const gapCenter = 6;
+    const availW = wrapW - padX - (numImgs - 1) * gapCenter;
+    const centerImgW = Math.floor(availW / Math.max(numImgs, 1));
+    const centerImgH = Math.round(centerImgW * 9 / 16);
+    const centerRowH = centerImgH + 8;
+
+    const sideImgW = Math.floor(centerImgW * 0.6);
+    const sideImgH = Math.round(sideImgW * 9 / 16);
+    const sideRowH = sideImgH + 6;
+
+    const centerY = wrapH / 2;
+    const vertGap = 14;
+
+    rows.forEach((row, i) => {
+      const offset = i - carouselCenterIdx;
+      const absOffset = Math.abs(offset);
+      const imgs = row.querySelectorAll('img');
+
+      if (absOffset > 4) {
+        const farY = (offset > 0 ? 1 : -1) * wrapH;
+        row.style.transform = `translateY(${farY}px) translateZ(-200px)`;
+        row.style.opacity = '0';
+        row.style.pointerEvents = 'none';
+        row.style.zIndex = '0';
+        row.classList.remove('center');
+        return;
+      }
+
+      row.style.pointerEvents = 'auto';
+
+      if (absOffset === 0) {
+        const yPos = centerY - centerRowH / 2;
+        row.style.transform = `translateY(${yPos}px) translateZ(0px)`;
+        row.style.opacity = '1';
+        row.style.zIndex = '10';
+        row.classList.add('center');
+        imgs.forEach(img => {
+          img.style.width = centerImgW + 'px';
+          img.style.height = centerImgH + 'px';
+          img.style.cursor = 'pointer';
+        });
+      } else {
+        const sign = offset > 0 ? 1 : -1;
+        const dimFactor = Math.max(0.7, 1 - (absOffset - 1) * 0.15);
+        const rowImgW = Math.floor(sideImgW * dimFactor);
+        const rowImgH = Math.round(rowImgW * 9 / 16);
+        const thisRowH = rowImgH + 6;
+
+        const yOffset = sign * (centerRowH / 2 + vertGap + (absOffset - 1) * (sideRowH + vertGap) + thisRowH / 2);
+        const yPos = centerY + yOffset - thisRowH / 2;
+        const zShift = -40 * absOffset;
+        const opacity = Math.max(0.25, 0.9 - (absOffset - 1) * 0.25);
+
+        row.style.transform = `translateY(${yPos}px) translateZ(${zShift}px)`;
+        row.style.opacity = opacity;
+        row.style.zIndex = 10 - absOffset;
+        row.classList.remove('center');
+        imgs.forEach(img => {
+          img.style.width = rowImgW + 'px';
+          img.style.height = rowImgH + 'px';
+          img.style.cursor = 'pointer';
+        });
+      }
+    });
+  }
+
+  document.getElementById('carouselPrev').addEventListener('click', async () => {
+    if (carouselCenterIdx < carouselGenIds.length - 1) {
+      carouselCenterIdx++;
+      const genId = carouselGenIds[carouselCenterIdx];
+      genSelect.value = genId;
+      currentGenId = genId;
+      await loadGeneration(genId);
+    }
+  });
+  document.getElementById('carouselNext').addEventListener('click', async () => {
+    if (carouselCenterIdx > 0) {
+      carouselCenterIdx--;
+      const genId = carouselGenIds[carouselCenterIdx];
+      genSelect.value = genId;
+      currentGenId = genId;
+      await loadGeneration(genId);
+    }
+  });
+
+  window.addEventListener('resize', () => { if (currentMode === 'gallery') positionCarousel(); });
+
+  let wheelCooldown = false;
+  carouselWrap.addEventListener('wheel', (e) => {
+    if (wheelCooldown) return;
+    e.preventDefault();
+    wheelCooldown = true;
+    if (e.deltaY > 0) document.getElementById('carouselPrev').click();
+    else if (e.deltaY < 0) document.getElementById('carouselNext').click();
+    setTimeout(() => { wheelCooldown = false; }, 500);
+  }, { passive: false });
+
+  // -- Thumbnail Strip -----------------------------------------------------
+  function renderThumbs() {
+    if (allImages.length === 0) {
+      thumbStrip.innerHTML = '<div style="color:var(--text-dim);font-size:12px;padding:20px">No images in this generation</div>';
+      return;
+    }
+    thumbStrip.innerHTML = allImages.map((img, i) => {
+      const driftPill = img.driftScore != null
+        ? `<div class="drift-pill">${img.driftScore}</div>`
+        : '';
+      return `
+        <div class="thumb" data-idx="${i}">
+          <img src="${img.url}" alt="${img.title}" loading="lazy">
+          <div class="thumb-label">${img.entityName || img.title}</div>
+          ${driftPill}
+        </div>
+      `;
+    }).join('');
+
+    thumbStrip.querySelectorAll('.thumb').forEach(th => {
+      th.addEventListener('click', () => openHero(parseInt(th.dataset.idx)));
+    });
+  }
+
+  // -- Hero Overlay --------------------------------------------------------
+  function openHero(idx) {
+    if (allImages.length === 0) return;
+    selectedImageIdx = ((idx % allImages.length) + allImages.length) % allImages.length;
+    const img = allImages[selectedImageIdx];
+
+    heroInner.innerHTML = `<img src="${img.url}" alt="${img.title}">`;
+    document.getElementById('heroCounter').textContent = `${selectedImageIdx + 1} / ${allImages.length}`;
+    const driftText = img.driftScore != null ? `drift: ${img.driftScore}` : '';
+    heroLabel.innerHTML = `
+      <div class="hero-label-period">${img.entityName || ''}</div>
+      <div class="hero-label-title">${img.title}</div>
+      ${driftText ? '<div class="hero-label-drift">' + driftText + '</div>' : ''}
+    `;
+
+    heroOverlay.classList.add('active');
+
+    thumbStrip.querySelectorAll('.thumb').forEach((th, i) => {
+      th.classList.toggle('active', i === selectedImageIdx);
+    });
+    const activeTh = thumbStrip.querySelector('.thumb.active');
+    if (activeTh) activeTh.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  function heroNav(dir) { openHero(selectedImageIdx + dir); }
+  function closeHero() { heroOverlay.classList.remove('active'); }
+
+  document.getElementById('heroPrev').addEventListener('click', () => heroNav(-1));
+  document.getElementById('heroNext').addEventListener('click', () => heroNav(1));
+  document.getElementById('heroClose').addEventListener('click', closeHero);
+  heroOverlay.addEventListener('click', e => { if (e.target === heroOverlay) closeHero(); });
+
+  // -- Drift Report Overlay ------------------------------------------------
+  function openDriftReport(img) {
+    if (!img || img.driftScore == null) {
+      showToast('No drift data available for this image', true);
+      return;
+    }
+    document.getElementById('driftScoreBig').textContent = img.driftScore;
+    document.getElementById('driftMeta').textContent = `${img.title} · ${img.entityName || currentManifest?.entity || ''}`;
+    driftOverlay.classList.add('active');
+  }
+
+  document.getElementById('driftClose').addEventListener('click', () => driftOverlay.classList.remove('active'));
+  driftOverlay.addEventListener('click', e => { if (e.target === driftOverlay) driftOverlay.classList.remove('active'); });
+
+  // -- Side-by-side Diff ---------------------------------------------------
+  document.getElementById('diffBtn').addEventListener('click', () => {
+    if (filteredGenerations.length < 2) {
+      showToast('Need at least 2 generations to compare', true);
+      return;
+    }
+
+    // Compare current gen's first image with its parent's first image
+    const currentGen = filteredGenerations.find(g => g.id === currentGenId);
+    const parentId = currentGen?.parent || (currentManifest?.parent);
+    if (!parentId || !manifestCache[parentId]) {
+      showToast('No parent generation available for diff', true);
+      return;
+    }
+
+    const parentManifest = manifestCache[parentId];
+    const currentImg = allImages[0];
+    let parentImgs = [];
+    if (Array.isArray(parentManifest.images)) {
+      parentImgs = parentManifest.images.filter(i => i.file).map(i => ({ ...i, url: parentId + '/' + i.file }));
+    } else if (Array.isArray(parentManifest.periods)) {
+      for (const p of parentManifest.periods) {
+        for (const img of p.images) {
+          if (img.file) parentImgs.push({ ...img, url: parentId + '/' + img.file });
+        }
+      }
+    }
+
+    if (!currentImg || parentImgs.length === 0) {
+      showToast('No images to compare', true);
+      return;
+    }
+
+    document.getElementById('diffLeftImg').src = parentImgs[0].url;
+    document.getElementById('diffLeftLabel').textContent = `${parentId} · ${parentImgs[0].title || ''}`;
+    document.getElementById('diffRightImg').src = currentImg.url;
+    document.getElementById('diffRightLabel').textContent = `${currentGenId} · ${currentImg.title || ''}`;
+    diffView.classList.add('active');
+  });
+
+  document.getElementById('diffClose').addEventListener('click', () => diffView.classList.remove('active'));
+
+  // -- Image Detail Overlay ------------------------------------------------
+  let detailIdx = 0;
+  function openDetail(idx) {
+    detailIdx = idx;
+    const img = allImages[detailIdx];
+    detailTitle.innerHTML = `${img.title} <span>— ${img.entityName || ''}</span>`;
+    detailImage.src = img.url;
+    detailPrompt.textContent = img.prompt || '';
+    detailOverlay.classList.add('active');
+  }
+
+  function detailNav(dir) {
+    detailIdx = ((detailIdx + dir) % allImages.length + allImages.length) % allImages.length;
+    const img = allImages[detailIdx];
+    detailTitle.innerHTML = `${img.title} <span>— ${img.entityName || ''}</span>`;
+    detailImage.src = img.url;
+    detailPrompt.textContent = img.prompt || '';
+  }
+
+  function closeDetail() { detailOverlay.classList.remove('active'); }
+  document.getElementById('detailClose').addEventListener('click', closeDetail);
+  detailOverlay.addEventListener('click', e => { if (e.target === detailOverlay) closeDetail(); });
+
+  // -- Slideshow -----------------------------------------------------------
+  function buildSlides() {
+    slideContainer.innerHTML = '';
+    if (allImages.length === 0) {
+      slideContainer.innerHTML = '<div style="text-align:center;color:var(--text-dim)"><p style="font-size:40px;margin-bottom:12px">&#127912;</p><p>No images to show</p></div>';
+      return;
+    }
+    allImages.forEach((img, i) => {
+      const el = document.createElement('img');
+      el.className = 'slide-img' + (i === 0 ? ' visible' : '');
+      el.src = img.url;
+      el.alt = img.title;
+      slideContainer.appendChild(el);
+    });
+    currentSlide = 0;
+    updateSlideInfo(0);
+  }
+
+  function updateSlideInfo(idx) {
+    if (allImages.length === 0) return;
+    const img = allImages[idx];
+    slideTitle.textContent = img.title;
+    slidePeriod.textContent = img.entityName || '';
+    slideCounter.textContent = `${idx + 1} / ${allImages.length}`;
+  }
+
+  function goToSlide(idx) {
+    const imgs = slideContainer.querySelectorAll('.slide-img');
+    if (imgs.length === 0) return;
+    imgs.forEach(i => i.classList.remove('visible'));
+    currentSlide = ((idx % imgs.length) + imgs.length) % imgs.length;
+    imgs[currentSlide].classList.add('visible');
+    updateSlideInfo(currentSlide);
+    resetProgress();
+  }
+
+  function nextSlide() { goToSlide(currentSlide + 1); }
+  function prevSlide() { goToSlide(currentSlide - 1); }
+
+  function startSlideshow() {
+    stopSlideshow();
+    isPlaying = true;
+    playPauseBtn.textContent = '\u23F8 Pause';
+    slideInterval = setInterval(nextSlide, slideSpeed);
+    resetProgress();
+  }
+
+  function stopSlideshow() {
+    isPlaying = false;
+    playPauseBtn.textContent = '\u25B6 Play';
+    clearInterval(slideInterval);
+    slideProgress.style.transition = 'none';
+    slideProgress.style.width = '0%';
+  }
+
+  function resetProgress() {
+    slideProgress.style.transition = 'none';
+    slideProgress.style.width = '0%';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        slideProgress.style.transition = `width ${slideSpeed}ms linear`;
+        slideProgress.style.width = '100%';
+      });
+    });
+  }
+
+  document.getElementById('slidePrev').addEventListener('click', () => { prevSlide(); if (isPlaying) startSlideshow(); });
+  document.getElementById('slideNext').addEventListener('click', () => { nextSlide(); if (isPlaying) startSlideshow(); });
+  playPauseBtn.addEventListener('click', () => { if (isPlaying) stopSlideshow(); else startSlideshow(); });
+  document.getElementById('speedSelect').addEventListener('change', e => { slideSpeed = parseInt(e.target.value); if (isPlaying) startSlideshow(); });
+  document.getElementById('fullscreenBtn').addEventListener('click', () => {
+    if (document.fullscreenElement) document.exitFullscreen();
+    else document.documentElement.requestFullscreen();
+  });
+
+  // -- Keyboard ------------------------------------------------------------
+  document.addEventListener('keydown', e => {
+    if (driftOverlay.classList.contains('active')) {
+      if (e.key === 'Escape') { driftOverlay.classList.remove('active'); e.preventDefault(); }
+      return;
+    }
+    if (diffView.classList.contains('active')) {
+      if (e.key === 'Escape') { diffView.classList.remove('active'); e.preventDefault(); }
+      return;
+    }
+    if (detailOverlay.classList.contains('active')) {
+      if (e.key === 'Escape') { closeDetail(); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { detailNav(1); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { detailNav(-1); e.preventDefault(); }
+      return;
+    }
+    if (heroOverlay.classList.contains('active')) {
+      if (e.key === 'Escape') { closeHero(); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { heroNav(1); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { heroNav(-1); e.preventDefault(); }
+      else if (e.key === 'd') { openDriftReport(allImages[selectedImageIdx]); e.preventDefault(); }
+      return;
+    }
+    if (currentMode === 'slideshow') {
+      switch (e.key) {
+        case 'ArrowRight': case ' ': nextSlide(); if (isPlaying) startSlideshow(); e.preventDefault(); break;
+        case 'ArrowLeft': prevSlide(); if (isPlaying) startSlideshow(); e.preventDefault(); break;
+        case 'p': if (isPlaying) stopSlideshow(); else startSlideshow(); break;
+      }
+      return;
+    }
+    switch (e.key) {
+      case 'ArrowUp': document.getElementById('carouselPrev').click(); e.preventDefault(); break;
+      case 'ArrowDown': document.getElementById('carouselNext').click(); e.preventDefault(); break;
+      case 'f': document.getElementById('fullscreenBtn').click(); break;
+    }
+  });
+
+  // -- Init ----------------------------------------------------------------
+  async function init() {
+    await loadLineage();
+
+    if (filteredGenerations.length > 0) {
+      // If a specific gen was requested via URL, use it
+      const targetGen = params.gen
+        ? filteredGenerations.find(g => g.id === params.gen)
+        : filteredGenerations[filteredGenerations.length - 1];
+
+      if (targetGen) {
+        genSelect.value = targetGen.id;
+        currentGenId = targetGen.id;
+        await loadGeneration(targetGen.id);
+      }
+
+      await buildCarousel();
+    }
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
