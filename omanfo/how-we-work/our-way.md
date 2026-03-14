@@ -97,7 +97,7 @@ AI agents in our repositories follow a disciplined workflow:
 4. **Verify** — Run tests, check behavior
 5. **Update the issue** — Report progress, close when done
 
-The [Okyerema skill](../.github/skills/okyerema/SKILL.md) gives agents the technical tools to do all of this correctly.
+The [Okyerema plugin](../../okyerema/) gives agents the technical tools to do all of this correctly.
 
 ## Blocking Relationships
 

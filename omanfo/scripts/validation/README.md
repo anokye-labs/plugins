@@ -47,4 +47,4 @@ Scripts exit with code 0 on success, non-zero on failure.
 
 ## CI/CD Integration
 
-These scripts are automatically run by the GitHub Actions workflow when PRs modify files in `omanfo/**` or `okyeame/**` directories. All validations must pass before the PR can be merged.
+These scripts are automatically run by the GitHub Actions workflow when PRs modify files in `omanfo/**` or `okyerema/**` directories. All validations must pass before the PR can be merged.

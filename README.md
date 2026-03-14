@@ -6,13 +6,19 @@
 
 | Plugin | Description | Skills | Status |
 |--------|-------------|--------|--------|
-| [omanfo](omanfo/) | The Omanfo plugin containing Okyeame (agent) and Okyerema (orchestration skill) for the Anokye System | Okyeame, Okyerema | ✅ Ready |
-| [ahuofe](ahuofe/) | The Ahuofe plugin for media generation and manipulation using fal.ai and ImageSorcery | fal-ai, fal-workflow, image-sorcery, media-agents | ✅ Ready |
+| [omanfo](omanfo/) | Community toolkit — Okyeame agent, document processing, product management, and productivity skills | okyeame, doc-coauthoring, docx, pdf, pptx, xlsx, github-issue-creator, internal-comms, product-management, productivity, skill-creator | ✅ Ready |
+| [okyerema](okyerema/) | Rhythm Engine — multi-context workflow automation, CI/CD, health patrols, and dispatch | rhythm, sankofa | ✅ Ready |
+| [ahuofe](ahuofe/) | Media generation and manipulation using fal.ai and ImageSorcery | fal-ai, fal-workflow, image-sorcery, media-agents | ✅ Ready |
 
-**Omanfo** ("The People") is the project-management plugin that contains:
+**Omanfo** ("The People") is the community toolkit plugin that contains:
 - **Okyeame** — The agent persona (linguist) for project management, status reporting, and coordination
-- **Okyerema** — The orchestration skill (master drummer) with scripts, references, and workflow automation
 - **Agent Archetypes** — Reusable templates for doc-sync, issue-labeler, and pr-reviewer automation
+- **Ancillary skills** — Document generation (DOCX/PDF/PPTX/XLSX), product management, productivity
+
+**Okyerema** ("Master Drummer") is the rhythm engine plugin that contains:
+- **Workflow automation** — GitHub Actions templates for dispatch, auto-approve, post-merge, and health patrols
+- **Scripts** — PowerShell tools for issue management, hierarchy, PR health, and status reporting
+- **Skills** — rhythm (WIEG state machine) and sankofa (health patrol patterns)
 
 ## Agent Archetypes
 
@@ -29,6 +35,7 @@ See [archetypes documentation](omanfo/archetypes/README.md) for deployment and c
 | Module | Purpose | Description | Status |
 |--------|---------|-------------|--------|
 | [OkyeremanAgentRunner](shared/OkyeremanAgentRunner/) | Runtime Foundation | Common functions for logging, error handling, issue context, PR management, safe output processing, correlation tracking | ✅ Ready |
+| [CLITestHarness](shared/CLITestHarness/) | Test Infrastructure | PowerShell module for testing Copilot CLI plugin interactions | ✅ Ready |
 
 ## Governance Workflow Templates
 
@@ -47,15 +54,15 @@ The Anokye System is a multi-agent orchestration architecture that transforms ho
 | Layer | Role | Where It Lives | How It's Installed |
 |-------|------|---------------|-------------------|
 | **Okyeame** (linguist) | CLI agent. Guides developers through Socratic dialog. Creates issues, reports status, automates repo setup. | Copilot CLI plugin | `copilot plugin install omanfo@anokye-plugins` |
-| **Okyerema** (master drummer) | Repo skill. Keeps cloud agents in rhythm. Scripts, references, workflow automation. | Target repo `.github/skills/okyerema/` | Auto-deployed from Omanfo plugin |
+| **Okyerema** (master drummer) | Rhythm engine. Keeps cloud agents in rhythm. Scripts, workflows, health patrols. | Standalone plugin | `copilot plugin install okyerema@anokye-plugins` |
 | **Asafo** (warriors) | Implementation agents. @copilot, specialist agents. Execute Tasks. | Cloud (GitHub Actions) | Deployed by Okyerema workflows |
 
 ### The Flow: From Plugin to Fully Orchestrated Repo
 
 1. **Developer registers the marketplace** → `copilot plugin marketplace add anokye-labs/plugins`
-2. **Developer installs the plugin** → `copilot plugin install omanfo@anokye-plugins`
+2. **Developer installs plugins** → `copilot plugin install omanfo@anokye-plugins` and `okyerema@anokye-plugins`
 3. **Okyeame detects an unconfigured repo** → guides setup through Socratic dialog
-4. **Okyeame deploys Okyerema skill** → copies `.github/skills/okyerema/` into the target repo
+4. **Okyerema deploys workflows** → installs GitHub Actions, scripts, and skill files into the target repo
 5. **Repo is now Anokye-System-enabled** → cloud agents can use Okyerema
 6. **Developer tells Okyeame to plan work** → Okyeame uses Okyerema to create typed issues with hierarchy
 7. **Asafo (@copilot) picks up Tasks** → writes code, opens PRs
@@ -82,8 +89,6 @@ The Anokye System is designed for growth:
 
 ### Why This Matters
 
-The README is the first thing a developer sees. If it says *"install this plugin and get some scripts,"* they miss the vision. 
-
 **What the Anokye System really does:** It turns your repository into an AI-orchestrated project management environment where work flows from conversation to typed issues to automated implementation to merged code — all with minimal manual intervention.
 
 ### Other Anokye System Components
@@ -95,8 +100,6 @@ The README is the first thing a developer sees. If it says *"install this plugin
 
 ### Quick Start: Marketplace Installation (Recommended)
 
-The Omanfo plugin is distributed through the Anokye Plugins marketplace. Install it in three steps:
-
 ```bash
 # Step 1: Register the Anokye Plugins marketplace (one-time setup)
 copilot plugin marketplace add anokye-labs/plugins
@@ -104,57 +107,53 @@ copilot plugin marketplace add anokye-labs/plugins
 # Step 2: Browse available plugins
 copilot plugin marketplace browse anokye-plugins
 
-# Step 3: Install the Omanfo plugin
+# Step 3: Install plugins
 copilot plugin install omanfo@anokye-plugins
+copilot plugin install okyerema@anokye-plugins
 ```
 
-Once installed, Okyeame is available in your Copilot CLI and will guide you through deploying the Okyerema skill to your repositories.
+Once installed, Okyeame is available in your Copilot CLI and will guide you through deploying Okyerema workflows to your repositories.
 
 ### Manual / Advanced Deployment
 
-For advanced users or automated deployment scenarios, the Omanfo plugin includes an `Install-Anokye.ps1` script that directly deploys skill files into a target repository:
+For advanced users or automated deployment scenarios:
 
 ```powershell
-# Deploy Okyerema skill files directly to your repository
-& /path/to/plugins/omanfo/scripts/Install-Anokye.ps1 -TargetRepo .
-```
+# Deploy Okyerema workflows and scripts to your repository
+& ./okyerema/install/Install-Okyerema.ps1 -TargetRepo .
 
-Or manually copy the `.github/skills/` directory from the plugin into your repository.
+# Deploy Omanfo documentation and agent config
+& ./omanfo/scripts/Install-Anokye.ps1 -TargetRepo .
+```
 
 **Note:** This approach bypasses Okyeame's Socratic dialog and is intended for automation pipelines or situations where you need fine-grained control over the deployment process.
 
-### What Gets Deployed
-
-When you run `Install-Anokye.ps1`, you get:
-
-- ✅ **Okyerema skill files** — SKILL.md, references, PowerShell scripts
-- ✅ **Documentation** — how-we-work guides, glossary, conventions
-- ✅ **Agent entry points** — agents.md for cloud agent coordination
-- ✅ **Workflow automation** — Scripts for issue types, hierarchy, PR reviews
-
-Your repository becomes Anokye-System-enabled, ready for orchestrated development.
-
-## Plugin Structure
-
-The Omanfo plugin contains multiple skills and follows this structure:
+## Repository Structure
 
 ```
-omanfo/
-├── README.md                          # Plugin docs and usage
-├── .github/plugin/plugin.json         # Copilot CLI plugin metadata
-├── okyeame.agent.md                   # Okyeame agent persona file
-├── .github/skills/
-│   ├── okyeame/                       # Okyeame skill
-│   │   └── SKILL.md                   # Main skill file (<500 lines)
-│   └── okyerema/                      # Okyerema skill  
-│       ├── SKILL.md                   # Main skill file (<500 lines)
-│       ├── references/                # On-demand reference guides
-│       └── scripts/                   # PowerShell helper scripts
-├── how-we-work/                       # Human-facing documentation
-├── evaluations/                       # Test scenarios for validation
-└── scripts/
-    ├── Install-Anokye.ps1             # Deployment script
-    └── Verify-Installation.ps1        # Verification script
+plugins/
+├── omanfo/                        # Community toolkit plugin
+│   ├── okyeame.agent.md           # Okyeame agent persona
+│   ├── skills/                    # 11 Copilot skills
+│   ├── archetypes/                # Agent templates
+│   ├── how-we-work/               # Human documentation
+│   └── scripts/                   # Deployment & validation
+├── okyerema/                      # Rhythm Engine plugin
+│   ├── okyerema.agent.md          # Okyerema agent persona
+│   ├── skills/                    # rhythm, sankofa skills
+│   ├── workflows/                 # GitHub Actions templates
+│   ├── scripts/                   # PowerShell tools
+│   └── install/                   # Deployment scripts
+├── ahuofe/                        # Media generation plugin
+│   └── skills/                    # fal-ai, image-sorcery skills
+├── shared/                        # Shared modules
+│   ├── OkyeremanAgentRunner/      # Agent runtime foundation
+│   └── CLITestHarness/            # Test infrastructure
+├── tests/                         # Test suites
+│   ├── omanfo/                    # Omanfo tests
+│   └── okyerema/                  # Okyerema tests
+├── workflow-templates/            # Governance workflows
+└── .github/plugin/marketplace.json # Marketplace registry
 ```
 
 ## Design Principles
@@ -168,7 +167,8 @@ omanfo/
 ## Naming
 
 The Anokye System uses Akan naming conventions:
-- **Omanfo** (ɔmanfoɔ) — "The people" - the unified plugin containing all components
+- **Omanfo** (ɔmanfoɔ) — "The people" — the community toolkit plugin
 - **Okyeame** (ɔkyeame) — The linguist who gives voice to the system (agent persona)
-- **Okyerema** (ɔkyerɛma) — The master drummer who keeps the asafo in rhythm (orchestration skill)
-- See the plugin's glossary for full terminology
+- **Okyerema** (ɔkyerɛma) — The master drummer who keeps the asafo in rhythm (orchestration plugin)
+- **Ahuofe** (ahúofe) — "Beauty" — the media generation plugin
+- See the [glossary](omanfo/how-we-work/glossary.md) for full terminology

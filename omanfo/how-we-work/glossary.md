@@ -48,14 +48,14 @@ At Anokye Labs, we draw from Akan culture to name our systems and describe how w
 
 **In our system:** The project orchestration skill. The Okyerema keeps agents in rhythm — coordinating adwoma through the asafo. When the Okyerema beats the drum, the asafo knows what to do and when to do it.
 
-**Skill:** [.github/skills/okyerema/](../.github/skills/okyerema/SKILL.md)
+**Plugin:** [okyerema/](../../okyerema/)
 
 ---
 
 ### Omanfo (oh-MAHN-fo)
 **Meaning:** The people, the community
 
-**In our system:** The shared plugin that bundles the Okyerema agent and all asafo skills into one installable package. Named "the people" because it contains everything the community needs.
+**In our system:** The community toolkit plugin containing the Okyeame agent and ancillary skills (documents, product management, productivity). Named "the people" because it equips the community with shared tools.
 
 **Plugin:** [anokye-labs/plugins/omanfo](https://github.com/anokye-labs/plugins/tree/main/omanfo)
 

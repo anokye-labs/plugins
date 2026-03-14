@@ -222,7 +222,7 @@ query {
 
 **Why:** Proper hierarchy enables parallel work, clear ownership, and progress tracking. The sub-issues API creates relationships immediately (synchronous), unlike tasklists which required 2-5 minute delays.
 
-**Reference:** anokye-labs/plugins#55, omanfo/.github/skills/okyerema/SKILL.md
+**Reference:** anokye-labs/plugins#55, okyerema/skills/rhythm/SKILL.md
 
 ### 8. Agent Assignment Protocol
 
@@ -262,7 +262,7 @@ gh api graphql `
 
 **Why:** Explicit assignment creates accountability and prevents duplicate work. The GraphQL flow is required because standard CLI assignment to bot accounts is not supported.
 
-**Reference:** omanfo/.github/skills/okyerema/references/agentic-workflows.md
+**Reference:** okyerema/skills/rhythm/references/agentic-workflows.md
 
 ## Observability
 
@@ -392,9 +392,9 @@ npm run test  # or equivalent
 
 These conventions are implemented through:
 
-1. **Plugin installation** — Conventions are included in `.github/skills/okyerema/`
+1. **Plugin installation** — Conventions are included in the [Okyerema plugin](../../okyerema/)
 2. **Skill instructions** — `SKILL.md` references these conventions
-3. **Helper scripts** — PowerShell tools enforce patterns (e.g., issue creation, hierarchy)
+3. **Helper scripts** — PowerShell tools in `okyerema/scripts/` enforce patterns (e.g., issue creation, hierarchy)
 4. **Evaluations** — Tests verify agents follow conventions
 
 ## References

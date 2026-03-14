@@ -12,7 +12,7 @@
       "name": "omanfo",
       "source": "omanfo",
       "description": "The Omanfo plugin -- Okyeame agent and project management skills.",
-      "version": "0.1.0",
+      "version": "1.0.0",
       "skills": [
         "./omanfo/skills/okyeame",
         "./omanfo/skills/doc-coauthoring",
@@ -35,6 +35,18 @@
       "skills": [
         "./okyerema/skills/rhythm",
         "./okyerema/skills/sankofa"
+      ]
+    },
+    {
+      "name": "ahuofe",
+      "source": "ahuofe",
+      "description": "The Ahuofe plugin -- media generation and manipulation using fal.ai and ImageSorcery.",
+      "version": "1.0.0",
+      "skills": [
+        "./ahuofe/skills/fal-ai",
+        "./ahuofe/skills/fal-workflow",
+        "./ahuofe/skills/image-sorcery",
+        "./ahuofe/skills/media-agents"
       ]
     }
   ]

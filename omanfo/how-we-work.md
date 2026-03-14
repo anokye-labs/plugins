@@ -26,7 +26,7 @@ We use GitHub Issues and Projects as our primary coordination mechanism. Our app
 
 ### For Agents
 - **[Agent Conventions](./how-we-work/agent-conventions.md)** — Behavioral expectations for AI agents
-- **[Okyerema Skill](/.github/skills/okyerema/SKILL.md)** — The agent skill with GraphQL examples and helper scripts
+- **[Okyerema Plugin](../okyerema/)** — The rhythm engine with GraphQL examples and helper scripts
 
 ## Quick Summary
 
@@ -65,7 +65,7 @@ If you're tempted to create a structural label, you're using the wrong tool.
 
 ## The Okyerema
 
-The Okyerema skill (`.github/skills/okyerema/`) contains everything an AI agent needs to manage our project structure. It includes:
+The [Okyerema plugin](../okyerema/) contains everything an AI agent needs to manage our project structure. It includes:
 
 - GraphQL queries and mutations for all operations
 - PowerShell helper scripts for common tasks

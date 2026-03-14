@@ -24,7 +24,7 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 **Action:** Run Get-Sitrep.ps1 to get tactical status.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-Sitrep.ps1 `
+& okyerema\scripts\health\Get-Sitrep.ps1 `
     -Owner $owner -Repo $repo
 ```
 
@@ -40,7 +40,7 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 **Action:** Run with a specific issue focus.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-Sitrep.ps1 `
+& okyerema\scripts\health\Get-Sitrep.ps1 `
     -Owner $owner -Repo $repo -IssueNumber 50
 ```
 
@@ -54,7 +54,7 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 **Action:** Run with a specific PR to check.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-Sitrep.ps1 `
+& okyerema\scripts\health\Get-Sitrep.ps1 `
     -Owner $owner -Repo $repo -PullNumber 10
 ```
 
@@ -68,7 +68,7 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 **Action:** Get compact output.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-Sitrep.ps1 `
+& okyerema\scripts\health\Get-Sitrep.ps1 `
     -Owner $owner -Repo $repo -Brief
 ```
 
@@ -82,7 +82,7 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 **Action:** Run Get-PRHealth.ps1 for PR health check.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-PRHealth.ps1 `
+& okyerema\scripts\verify\Get-PRHealth.ps1 `
     -Owner $owner -Repo $repo -PullNumber 10
 ```
 
@@ -100,7 +100,7 @@ $repo = "plugins"  # or any repo with open issues, PRs, and commits
 **Action:** Verify reviewer categorization logic.
 
 ```powershell
-$prHealth = & .github\skills\okyerema\scripts\Get-PRHealth.ps1 `
+$prHealth = & okyerema\scripts\verify\Get-PRHealth.ps1 `
     -Owner $owner -Repo $repo -PullNumber 10
 
 # Check reviewer categories
@@ -119,7 +119,7 @@ $prHealth.HumanThreads
 **Action:** Get compact PR health summary.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-PRHealth.ps1 `
+& okyerema\scripts\verify\Get-PRHealth.ps1 `
     -Owner $owner -Repo $repo -PullNumber 10 -Brief
 ```
 
@@ -133,7 +133,7 @@ $prHealth.HumanThreads
 **Action:** Run Get-HierarchyHealth.ps1 for hierarchy validation.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-HierarchyHealth.ps1 `
+& okyerema\scripts\health\Get-HierarchyHealth.ps1 `
     -Owner $owner -Repo $repo
 ```
 
@@ -151,7 +151,7 @@ $prHealth.HumanThreads
 **Action:** Verify type hierarchy validation.
 
 ```powershell
-$health = & .github\skills\okyerema\scripts\Get-HierarchyHealth.ps1 `
+$health = & okyerema\scripts\health\Get-HierarchyHealth.ps1 `
     -Owner $owner -Repo $repo
 
 # Check for type mismatches
@@ -169,7 +169,7 @@ $health.TypeMismatches
 **Action:** Get compact hierarchy health summary.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-HierarchyHealth.ps1 `
+& okyerema\scripts\health\Get-HierarchyHealth.ps1 `
     -Owner $owner -Repo $repo -Brief
 ```
 
@@ -249,7 +249,7 @@ $health.TypeMismatches
 **Action:** Test error handling with non-existent PR.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-PRHealth.ps1 `
+& okyerema\scripts\verify\Get-PRHealth.ps1 `
     -Owner $owner -Repo $repo -PullNumber 99999
 ```
 
@@ -264,7 +264,7 @@ $health.TypeMismatches
 **Action:** Test with non-existent repository.
 
 ```powershell
-& .github\skills\okyerema\scripts\Get-Sitrep.ps1 `
+& okyerema\scripts\health\Get-Sitrep.ps1 `
     -Owner "invalid-org" -Repo "nonexistent-repo"
 ```
 
@@ -278,7 +278,7 @@ $health.TypeMismatches
 **Action:** Verify scripts work in PowerShell pipelines.
 
 ```powershell
-$sitrep = & .github\skills\okyerema\scripts\Get-Sitrep.ps1 `
+$sitrep = & okyerema\scripts\health\Get-Sitrep.ps1 `
     -Owner $owner -Repo $repo
 
 # Should be able to access properties
@@ -387,8 +387,8 @@ The following commands are agent-driven and don't have dedicated scripts. They s
 
 ## Notes
 
-- All scripts are located in `.github/skills/okyerema/scripts/`
-- Command reference is in `.github/skills/okyerema/references/status-commands.md`
-- Agent behavior is defined in `.github/skills/okyerema/okyerema.agent.md`
+- All scripts are located in `okyerema/scripts/`
+- Command reference is in `okyerema/skills/rhythm/references/status-commands.md`
+- Agent behavior is defined in `okyerema/okyerema.agent.md`
 - Scripts should handle pagination for large result sets
 - All GitHub queries use `gh api graphql` for consistency

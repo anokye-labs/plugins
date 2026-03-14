@@ -19,11 +19,11 @@ All agents must follow these core principles:
 
 See the full [agent conventions document](how-we-work/agent-conventions.md) for details and anti-patterns.
 
-## The Okyerema Skill
+## The Okyerema Plugin
 
-**Location:** [.github/skills/okyerema/SKILL.md](.github/skills/okyerema/SKILL.md)
+**Location:** [okyerema/](../okyerema/)
 
-The Okyerema (talking drummer) skill teaches agents how to:
+The Okyerema (talking drummer) plugin teaches agents how to:
 - Create issues with proper organization types (Epic, Feature, Task, Bug)
 - Build parent-child hierarchies using GitHub's sub-issues API
 - Manipulate GitHub Projects via GraphQL
@@ -51,6 +51,3 @@ Every agent session should operate in the context of a specific GitHub issue. Be
 
 For the human-readable version of how we work, see [how-we-work.md](./how-we-work.md).
 
-## Future: Okyerema Plugin
-
-Long-term, the Okyerema skill will move into a dedicated plugin in [anokye-labs/plugins](https://github.com/anokye-labs/plugins). Installing the plugin will set up the skill, helper scripts, and user-facing documentation automatically. Until then, the skill lives here in akwaaba.

@@ -26,6 +26,8 @@ Desktop.ini
 
 ## Test artifacts
 test-*-eval/
+.playwright-cli/
+testResults.xml
 
 ## Node.js
 node_modules/

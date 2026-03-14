@@ -17,7 +17,7 @@ When installed, Omanfo gives GitHub Copilot the ability to:
 Omanfo ("the people") is the shared toolkit of the asafo. It provides the **Okyeame** (linguist) agent and ancillary skills for documents, product management, and productivity.
 
 For workflow automation, CI/CD, and the rhythm engine, see **[Okyerema](../okyerema/)** (standalone plugin).
-See **[Okyeame](../okyeame/)** for the linguist agent.
+See **[Okyeame](okyeame.agent.md)** for the linguist agent.
 
 ## Installation
 
@@ -25,15 +25,16 @@ See **[Okyeame](../okyeame/)** for the linguist agent.
 
 ```powershell
 # Deploy the Anokye System to your target repo
-& S:\anokye-labs\plugins\omanfo\scripts\Install-Anokye.ps1 -TargetRepo .
+& ./omanfo/scripts/Install-Anokye.ps1 -TargetRepo .
 ```
 
 ### Manual Install
 
 Copy these directories into your repository:
-1. `.github/skills/okyerema/` — The Copilot skill (SKILL.md + references + scripts)
-2. `how-we-work/` and `how-we-work.md` — Human documentation (optional)
-3. `agents.md` — Agent entry point (optional)
+1. `how-we-work/` and `how-we-work.md` — Human documentation (optional)
+2. `agents.md` — Agent entry point (optional)
+
+For the Okyerema rhythm engine (workflow automation, CI/CD), install the **[Okyerema plugin](../okyerema/)** separately.
 
 ### Prerequisites
 
@@ -41,35 +42,30 @@ Copy these directories into your repository:
 - PowerShell 7+
 - Organization with issue types configured (Epic, Feature, Task, Bug)
 
-## What Gets Installed
+## Plugin Structure
 
 ```
-your-repo/
-├── .github/skills/okyerema/
-│   ├── SKILL.md                    # Main skill (~165 lines)
-│   ├── references/
-│   │   ├── issue-types.md          # Issue type GraphQL operations
-│   │   ├── relationships.md        # Hierarchy via sub-issues API
-│   │   ├── projects.md             # Projects V2 API
-│   │   ├── pr-reviews.md           # PR review thread management
-│   │   ├── labels.md               # Label best practices
-│   │   └── errors.md               # Common errors & fixes
-│   └── scripts/
-│       ├── Get-IssueTypeIds.ps1    # Get org type IDs
-│       ├── New-IssueWithType.ps1   # Create typed issues
-│       ├── Update-IssueHierarchy.ps1  # Build parent-child relationships
-│       ├── Test-Hierarchy.ps1      # Verify hierarchy trees
-│       ├── Get-UnresolvedThreads.ps1  # List PR review threads
-│       ├── Reply-ReviewThread.ps1  # Reply to review threads
-│       └── Resolve-ReviewThreads.ps1  # Bulk resolve threads
+omanfo/
+├── okyeame.agent.md                # Okyeame agent persona
+├── .github/plugin/plugin.json      # Plugin metadata
+├── skills/                         # Copilot skills
+│   ├── okyeame/                    # Okyeame skill
+│   ├── doc-coauthoring/            # Document co-authoring
+│   ├── docx/                       # DOCX generation
+│   ├── github-issue-creator/       # Issue creation
+│   ├── internal-comms/             # Internal communications
+│   ├── pdf/                        # PDF generation
+│   ├── pptx/                       # PPTX presentations
+│   ├── product-management/         # Product management
+│   ├── productivity/               # Productivity workflows
+│   ├── skill-creator/              # Skill authoring
+│   └── xlsx/                       # XLSX spreadsheets
+├── archetypes/                     # Reusable agent templates
+├── how-we-work/                    # Human-facing documentation
 ├── how-we-work.md                  # Coordination overview
-├── how-we-work/
-│   ├── getting-started.md          # Newcomer guide
-│   ├── our-way.md                  # Opinionated workflow
-│   ├── adr-process.md              # ADR process guidance
-│   ├── adr-template.md             # Architecture Decision Record template
-│   └── glossary.md                 # Akan terminology
-└── agents.md                       # Agent entry point
+├── agents.md                       # Agent entry point
+├── evaluations/                    # Test scenarios
+└── scripts/                        # Deployment and validation
 ```
 
 ## Agent Archetypes
