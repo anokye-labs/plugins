@@ -33,6 +33,7 @@
     Write-Host "Node ID: $($ctx.NodeId)"
 #>
 [CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter()][string]$Owner,
     [Parameter()][string]$Repo,

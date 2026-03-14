@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Detect stalled work items (assigned issues with no recent updates).
@@ -26,6 +27,8 @@
 .EXAMPLE
     .\Get-StalledWork.ps1 -Owner anokye-labs -Repo akwaaba -ThresholdDays 14 -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

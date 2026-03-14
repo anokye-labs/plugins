@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Deep PR health check for the /prcheck command.
@@ -25,6 +26,8 @@
 .EXAMPLE
     .\Get-PRHealth.ps1 -Owner anokye-labs -Repo akwaaba -PullNumber 12 -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

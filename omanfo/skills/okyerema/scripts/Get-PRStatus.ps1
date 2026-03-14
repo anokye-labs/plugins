@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Comprehensive PR status check (approvals, checks, merge readiness).
@@ -28,6 +29,8 @@
 .EXAMPLE
     .\Get-PRStatus.ps1 -Owner anokye-labs -Repo plugins -PullNumber 50 -Json
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

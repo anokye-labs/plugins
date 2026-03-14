@@ -1,10 +1,21 @@
-# Get-IssueTypeIds.ps1
-# Retrieve organization issue type IDs for use in GraphQL mutations
-
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Retrieve organization issue type IDs for use in GraphQL mutations.
+.DESCRIPTION
+    Queries the organization's issue types and returns them as a hashtable mapping
+    type name to type ID.
+.PARAMETER Owner
+    Organization login name.
+#>
+[CmdletBinding()]
+[OutputType([hashtable])]
 param(
     [Parameter(Mandatory)]
     [string]$Owner
 )
+
+$ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\_Invoke-GraphQL.ps1"
 

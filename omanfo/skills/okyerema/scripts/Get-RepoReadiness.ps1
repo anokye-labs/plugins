@@ -29,6 +29,8 @@
 .EXAMPLE
     .\Get-RepoReadiness.ps1 -Owner anokye-labs -Repo akwaaba -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

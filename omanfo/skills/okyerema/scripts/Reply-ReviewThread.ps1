@@ -1,6 +1,10 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Reply to a PR review thread via GraphQL.
+
+.DESCRIPTION
+    Posts a reply to a specific review thread and optionally resolves it.
 
 .PARAMETER Owner
     Repository owner (org or user).
@@ -29,6 +33,8 @@
 .EXAMPLE
     .\Reply-ReviewThread.ps1 -Owner anokye-labs -Repo akwaaba -PullNumber 6 -ThreadIndex 0 -Body "Fixed" -Resolve
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,
@@ -38,6 +44,8 @@ param(
     [Parameter(Mandatory)][string]$Body,
     [switch]$Resolve
 )
+
+$ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\_Invoke-GraphQL.ps1"
 

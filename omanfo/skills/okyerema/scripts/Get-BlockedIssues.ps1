@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Find issues that are blocked by open dependencies.
@@ -6,10 +7,10 @@
     Queries open issues and identifies which ones are blocked by:
     1. Open child sub-issues (hierarchy-based dependencies)
     2. Open blocking issues referenced in body/comments (cross-reference dependencies)
-    
+
     This helps identify work items that cannot proceed and surfaces the blockers
     so they can be prioritized.
-    
+
     LIMITATION: Due to GraphQL pagination constraints, only the first 100 sub-issues
     per issue are checked. Issues with more than 100 children may be misclassified.
 
@@ -37,6 +38,8 @@
 .EXAMPLE
     .\Get-BlockedIssues.ps1 -Owner anokye-labs -Repo plugins -IssueType Task -MaxResults 5
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

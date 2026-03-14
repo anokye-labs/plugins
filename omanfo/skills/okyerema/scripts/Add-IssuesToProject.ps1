@@ -1,6 +1,35 @@
-# Add-IssuesToProject.ps1
-# Bulk add issues to GitHub Projects V2 with optional custom field values
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Bulk add issues to a GitHub Projects V2 board with optional custom field values.
 
+.DESCRIPTION
+    Adds one or more issues to a GitHub Project V2, optionally setting custom field
+    values such as Status or Priority on each added item.
+
+.PARAMETER Owner
+    Repository owner (organization).
+
+.PARAMETER Repo
+    Repository name.
+
+.PARAMETER ProjectNumber
+    GitHub Project V2 number.
+
+.PARAMETER IssueNumbers
+    Array of issue numbers to add to the project.
+
+.PARAMETER FieldValues
+    Hashtable of custom field names to values (e.g. @{ "Status" = "In Progress" }).
+
+.PARAMETER RetryAttempts
+    Number of retry attempts for GraphQL calls. Default is 3.
+
+.PARAMETER RetryDelayMs
+    Delay in milliseconds between retries. Default is 1000.
+#>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

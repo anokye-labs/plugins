@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Recursive issue hierarchy status (DAG status).
@@ -6,10 +7,10 @@
     Queries the complete issue hierarchy and displays the status of each issue
     in a DAG (Directed Acyclic Graph) view. Shows parent-child relationships,
     issue states, and computes readiness based on child completion.
-    
+
     An issue is "ready" if all its children are closed. This enables agents to
     understand which work items can be started based on dependency completion.
-    
+
     LIMITATION: Due to GraphQL pagination constraints, only the first 100 sub-issues
     per issue are checked. Issues with more than 100 children may be misclassified.
 
@@ -37,6 +38,8 @@
 .EXAMPLE
     .\Get-DagStatus.ps1 -Owner anokye-labs -Repo plugins -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

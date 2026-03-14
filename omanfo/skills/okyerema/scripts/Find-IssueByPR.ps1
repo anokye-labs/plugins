@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Find PRs linked to specific issues.
@@ -7,7 +8,7 @@
     - Development timeline events (closing references)
     - PR body/comments mentioning the issue
     - Issue timeline events showing linked PRs
-    
+
     Returns PR numbers and their link types.
 
 .PARAMETER Owner
@@ -28,6 +29,8 @@
 .EXAMPLE
     .\Find-IssueByPR.ps1 -Owner anokye-labs -Repo plugins -IssueNumber 42 -IncludeClosed
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

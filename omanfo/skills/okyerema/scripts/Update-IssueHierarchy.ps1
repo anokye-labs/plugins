@@ -1,6 +1,20 @@
-# Update-IssueHierarchy.ps1
-# Build parent-child relationships using GitHub's sub-issues API
-
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Build parent-child relationships using GitHub's sub-issues API.
+.DESCRIPTION
+    Links one or more child issues to a parent issue as sub-issues.
+.PARAMETER Owner
+    Repository owner (organization or user).
+.PARAMETER Repo
+    Repository name.
+.PARAMETER ParentNumber
+    The parent issue number.
+.PARAMETER ChildNumbers
+    Array of child issue numbers to link as sub-issues.
+#>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

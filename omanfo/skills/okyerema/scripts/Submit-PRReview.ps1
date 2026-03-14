@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Submit structured PR review programmatically.
@@ -8,7 +9,7 @@
     - Review comments on specific lines
     - Overall review state (APPROVE, REQUEST_CHANGES, COMMENT)
     - Review body/summary
-    
+
     This enables programmatic review submission from automation or agents.
 
 .PARAMETER Owner
@@ -46,6 +47,8 @@
     .\Submit-PRReview.ps1 -Owner anokye-labs -Repo plugins -PullNumber 50 `
         -Event REQUEST_CHANGES -Body "Found a few issues" -Comments $comments
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

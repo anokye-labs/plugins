@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Gather tactical status for the /sitrep command.
@@ -28,6 +29,8 @@
 .EXAMPLE
     .\Get-Sitrep.ps1 -Owner anokye-labs -Repo akwaaba -PullNumber 12 -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

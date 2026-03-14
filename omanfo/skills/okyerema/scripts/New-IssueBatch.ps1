@@ -1,6 +1,18 @@
-# New-IssueBatch.ps1
-# Batch create multiple GitHub issues with proper organization issue types
-
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Batch create multiple GitHub issues with organization issue types.
+.DESCRIPTION
+    Creates multiple issues in a single run, reusing a cached repo context for efficiency.
+.PARAMETER Owner
+    Repository owner (organization or user).
+.PARAMETER Repo
+    Repository name.
+.PARAMETER Issues
+    Array of hashtables with Title, TypeName, Body, Labels keys.
+#>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

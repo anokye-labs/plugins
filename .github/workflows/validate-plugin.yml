@@ -221,6 +221,41 @@ jobs:
             exit 1
           }
 
+      - name: Run PSScriptAnalyzer
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+
+          $findings = @()
+          $dirs = @('omanfo', 'okyeame', 'ahuofe')
+
+          foreach ($dir in $dirs) {
+            if (Test-Path $dir) {
+              Write-Host "Analyzing $dir..." -ForegroundColor Cyan
+              $results = Invoke-ScriptAnalyzer -Path $dir -Recurse -ErrorAction SilentlyContinue
+              if ($results) {
+                $findings += $results
+              }
+            }
+          }
+
+          # Write findings to step summary
+          $summary = "## PSScriptAnalyzer Results`n`n"
+          if ($findings.Count -eq 0) {
+            $summary += "No issues found.`n"
+          } else {
+            $summary += "| Severity | File | Line | Rule | Message |`n"
+            $summary += "|----------|------|------|------|---------|`n"
+            foreach ($f in $findings) {
+              $file = $f.ScriptName
+              $summary += "| $($f.Severity) | $file | $($f.Line) | $($f.RuleName) | $($f.Message) |`n"
+            }
+            $summary += "`nTotal: $($findings.Count) finding(s)`n"
+          }
+
+          $summary >> $env:GITHUB_STEP_SUMMARY
+
   unit-tests:
     name: Pester Unit Tests
     runs-on: ubuntu-latest
@@ -239,11 +274,49 @@ jobs:
       - name: Run omanfo unit tests
         shell: pwsh
         run: |
+          New-Item -ItemType Directory -Path './coverage' -Force | Out-Null
           $config = New-PesterConfiguration
           $config.Run.Path = './tests/omanfo/unit'
           $config.Output.Verbosity = 'Detailed'
           $config.Run.Exit = $true
+          $config.CodeCoverage.Enabled = $true
+          $config.CodeCoverage.Path = @('./omanfo/skills/okyerema/scripts/[!_]*.ps1')
+          $config.CodeCoverage.OutputFormat = 'JaCoCo'
+          $config.CodeCoverage.OutputPath = './coverage/omanfo-coverage.xml'
           Invoke-Pester -Configuration $config
+
+      - name: Report code coverage
+        if: always()
+        shell: pwsh
+        run: |
+          $coverageFile = './coverage/omanfo-coverage.xml'
+          $summary = "## Code Coverage Report`n`n"
+
+          if (Test-Path $coverageFile) {
+            [xml]$xml = Get-Content $coverageFile
+            $counter = $xml.report.counter | Where-Object { $_.type -eq 'LINE' }
+            if ($counter) {
+              $missed = [int]$counter.missed
+              $covered = [int]$counter.covered
+              $total = $missed + $covered
+              if ($total -gt 0) {
+                $pct = [math]::Round(($covered / $total) * 100, 2)
+              } else {
+                $pct = 0
+              }
+              $summary += "| Metric | Value |`n"
+              $summary += "|--------|-------|`n"
+              $summary += "| Lines Covered | $covered |`n"
+              $summary += "| Lines Missed | $missed |`n"
+              $summary += "| **Coverage** | **$pct%** |`n"
+            } else {
+              $summary += "Coverage data found but no LINE counters present.`n"
+            }
+          } else {
+            $summary += "No coverage report generated.`n"
+          }
+
+          $summary >> $env:GITHUB_STEP_SUMMARY
 
       - name: Run scripts unit tests
         shell: pwsh
@@ -253,3 +326,78 @@ jobs:
           $config.Output.Verbosity = 'Detailed'
           $config.Run.Exit = $true
           Invoke-Pester -Configuration $config
+
+  smoke-tests:
+    name: Smoke Tests
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force
+
+      - name: Run skill loading smoke tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests/omanfo/Skill-Loading.Smoke.Tests.ps1'
+          $config.Output.Verbosity = 'Detailed'
+          $config.Run.Exit = $true
+          Invoke-Pester -Configuration $config
+
+      - name: Run install plugin smoke tests
+        shell: pwsh
+        run: |
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests/omanfo/Install-Plugin.Smoke.Tests.ps1'
+          $config.Output.Verbosity = 'Detailed'
+          $config.Run.Exit = $true
+          Invoke-Pester -Configuration $config
+
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Secret detection with TruffleHog
+        uses: trufflesecurity/trufflehog@v3.88.24
+        with:
+          extra_args: --only-verified
+
+      - name: PSScriptAnalyzer security rules
+        shell: pwsh
+        run: |
+          Install-Module -Name PSScriptAnalyzer -Scope CurrentUser -Force
+
+          $findings = @()
+          $dirs = @('omanfo', 'okyeame', 'ahuofe')
+
+          foreach ($dir in $dirs) {
+            if (Test-Path $dir) {
+              $results = Invoke-ScriptAnalyzer -Path $dir -Recurse -Severity Error -ErrorAction SilentlyContinue
+              if ($results) {
+                $findings += $results
+              }
+            }
+          }
+
+          if ($findings.Count -gt 0) {
+            Write-Host "Found $($findings.Count) Error-severity issue(s):" -ForegroundColor Red
+            $findings | Format-Table -Property Severity, ScriptName, Line, RuleName, Message -AutoSize
+            exit 1
+          } else {
+            Write-Host "No Error-severity issues found." -ForegroundColor Green
+          }
