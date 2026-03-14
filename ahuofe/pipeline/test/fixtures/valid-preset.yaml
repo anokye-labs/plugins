@@ -1,0 +1,9 @@
+name: draft
+model: fal-ai/nano-banana-2
+reference_sheet: false
+max_iterations: 1
+drift_evaluation: quick
+output_format: jpg
+quality: 80
+aspect_ratio: "16:9"
+requires_approval: false

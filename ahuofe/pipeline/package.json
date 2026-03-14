@@ -1,0 +1,30 @@
+{
+  "name": "@ahuofe/pipeline",
+  "version": "0.1.0",
+  "description": "Ahuofe v2 generation engine — PR-driven iterative media generation pipeline",
+  "type": "module",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "typecheck": "tsc --noEmit",
+    "validate": "tsx src/local/validate-yaml.ts",
+    "preview-prompt": "tsx src/local/preview-prompt.ts",
+    "mock-generate": "tsx src/local/mock-generate.ts"
+  },
+  "dependencies": {
+    "@fal-ai/client": "^1.9.4",
+    "ajv": "^8.17.1",
+    "js-yaml": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/js-yaml": "^4.0.9",
+    "@types/node": "^22.10.0",
+    "@vitest/coverage-v8": "^3.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.7.0",
+    "vitest": "^3.0.0"
+  }
+}

@@ -1,0 +1,7 @@
+id: broken-entity
+name: Broken Entity
+# Missing required field: base_form
+class: unknown
+body_parts:
+  helm:
+    description: "Some helm description"

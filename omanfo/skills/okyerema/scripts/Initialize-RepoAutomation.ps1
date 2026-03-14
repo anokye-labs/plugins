@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Generate GitHub issues for each missing automation infrastructure piece.
@@ -43,8 +44,8 @@
 .EXAMPLE
     .\Initialize-RepoAutomation.ps1 -Owner anokye-labs -Repo my-repo -WhatIf
 #>
-#Requires -Version 5.1
 [CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

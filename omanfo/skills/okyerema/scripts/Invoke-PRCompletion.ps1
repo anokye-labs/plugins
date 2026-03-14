@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Orchestrate review-classify-fix-commit-push-reply-resolve cycle for PR completion.
@@ -10,7 +11,7 @@
     4. Commit and push changes
     5. Reply to review threads with fix details
     6. Resolve threads
-    
+
     Supports dry-run mode to preview actions without making changes.
     Supports max iterations to limit the number of completion cycles.
 
@@ -43,19 +44,21 @@
 
 .EXAMPLE
     .\Invoke-PRCompletion.ps1 -Owner anokye-labs -Repo plugins -PullNumber 6
-    
+
     Runs the completion loop for PR #6.
 
 .EXAMPLE
     .\Invoke-PRCompletion.ps1 -Owner anokye-labs -Repo plugins -PullNumber 6 -DryRun
-    
+
     Shows what would be done without making changes.
 
 .EXAMPLE
     .\Invoke-PRCompletion.ps1 -Owner anokye-labs -Repo plugins -PullNumber 6 -MaxIterations 1 -AutoResolve -MinSeverity High
-    
+
     Runs one iteration, auto-resolves threads, processes only High and Critical severity.
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

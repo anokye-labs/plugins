@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Find issues that exist outside any hierarchy.
@@ -31,6 +32,8 @@
 .EXAMPLE
     .\Get-OrphanedIssues.ps1 -Owner anokye-labs -Repo akwaaba -SuggestParents
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

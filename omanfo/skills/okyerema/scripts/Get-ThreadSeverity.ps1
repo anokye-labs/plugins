@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Classify PR review thread comments by severity.
@@ -5,7 +6,7 @@
 .DESCRIPTION
     Analyzes review thread comments to determine severity level based on keywords,
     tone, and content. Returns: Critical, High, Medium, Low, or Info.
-    
+
     Severity levels:
     - Critical: Blocking issues, security vulnerabilities, data loss risks
     - High: Major bugs, incorrect logic, breaking changes
@@ -30,17 +31,19 @@
 
 .EXAMPLE
     .\Get-ThreadSeverity.ps1 -Owner anokye-labs -Repo plugins -PullNumber 6
-    
+
     Analyzes all unresolved threads and returns severity for each.
 
 .EXAMPLE
     .\Get-ThreadSeverity.ps1 -Owner anokye-labs -Repo plugins -PullNumber 6 -ThreadIndex 0
-    
+
     Analyzes thread at index 0 and returns its severity.
 
 .OUTPUTS
     PSCustomObject with properties: ThreadId, Severity, Confidence, Reason, FirstComment
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

@@ -1,0 +1,42 @@
+id: okyeame
+name: Okyeame
+class: robotic-royal
+base_form: "Tall humanoid figure in ceremonial regalia, 7-head-tall proportions, armored torso with exposed golden mechanical joints"
+proportions:
+  height: "7 heads tall"
+  shoulder_width: "2.5 heads wide"
+  arm_length: "3 heads"
+adinkra_ref: nkyinkyim
+body_parts:
+  helm:
+    description: "Crested ceremonial helm with vertical fin, angular face plate with narrow visor slit"
+    material: burnished_gold
+    color_ref: kente_gold
+  torso_armor:
+    description: "Layered plate armor with adinkra engravings, kente cloth draped toga-style over left shoulder"
+    material: dark_steel
+    constraints:
+      - "no visible skin or face"
+      - "cloth must drape over LEFT shoulder specifically"
+  right_hand:
+    description: "Holds the linguist staff (okyeame poma) — a carved wooden staff topped with a golden bird"
+    material: carved_wood
+  left_hand:
+    description: "Open palm gesture, palm facing outward in greeting/oratory pose"
+poses:
+  - id: idle-standing
+    name: Idle Standing
+    description: "Standing upright, staff in right hand, left palm open and raised slightly"
+    camera_angle: "front 3/4 view, slightly below eye level"
+  - id: speaking
+    name: Speaking
+    description: "Animated gesture with left hand raised, staff planted on ground, slight forward lean"
+    camera_angle: "front view, eye level"
+not_this:
+  - "exposed face or skin"
+  - "modern clothing"
+  - "weapons other than the linguist staff"
+  - "cartoon or chibi proportions"
+metadata:
+  origin: "Akan royal court tradition"
+  role: "The Linguist — spokesperson for the Omanhene"

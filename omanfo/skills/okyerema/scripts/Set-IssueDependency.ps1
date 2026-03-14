@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Establish dependency relationships between issues (blocks/blocked-by).
@@ -34,6 +35,8 @@
 .EXAMPLE
     .\Set-IssueDependency.ps1 -Owner anokye-labs -Repo plugins -IssueNumber 22 -Action Query
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

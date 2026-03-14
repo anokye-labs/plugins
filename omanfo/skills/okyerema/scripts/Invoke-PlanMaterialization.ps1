@@ -1,37 +1,35 @@
-# Invoke-PlanMaterialization.ps1
-# Convert markdown plan documents into GitHub issue DAGs with proper hierarchy
-
+#Requires -Version 5.1
 <#
 .SYNOPSIS
-    Materializes a markdown plan document into GitHub issues with Epic→Feature→Task hierarchy.
+    Materializes a markdown plan document into GitHub issues with Epic->Feature->Task hierarchy.
 
 .DESCRIPTION
     Parses a markdown document where headings represent issue hierarchy:
-    - H1 (#) → Epic
-    - H2 (##) → Feature  
-    - H3 (###) → Task
-    
+    - H1 (#) -> Epic
+    - H2 (##) -> Feature
+    - H3 (###) -> Task
+
     Creates issues with proper organization types and builds parent-child relationships
     using GitHub's sub-issues API. Optionally adds issues to a GitHub Project.
 
 .PARAMETER Owner
-    Repository owner (organization or user)
+    Repository owner (organization or user).
 
 .PARAMETER Repo
-    Repository name
+    Repository name.
 
 .PARAMETER PlanFile
-    Path to the markdown plan document
+    Path to the markdown plan document.
 
 .PARAMETER ProjectNumber
-    Optional GitHub Project number to add issues to
+    Optional GitHub Project number to add issues to.
 
 .PARAMETER DryRun
-    If specified, shows what would be created without making changes
+    If specified, shows what would be created without making changes.
 
 .PARAMETER MappingFile
-    Optional path to save issue mapping (for use with Sync-PlanToIssues.ps1)
-    Defaults to <PlanFile>-mapping.json
+    Optional path to save issue mapping (for use with Sync-PlanToIssues.ps1).
+    Defaults to <PlanFile>-mapping.json.
 
 .EXAMPLE
     ./Invoke-PlanMaterialization.ps1 -Owner "anokye-labs" -Repo "my-project" -PlanFile "./roadmap.md"
@@ -48,7 +46,8 @@
     - Organization issue types configured (Epic, Feature, Task)
     - Sub-issues API access (GraphQL-Features header)
 #>
-
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

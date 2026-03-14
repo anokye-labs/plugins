@@ -1,6 +1,4 @@
-# Sync-PlanToIssues.ps1
-# Synchronize an updated markdown plan with existing GitHub issues
-
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Syncs changes from a markdown plan document to existing GitHub issues.
@@ -10,24 +8,24 @@
     - New items to create
     - Modified items to update (title/body changes)
     - Items that need hierarchy adjustments
-    
+
     This script maintains bidirectional sync between markdown plans and GitHub issues,
     allowing plans to evolve while preserving issue numbers and relationships.
 
 .PARAMETER Owner
-    Repository owner (organization or user)
+    Repository owner (organization or user).
 
 .PARAMETER Repo
-    Repository name
+    Repository name.
 
 .PARAMETER PlanFile
-    Path to the markdown plan document
+    Path to the markdown plan document.
 
 .PARAMETER MappingFile
-    Path to JSON file that maps plan items to issue numbers (created by Invoke-PlanMaterialization.ps1)
+    Path to JSON file that maps plan items to issue numbers (created by Invoke-PlanMaterialization.ps1).
 
 .PARAMETER DryRun
-    If specified, shows what would be changed without making changes
+    If specified, shows what would be changed without making changes.
 
 .EXAMPLE
     ./Sync-PlanToIssues.ps1 -Owner "anokye-labs" -Repo "my-project" -PlanFile "./roadmap.md" -MappingFile "./roadmap-mapping.json"
@@ -37,7 +35,8 @@
     - GitHub CLI (gh) authenticated
     - A mapping file created by prior Invoke-PlanMaterialization.ps1 run
 #>
-
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

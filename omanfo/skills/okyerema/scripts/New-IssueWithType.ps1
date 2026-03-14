@@ -1,7 +1,27 @@
-# New-IssueWithType.ps1
-# Create a GitHub issue with proper organization issue type
-# Implements default assignment policy: Task/Bug → @copilot, Epic/Feature → authenticated user
-
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Create a GitHub issue with a proper organization issue type.
+.DESCRIPTION
+    Creates an issue with the specified type and applies default assignment policy:
+    Task/Bug are assigned to @copilot, Epic/Feature to the authenticated user.
+.PARAMETER Owner
+    Repository owner (organization or user).
+.PARAMETER Repo
+    Repository name.
+.PARAMETER Title
+    Issue title.
+.PARAMETER TypeName
+    Issue type name (Epic, Feature, Task, Bug).
+.PARAMETER Body
+    Issue body text.
+.PARAMETER Labels
+    Array of label names to apply.
+.PARAMETER Assignee
+    Assignee login. "auto" uses the default policy, "" means none.
+#>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

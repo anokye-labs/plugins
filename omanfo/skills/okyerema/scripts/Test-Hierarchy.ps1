@@ -1,6 +1,20 @@
-# Test-Hierarchy.ps1
-# Verify issue relationships via GraphQL using sub-issues API
-
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Verify issue relationships via GraphQL using the sub-issues API.
+.DESCRIPTION
+    Traverses and displays the parent-child hierarchy tree for a given issue.
+.PARAMETER Owner
+    Repository owner (organization or user).
+.PARAMETER Repo
+    Repository name.
+.PARAMETER IssueNumber
+    The root issue number to inspect.
+.PARAMETER Depth
+    Maximum traversal depth (default 2).
+#>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

@@ -1,6 +1,10 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Resolve (or unresolve) PR review threads via GraphQL.
+
+.DESCRIPTION
+    Batch-resolves or unresolves review threads on a pull request.
 
 .PARAMETER Owner
     Repository owner.
@@ -29,6 +33,8 @@
 .EXAMPLE
     .\Resolve-ReviewThreads.ps1 -Owner anokye-labs -Repo akwaaba -PullNumber 6 -All -Unresolve
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,
@@ -37,6 +43,8 @@ param(
     [switch]$Unresolve,
     [switch]$All
 )
+
+$ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\_Invoke-GraphQL.ps1"
 

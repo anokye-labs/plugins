@@ -1,6 +1,10 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     List unresolved (or all) review threads on a PR with comment details.
+
+.DESCRIPTION
+    Queries PR review threads via GraphQL and displays them with comment previews.
 
 .PARAMETER Owner
     Repository owner.
@@ -23,6 +27,8 @@
 .EXAMPLE
     .\Get-UnresolvedThreads.ps1 -Owner anokye-labs -Repo akwaaba -PullNumber 6 -IncludeResolved -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,
@@ -30,6 +36,8 @@ param(
     [switch]$IncludeResolved,
     [switch]$Brief
 )
+
+$ErrorActionPreference = "Stop"
 
 . "$PSScriptRoot\_Invoke-GraphQL.ps1"
 

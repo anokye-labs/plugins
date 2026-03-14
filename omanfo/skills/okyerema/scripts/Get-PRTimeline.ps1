@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Get timeline view of review activity on a PR.
@@ -8,7 +9,7 @@
     - Review thread creation and resolution
     - Commits
     - Status check updates
-    
+
     Provides a narrative view of what happened when.
 
 .PARAMETER Owner
@@ -32,6 +33,8 @@
 .EXAMPLE
     .\Get-PRTimeline.ps1 -Owner anokye-labs -Repo plugins -PullNumber 50 -Limit 100
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

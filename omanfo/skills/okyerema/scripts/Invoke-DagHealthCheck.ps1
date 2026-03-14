@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     DAG structural validation for issue hierarchies.
@@ -23,6 +24,8 @@
 .EXAMPLE
     .\Invoke-DagHealthCheck.ps1 -Owner anokye-labs -Repo akwaaba -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

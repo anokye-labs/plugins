@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     Structural validation for the /health command.
@@ -22,6 +23,8 @@
 .EXAMPLE
     .\Get-HierarchyHealth.ps1 -Owner anokye-labs -Repo akwaaba -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

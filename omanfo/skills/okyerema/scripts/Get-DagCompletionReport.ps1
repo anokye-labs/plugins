@@ -1,3 +1,4 @@
+#Requires -Version 5.1
 <#
 .SYNOPSIS
     DAG progress completion report for issue hierarchies.
@@ -30,6 +31,8 @@
 .EXAMPLE
     .\Get-DagCompletionReport.ps1 -Owner anokye-labs -Repo plugins -Brief
 #>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

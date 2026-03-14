@@ -1,7 +1,19 @@
-# New-IssueHierarchy.ps1
-# Create full Epic-Feature-Task trees from structured definitions
-# Uses sub-issues API to establish parent-child relationships
-
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Create full Epic-Feature-Task trees from structured definitions.
+.DESCRIPTION
+    Builds a complete issue hierarchy using the GitHub sub-issues API to establish
+    parent-child relationships.
+.PARAMETER Owner
+    Repository owner (organization or user).
+.PARAMETER Repo
+    Repository name.
+.PARAMETER Hierarchy
+    Structured hashtable defining the Epic/Feature/Task tree.
+#>
+[CmdletBinding()]
+[OutputType([PSCustomObject])]
 param(
     [Parameter(Mandatory)][string]$Owner,
     [Parameter(Mandatory)][string]$Repo,

@@ -1,13 +1,30 @@
-# _Get-RepoContext.ps1
-# Shared helper: retrieve and cache repository context (node ID, owner type, issue types)
+#Requires -Version 5.1
+<#
+.SYNOPSIS
+    Shared helper to retrieve and cache repository context.
+
+.DESCRIPTION
+    Queries the GitHub GraphQL API for repository metadata (node ID, owner type,
+    issue types) and caches the result for the session.
+
+.PARAMETER Owner
+    Repository owner (organization or user).
+
+.PARAMETER Repo
+    Repository name.
+#>
 
 $script:_RepoContextCache = @{}
 
 function Get-RepoContext {
+    [CmdletBinding()]
+    [OutputType([PSCustomObject])]
     param(
         [Parameter(Mandatory)][string]$Owner,
         [Parameter(Mandatory)][string]$Repo
     )
+
+    $ErrorActionPreference = "Stop"
 
     $cacheKey = "$Owner/$Repo"
     if ($script:_RepoContextCache.ContainsKey($cacheKey)) {
