@@ -1,0 +1,57 @@
+colors:
+  primary: "#D4AF37"
+  secondary: "#8B4513"
+  accent: "#FFFFFF"
+  palette:
+    - name: royal-gold
+      hex: "#D4AF37"
+      description: Primary gold used for all royal elements
+    - gold
+    - "#C5A02E"
+    - name: earth-brown
+      hex: "#8B4513"
+      description: Secondary earth tone for grounding
+
+materials:
+  primary_cloth:
+    type: kente
+    finish: satin-weave
+    texture: geometric interlocking patterns
+    description: Hand-woven kente with traditional Akan patterns
+  crown_metal:
+    type: gold
+    finish: polished
+    texture: smooth with embossed adinkra symbols
+  staff_body:
+    type: wood
+    finish: oiled
+    texture: carved spiral grain
+  bindings:
+    type: leather
+    finish: matte
+    texture: tooled with repeating pattern
+
+environment:
+  lighting: warm golden ambient from oil lamps and high windows
+  background: royal court with carved wooden pillars
+  atmosphere: ceremonial and dignified
+  time_of_day: late afternoon
+  setting: indoor palatial hall with vaulted ceiling
+
+proportions:
+  head_to_body: 0.12
+  torso_to_total: 0.35
+  limb_to_total: 0.33
+  shoulder_width: 0.22
+
+adinkra_map:
+  sankofa:
+    name: Sankofa
+    meaning: Return and get it - learn from the past
+    usage: Primary symbol for the Okyeame entity
+    description: Heart-shaped bird looking backward
+  dwennimmen:
+    name: Dwennimmen
+    meaning: Humility and strength - ram's horns
+    usage: Crown decoration and helm accent
+    description: Stylized ram's horns in symmetrical pattern

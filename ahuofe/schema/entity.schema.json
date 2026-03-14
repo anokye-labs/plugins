@@ -1,0 +1,178 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anokye-labs.github.io/plugins/ahuofe/schema/entity.schema.json",
+  "title": "Ahuofe Entity",
+  "description": "Schema for brand entity YAML files (e.g., brand/entities/physical/okyeame.yaml)",
+  "type": "object",
+  "required": ["name", "base_form", "proportions"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Entity display name"
+    },
+    "class": {
+      "type": "string",
+      "description": "Entity classification (e.g., physical, virtual, collective)"
+    },
+    "base_form": {
+      "$ref": "#/definitions/base_form"
+    },
+    "proportions": {
+      "$ref": "#/definitions/proportions"
+    },
+    "body_parts": {
+      "$ref": "#/definitions/body_parts"
+    },
+    "adinkra": {
+      "$ref": "#/definitions/adinkra_ref"
+    },
+    "style": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Style directives for the entity"
+    },
+    "materials": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Material specifications"
+    },
+    "environment": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Environment constraints for the entity"
+    },
+    "colors": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Entity-specific color overrides"
+    },
+    "poses": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string" },
+          "description": { "type": "string" }
+        },
+        "additionalProperties": true
+      },
+      "description": "Available poses for this entity"
+    }
+  },
+  "definitions": {
+    "base_form": {
+      "type": "object",
+      "required": ["type", "description"],
+      "additionalProperties": true,
+      "properties": {
+        "type": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Base form type (e.g., humanoid, abstract, geometric)"
+        },
+        "description": {
+          "$ref": "#/definitions/descriptive_string"
+        },
+        "silhouette": {
+          "$ref": "#/definitions/descriptive_string"
+        },
+        "build": {
+          "type": "string",
+          "description": "Body build description"
+        },
+        "stance": {
+          "type": "string",
+          "description": "Default stance"
+        }
+      }
+    },
+    "proportions": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "head_ratio": {
+          "$ref": "#/definitions/proportion_value"
+        },
+        "body_ratio": {
+          "$ref": "#/definitions/proportion_value"
+        },
+        "limb_ratio": {
+          "$ref": "#/definitions/proportion_value"
+        },
+        "overall_height": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Overall height reference value"
+        },
+        "scale": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Scale factor"
+        }
+      }
+    },
+    "proportion_value": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Proportion value between 0 and 1"
+    },
+    "adinkra_ref": {
+      "type": "string",
+      "pattern": "^adinkra:[a-z][a-z0-9_-]*$",
+      "description": "Reference to an adinkra symbol (e.g., adinkra:sankofa)"
+    },
+    "descriptive_string": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "string",
+          "pattern": "^NOT_THIS:",
+          "description": "Negative constraint guard (anti-drift)"
+        }
+      ]
+    },
+    "body_parts": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/body_part"
+      },
+      "description": "Body-part-level descriptions keyed by part name"
+    },
+    "body_part": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "description": {
+          "$ref": "#/definitions/descriptive_string"
+        },
+        "material": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string"
+        },
+        "adinkra": {
+          "$ref": "#/definitions/adinkra_ref"
+        },
+        "details": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "not_this": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^NOT_THIS:"
+          },
+          "description": "Negative constraint guards for this body part"
+        }
+      }
+    }
+  }
+}

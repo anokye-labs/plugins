@@ -1,0 +1,95 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anokye-labs.github.io/plugins/ahuofe/schema/preset.schema.json",
+  "title": "Ahuofe Preset Configuration",
+  "description": "Schema for brand preset/stage configuration files (e.g., brand/presets/draft.yaml)",
+  "type": "object",
+  "required": ["name", "model"],
+  "additionalProperties": true,
+  "properties": {
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Preset display name"
+    },
+    "stage": {
+      "type": "string",
+      "enum": ["draft", "review", "refine", "final"],
+      "description": "Pipeline stage this preset targets"
+    },
+    "model": {
+      "type": "string",
+      "minLength": 1,
+      "description": "fal.ai model identifier (e.g., fal-ai/flux-pro)"
+    },
+    "aspect_ratio": {
+      "type": "string",
+      "pattern": "^[1-9][0-9]*:[1-9][0-9]*$",
+      "description": "Aspect ratio (e.g., 16:9, 1:1, 4:3)"
+    },
+    "num_inference_steps": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 200,
+      "description": "Number of inference steps for the model"
+    },
+    "guidance_scale": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 30,
+      "description": "Guidance scale for classifier-free guidance"
+    },
+    "max_iterations": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "Maximum number of generation iterations"
+    },
+    "pass_threshold": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "description": "Drift score threshold (0-100) to pass evaluation"
+    },
+    "seed": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Random seed for reproducible generation"
+    },
+    "negative_prompt": {
+      "type": "string",
+      "description": "Negative prompt to guide generation away from undesired features"
+    },
+    "style_preset": {
+      "type": "string",
+      "description": "Named style preset to apply"
+    },
+    "reference_sheet": {
+      "type": "boolean",
+      "description": "Whether to generate a reference sheet first"
+    },
+    "reference_model": {
+      "type": "string",
+      "description": "Model to use for reference sheet generation"
+    },
+    "drift_evaluation": {
+      "type": "string",
+      "enum": ["quick", "quick_plus", "vision"],
+      "description": "Drift evaluation mode"
+    },
+    "output_format": {
+      "type": "string",
+      "enum": ["png", "jpg", "webp"],
+      "description": "Output image format"
+    },
+    "quality": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 100,
+      "description": "Output image quality (1-100)"
+    },
+    "requires_approval": {
+      "type": "boolean",
+      "description": "Whether this stage requires human approval before generation"
+    }
+  }
+}

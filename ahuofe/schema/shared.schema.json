@@ -1,0 +1,181 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://anokye-labs.github.io/plugins/ahuofe/schema/shared.schema.json",
+  "title": "Ahuofe Shared Configuration",
+  "description": "Schema for brand shared configuration files (e.g., brand/shared/colors.yaml, materials.yaml, environment.yaml)",
+  "type": "object",
+  "required": [],
+  "additionalProperties": true,
+  "properties": {
+    "colors": {
+      "$ref": "#/definitions/color_config"
+    },
+    "materials": {
+      "$ref": "#/definitions/material_config"
+    },
+    "environment": {
+      "$ref": "#/definitions/environment_config"
+    },
+    "proportions": {
+      "$ref": "#/definitions/proportion_config"
+    },
+    "adinkra_map": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/definitions/adinkra_entry"
+      },
+      "description": "Map of adinkra symbol names to their definitions"
+    },
+    "$ref": {
+      "type": "string",
+      "description": "Cross-reference to another shared file"
+    }
+  },
+  "definitions": {
+    "hex_color": {
+      "type": "string",
+      "pattern": "^#[0-9A-Fa-f]{6}$",
+      "description": "Hex color in #RRGGBB format"
+    },
+    "named_color": {
+      "type": "string",
+      "enum": [
+        "black", "white", "red", "green", "blue", "yellow", "orange",
+        "purple", "brown", "gold", "silver", "ivory", "crimson",
+        "indigo", "teal", "maroon", "navy", "olive", "coral", "bronze"
+      ],
+      "description": "Named color from the allowed palette"
+    },
+    "color_value": {
+      "anyOf": [
+        { "$ref": "#/definitions/hex_color" },
+        { "$ref": "#/definitions/named_color" }
+      ]
+    },
+    "color_object": {
+      "type": "object",
+      "properties": {
+        "primary": { "$ref": "#/definitions/color_value" },
+        "secondary": { "$ref": "#/definitions/color_value" },
+        "accent": { "$ref": "#/definitions/color_value" },
+        "name": { "type": "string" },
+        "hex": { "$ref": "#/definitions/hex_color" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "color_config": {
+      "type": "object",
+      "properties": {
+        "primary": { "$ref": "#/definitions/color_value" },
+        "secondary": { "$ref": "#/definitions/color_value" },
+        "accent": { "$ref": "#/definitions/color_value" },
+        "palette": {
+          "type": "array",
+          "items": {
+            "anyOf": [
+              { "$ref": "#/definitions/color_value" },
+              { "$ref": "#/definitions/color_object" }
+            ]
+          }
+        }
+      },
+      "additionalProperties": {
+        "anyOf": [
+          { "$ref": "#/definitions/color_value" },
+          { "$ref": "#/definitions/color_object" }
+        ]
+      }
+    },
+    "material_enum": {
+      "type": "string",
+      "enum": [
+        "kente", "gold", "silver", "bronze", "wood", "leather",
+        "silk", "cotton", "clay", "stone", "iron", "brass",
+        "copper", "glass", "ivory", "bone", "shell", "bead",
+        "raffia", "bamboo"
+      ],
+      "description": "Allowed material type"
+    },
+    "material_config": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          { "$ref": "#/definitions/material_enum" },
+          {
+            "type": "object",
+            "properties": {
+              "type": { "$ref": "#/definitions/material_enum" },
+              "finish": { "type": "string" },
+              "texture": { "type": "string" },
+              "description": { "type": "string" }
+            },
+            "required": ["type"],
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "environment_config": {
+      "type": "object",
+      "properties": {
+        "lighting": {
+          "type": "string",
+          "description": "Lighting description"
+        },
+        "background": {
+          "type": "string",
+          "description": "Background description"
+        },
+        "atmosphere": {
+          "type": "string",
+          "description": "Atmospheric description"
+        },
+        "time_of_day": {
+          "type": "string",
+          "description": "Time of day setting"
+        },
+        "setting": {
+          "type": "string",
+          "description": "General setting description"
+        }
+      },
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "proportion_range": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1,
+      "description": "Proportion value in 0-1 range"
+    },
+    "proportion_config": {
+      "type": "object",
+      "additionalProperties": {
+        "anyOf": [
+          { "$ref": "#/definitions/proportion_range" },
+          {
+            "type": "object",
+            "properties": {
+              "value": { "$ref": "#/definitions/proportion_range" },
+              "description": { "type": "string" }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "adinkra_entry": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "meaning": { "type": "string" },
+        "image": { "type": "string" },
+        "usage": { "type": "string" },
+        "description": { "type": "string" }
+      },
+      "additionalProperties": true
+    }
+  }
+}

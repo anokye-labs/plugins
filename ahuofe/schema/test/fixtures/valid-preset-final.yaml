@@ -1,0 +1,17 @@
+name: final
+stage: final
+model: fal-ai/flux-pro/kontext/max/multi
+reference_sheet: true
+reference_model: fal-ai/flux-pro/kontext
+max_iterations: 3
+pass_threshold: 85
+drift_evaluation: vision
+output_format: png
+aspect_ratio: "16:9"
+num_inference_steps: 100
+guidance_scale: 12.5
+quality: 100
+requires_approval: true
+seed: 42
+negative_prompt: low quality, blurry, deformed, western crown, modern clothing
+style_preset: afro-futurism
