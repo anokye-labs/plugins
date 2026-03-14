@@ -64,6 +64,15 @@ jobs:
             echo "okyeame_changed=false" >> $GITHUB_OUTPUT
             echo "○ okyeame has no changes"
           fi
+
+          # Check if okyerema has changes
+          if echo "$CHANGED_FILES" | grep -q "^okyerema/"; then
+            echo "okyerema_changed=true" >> $GITHUB_OUTPUT
+            echo "✓ okyerema has changes"
+          else
+            echo "okyerema_changed=false" >> $GITHUB_OUTPUT
+            echo "○ okyerema has no changes"
+          fi
       
       - name: Validate omanfo plugin
         if: steps.changes.outputs.omanfo_changed == 'true'
@@ -169,6 +178,58 @@ jobs:
             exit 1
           }
 
+      - name: Validate okyerema plugin
+        if: steps.changes.outputs.okyerema_changed == 'true'
+        shell: pwsh
+        run: |
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          Write-Host "       VALIDATING OKYEREMA PLUGIN" -ForegroundColor Cyan
+          Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+
+          $failures = 0
+
+          # Test 1: File Structure
+          Write-Host "`n▶ Running Test-FileStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-FileStructure.ps1 -PluginPath okyerema
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+
+          # Test 3: PowerShell Syntax
+          Write-Host "`n▶ Running Test-PowerShellSyntax..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-PowerShellSyntax.ps1 -PluginPath okyerema
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+
+          # Test 4: SKILL.md Quality
+          Write-Host "`n▶ Running Test-SkillQuality..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-SkillQuality.ps1 -PluginPath okyerema
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+
+          # Test 5: Evaluation Coverage
+          Write-Host "`n▶ Running Test-EvalCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-EvalCoverage.ps1 -PluginPath okyerema
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+
+          # Test 6: Markdown Structure
+          Write-Host "`n▶ Running Test-MarkdownStructure..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-MarkdownStructure.ps1 -PluginPath okyerema
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+
+          # Test 7: Script Test Coverage
+          Write-Host "`n▶ Running Test-ScriptTestCoverage..." -ForegroundColor Blue
+          & ./omanfo/scripts/validation/Test-ScriptTestCoverage.ps1 -PluginPath okyerema
+          if ($LASTEXITCODE -ne 0) { $failures++ }
+
+          # Summary
+          Write-Host "`n═══════════════════════════════════════" -ForegroundColor Cyan
+          if ($failures -eq 0) {
+            Write-Host "   ✅ ALL OKYEREMA VALIDATIONS PASSED" -ForegroundColor Green
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 0
+          } else {
+            Write-Host "   ❌ $failures VALIDATION(S) FAILED" -ForegroundColor Red
+            Write-Host "═══════════════════════════════════════`n" -ForegroundColor Cyan
+            exit 1
+          }
+
       - name: Validate ahuofe plugin
         if: steps.changes.outputs.ahuofe_changed == 'true'
         shell: pwsh
@@ -244,3 +305,16 @@ jobs:
           $config.Output.Verbosity = 'Detailed'
           $config.Run.Exit = $true
           Invoke-Pester -Configuration $config
+
+      - name: Run okyerema unit tests
+        shell: pwsh
+        run: |
+          if (Test-Path './tests/okyerema/unit') {
+            $config = New-PesterConfiguration
+            $config.Run.Path = './tests/okyerema/unit'
+            $config.Output.Verbosity = 'Detailed'
+            $config.Run.Exit = $true
+            Invoke-Pester -Configuration $config
+          } else {
+            Write-Host "No okyerema unit tests found, skipping." -ForegroundColor Yellow
+          }

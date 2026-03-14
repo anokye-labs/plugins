@@ -1,0 +1,161 @@
+name: Auto Enqueue
+
+# Distributable template — copy to target repo's .github/workflows/
+# Sweeps open PRs and enqueues those that are ready to merge.
+
+on:
+  workflow_run:
+    workflows: ["Validate Plugin", "Require Linked Issue"]
+    types: [completed]
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+jobs:
+  auto-enqueue:
+    name: Auto Enqueue
+    if: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+      actions: write
+    steps:
+      - name: Enqueue ready PRs
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const requiredChecks = ['Static Validation', 'Check Linked Issue'];
+
+            function latestConclusion(checkRuns, name) {
+              const matches = checkRuns
+                .filter(r => r.name === name && r.status === 'completed')
+                .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+              return matches.length > 0 ? matches[0].conclusion : null;
+            }
+
+            const targetSha = context.payload.workflow_run?.head_sha || null;
+
+            const prs = await github.paginate(github.rest.pulls.list, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              base: 'main',
+              per_page: 100,
+            });
+
+            let enqueued = 0;
+            let dispatched = 0;
+            for (const pr of prs) {
+              if (targetSha && pr.head.sha !== targetSha) continue;
+
+              // Copilot PRs: dispatch copilot-checks.yml
+              if (pr.head.ref.startsWith('copilot/')
+                  && ['Copilot', 'copilot-swe-agent[bot]'].includes(pr.user.login)) {
+                const linked = await github.graphql(`
+                  query($owner:String!,$repo:String!,$pr:Int!) {
+                    repository(owner:$owner,name:$repo) {
+                      pullRequest(number:$pr) {
+                        closingIssuesReferences(first:1) { totalCount }
+                      }
+                    }
+                  }
+                `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number });
+
+                if (linked.repository.pullRequest.closingIssuesReferences.totalCount === 0) continue;
+
+                if (pr.auto_merge) {
+                  const { data: checkData } = await github.rest.checks.listForRef({
+                    owner: context.repo.owner, repo: context.repo.repo,
+                    ref: pr.head.sha, per_page: 100,
+                  });
+                  if (requiredChecks.every(name => latestConclusion(checkData.check_runs, name) === 'success')) continue;
+                }
+
+                try {
+                  await github.rest.actions.createWorkflowDispatch({
+                    owner: context.repo.owner, repo: context.repo.repo,
+                    workflow_id: 'copilot-checks.yml',
+                    ref: 'main',
+                    inputs: { pr_number: String(pr.number) },
+                  });
+                  dispatched++;
+                } catch (e) {
+                  core.info(`PR #${pr.number}: dispatch failed: ${e.message}`);
+                }
+                continue;
+              }
+
+              if (pr.draft || !pr.auto_merge) continue;
+
+              const triageActive = pr.labels?.some(l => l.name === 'triage/active');
+              if (triageActive) continue;
+
+              const { data: checkData } = await github.rest.checks.listForRef({
+                owner: context.repo.owner, repo: context.repo.repo,
+                ref: pr.head.sha, per_page: 100,
+              });
+              if (!requiredChecks.every(name => latestConclusion(checkData.check_runs, name) === 'success')) continue;
+
+              const { data: reviews } = await github.rest.pulls.listReviews({
+                owner: context.repo.owner, repo: context.repo.repo,
+                pull_number: pr.number,
+              });
+              if (!reviews.some(r => r.state === 'APPROVED')) continue;
+
+              // Auto-resolve bot threads
+              const botLogins = new Set([
+                'github-code-quality[bot]', 'github-code-quality',
+                'devin-ai-integration[bot]', 'devin-ai-integration',
+                'github-advanced-security[bot]', 'github-advanced-security',
+              ]);
+
+              const threadData = await github.graphql(`
+                query($owner:String!,$repo:String!,$pr:Int!) {
+                  repository(owner:$owner,name:$repo) {
+                    pullRequest(number:$pr) {
+                      reviewThreads(first:100) {
+                        nodes {
+                          id isResolved
+                          comments(first:1) { nodes { author { login } } }
+                        }
+                      }
+                    }
+                  }
+                }
+              `, { owner: context.repo.owner, repo: context.repo.repo, pr: pr.number });
+
+              const unresolvedBotThreads = threadData.repository.pullRequest.reviewThreads.nodes
+                .filter(t => !t.isResolved && t.comments.nodes.length > 0
+                  && botLogins.has(t.comments.nodes[0].author.login));
+
+              for (const thread of unresolvedBotThreads) {
+                try {
+                  await github.graphql(`
+                    mutation($id: ID!) {
+                      resolveReviewThread(input: { threadId: $id }) { thread { isResolved } }
+                    }
+                  `, { id: thread.id });
+                } catch (e) {}
+              }
+
+              const hasUnresolved = threadData.repository.pullRequest.reviewThreads.nodes
+                .some(t => !t.isResolved && (t.comments.nodes.length === 0
+                  || !botLogins.has(t.comments.nodes[0].author.login)));
+              if (hasUnresolved) continue;
+
+              try {
+                await github.graphql(`
+                  mutation($prId:ID!) {
+                    enqueuePullRequest(input:{ pullRequestId:$prId }) {
+                      mergeQueueEntry { position state }
+                    }
+                  }
+                `, { prId: pr.node_id });
+                enqueued++;
+              } catch (e) {
+                core.info(`Could not enqueue PR #${pr.number}: ${e.message}`);
+              }
+            }
+
+            core.info(`Sweep: ${enqueued} enqueued, ${dispatched} dispatched, out of ${prs.length} open.`);

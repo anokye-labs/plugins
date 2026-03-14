@@ -58,7 +58,7 @@ jobs:
           git fetch origin main
           CHANGED_FILES=$(git diff --name-only origin/main...HEAD)
 
-          for plugin in omanfo ahuofe okyeame; do
+          for plugin in omanfo ahuofe okyeame okyerema; do
             if echo "$CHANGED_FILES" | grep -q "^${plugin}/"; then
               echo "${plugin}_changed=true" >> $GITHUB_OUTPUT
               echo "✓ ${plugin} has changes"
@@ -100,6 +100,18 @@ jobs:
           foreach ($test in @('Test-FileStructure','Test-PowerShellSyntax','Test-SkillQuality','Test-EvalCoverage','Test-MarkdownStructure','Test-ScriptTestCoverage')) {
             Write-Host "▶ Running $test..." -ForegroundColor Blue
             & ./omanfo/scripts/validation/$test.ps1 -PluginPath okyeame
+            if ($LASTEXITCODE -ne 0) { $failures++ }
+          }
+          if ($failures -gt 0) { exit 1 }
+
+      - name: Validate okyerema plugin
+        if: steps.changes.outputs.okyerema_changed == 'true'
+        shell: pwsh
+        run: |
+          $failures = 0
+          foreach ($test in @('Test-FileStructure','Test-PowerShellSyntax','Test-SkillQuality','Test-EvalCoverage','Test-MarkdownStructure','Test-ScriptTestCoverage')) {
+            Write-Host "▶ Running $test..." -ForegroundColor Blue
+            & ./omanfo/scripts/validation/$test.ps1 -PluginPath okyerema
             if ($LASTEXITCODE -ne 0) { $failures++ }
           }
           if ($failures -gt 0) { exit 1 }
@@ -172,6 +184,19 @@ jobs:
           $config.Output.Verbosity = 'Detailed'
           $config.Run.Exit = $true
           Invoke-Pester -Configuration $config
+
+      - name: Run okyerema unit tests
+        shell: pwsh
+        run: |
+          if (Test-Path './tests/okyerema/unit') {
+            $config = New-PesterConfiguration
+            $config.Run.Path = './tests/okyerema/unit'
+            $config.Output.Verbosity = 'Detailed'
+            $config.Run.Exit = $true
+            Invoke-Pester -Configuration $config
+          } else {
+            Write-Host "No okyerema unit tests found, skipping." -ForegroundColor Yellow
+          }
 
   # ── Auto-approve + enqueue ────────────────────────────────────────────
   # NOTE: This job deliberately does NOT checkout PR code. It only uses

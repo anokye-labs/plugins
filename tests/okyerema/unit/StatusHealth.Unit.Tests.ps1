@@ -1,5 +1,5 @@
-# StatusHealth.Tests.ps1
-# Pester tests for status and health monitoring scripts
+# StatusHealth.Unit.Tests.ps1
+# Pester 5 tests for okyerema status and health monitoring scripts
 
 BeforeAll {
     $healthPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/health"
@@ -44,56 +44,56 @@ Describe "Get-Sitrep" {
     }
 
     It "Should query repository data via GraphQL" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $mockResponse 
+            return $mockResponse
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
         Mock git { return "main" } -ParameterFilter { $args[0] -eq 'rev-parse' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'log' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'status' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should return PSCustomObject" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $mockResponse 
+            return $mockResponse
         } -ParameterFilter { $args[0] -eq 'api' }
         Mock git { return "main" } -ParameterFilter { $args[0] -eq 'rev-parse' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'log' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'status' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result | Should -BeOfType [PSCustomObject]
     }
 
     It "Should include TotalOpen in output" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $mockResponse 
+            return $mockResponse
         } -ParameterFilter { $args[0] -eq 'api' }
         Mock git { return "main" } -ParameterFilter { $args[0] -eq 'rev-parse' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'log' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'status' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "TotalOpen"
     }
 
     It "Should include GitStatus in output" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $mockResponse 
+            return $mockResponse
         } -ParameterFilter { $args[0] -eq 'api' }
         Mock git { return "main" } -ParameterFilter { $args[0] -eq 'rev-parse' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'log' }
         Mock git { return "" } -ParameterFilter { $args[0] -eq 'status' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "GitStatus"
     }
 }
@@ -117,55 +117,55 @@ Describe "Get-HierarchyHealth" {
     }
 
     It "Should query all issues with hierarchy data" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should return PSCustomObject with health metrics" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result | Should -BeOfType [PSCustomObject]
     }
 
     It "Should include TypeCounts property" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "TypeCounts"
     }
 
     It "Should include Orphans property" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "Orphans"
     }
 
     It "Should include HealthScore property" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "HealthScore"
     }
 }
@@ -189,22 +189,22 @@ Describe "Get-DagStatus" {
     }
 
     It "Should query issues with blocking relationships" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should return array of issue objects" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = @(& $scriptPath -Owner "test-org" -Repo "test-repo")
-        
+
         # Force result to array and check it has items
         $result.Count | Should -BeGreaterOrEqual 0
     }
@@ -326,7 +326,7 @@ Describe "Get-DagCompletionReport" {
 
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
 
-        # Fixture has 3 all-open paths: #1 → #3 → #6, #8 → #9, #8 → #10
+        # Fixture has 3 all-open paths: #1 -> #3 -> #6, #8 -> #9, #8 -> #10
         $result.BlockedPathCount | Should -Be 3
         $result.BlockedPaths.Count | Should -Be $result.BlockedPathCount
     }
@@ -339,7 +339,7 @@ Describe "Get-DagCompletionReport" {
 
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
 
-        # Longest all-open path in fixture is #1 → #3 → #6 (length 3)
+        # Longest all-open path in fixture is #1 -> #3 -> #6 (length 3)
         $result.CriticalPathLength | Should -Be 3
     }
 
@@ -376,44 +376,44 @@ Describe "Invoke-DagHealthCheck" {
     }
 
     It "Should query dependency graph" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should return health report with cycles" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "Cycles"
     }
 
     It "Should return health score" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "HealthScore"
     }
 
     It "Should provide cycles property with correct count" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result.PSObject.Properties.Name | Should -Contain "Cycles"
         $result.Cycles.Count | Should -Be $result.CycleCount
     }

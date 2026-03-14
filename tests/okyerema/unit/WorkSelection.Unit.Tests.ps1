@@ -1,15 +1,14 @@
-# WorkSelection.Tests.ps1
-# Pester tests for work selection and prioritization scripts
+# WorkSelection.Unit.Tests.ps1
+# Pester 5 tests for okyerema work selection rhythm scripts
 
 BeforeAll {
-    $scriptsPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/rhythm"
-    $healthScriptsPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/health"
+    $rhythmPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/rhythm"
     $fixturesPath = Join-Path $PSScriptRoot "../fixtures"
 }
 
 Describe "Get-ReadyIssues" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Get-ReadyIssues.ps1"
+        $scriptPath = Join-Path $rhythmPath "Get-ReadyIssues.ps1"
         $fixtureData = Get-Content (Join-Path $fixturesPath "dag-health.json") -Raw
     }
 
@@ -26,22 +25,22 @@ Describe "Get-ReadyIssues" {
     }
 
     It "Should query all open issues with dependencies" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should return PSCustomObject with ReadyIssues" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result | Should -BeOfType [PSCustomObject]
         $result.ReadyIssues | Should -Not -BeNullOrEmpty
     }
@@ -49,7 +48,7 @@ Describe "Get-ReadyIssues" {
 
 Describe "Get-BlockedIssues" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Get-BlockedIssues.ps1"
+        $scriptPath = Join-Path $rhythmPath "Get-BlockedIssues.ps1"
         $fixtureData = Get-Content (Join-Path $fixturesPath "dag-health.json") -Raw
     }
 
@@ -66,22 +65,22 @@ Describe "Get-BlockedIssues" {
     }
 
     It "Should query all open issues" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should return PSCustomObject with BlockedIssues" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result | Should -BeOfType [PSCustomObject]
         $result.PSObject.Properties.Name | Should -Contain "BlockedIssues"
     }
@@ -89,7 +88,7 @@ Describe "Get-BlockedIssues" {
 
 Describe "Get-OrphanedIssues" {
     BeforeAll {
-        $scriptPath = Join-Path $healthScriptsPath "Get-OrphanedIssues.ps1"
+        $scriptPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/health" | Join-Path -ChildPath "Get-OrphanedIssues.ps1"
         $fixtureData = Get-Content (Join-Path $fixturesPath "hierarchy-tree.json") -Raw
     }
 
@@ -106,22 +105,22 @@ Describe "Get-OrphanedIssues" {
     }
 
     It "Should query issues with hierarchy relationships" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should return PSCustomObject with Orphans" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $fixtureData 
+            return $fixtureData
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo"
-        
+
         $result | Should -BeOfType [PSCustomObject]
         $result.Orphans | Should -Not -BeNullOrEmpty
     }
@@ -129,7 +128,7 @@ Describe "Get-OrphanedIssues" {
 
 Describe "Get-StalledWork" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Get-StalledWork.ps1"
+        $scriptPath = Join-Path $rhythmPath "Get-StalledWork.ps1"
         $mockResponse = @'
 {
   "data": {
@@ -173,22 +172,22 @@ Describe "Get-StalledWork" {
     }
 
     It "Should query issues with timeline data" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $mockResponse 
+            return $mockResponse
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" *>&1 } | Should -Not -Throw
     }
 
     It "Should identify stalled issues" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
-            return $mockResponse 
+            return $mockResponse
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -ThresholdDays 30
-        
+
         $result | Should -BeOfType [PSCustomObject]
     }
 }

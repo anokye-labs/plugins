@@ -1,0 +1,133 @@
+name: Sankofa Health Patrol
+
+# Distributable template — copy to target repo's .github/workflows/
+# Runs scheduled health checks: orphan detection, stale work, hierarchy integrity.
+# Configure schedule via cron below.
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'  # Every Monday at 9 AM UTC
+  workflow_dispatch:
+
+jobs:
+  patrol:
+    name: Health Patrol
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run health checks
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $owner = "${{ github.repository_owner }}"
+          $repo = "${{ github.event.repository.name }}"
+
+          Write-Host "Sankofa Health Patrol — $owner/$repo" -ForegroundColor Cyan
+          Write-Host "========================================`n" -ForegroundColor Cyan
+
+          $alerts = @()
+
+          # 1. Check for orphaned issues
+          Write-Host "Checking for orphaned issues..." -ForegroundColor Blue
+          $query = @"
+          query {
+            repository(owner: "$owner", name: "$repo") {
+              issues(states: OPEN, first: 100) {
+                nodes {
+                  number
+                  title
+                  issueType { name }
+                  parentIssue { number }
+                }
+              }
+            }
+          }
+          "@
+
+          $result = gh api graphql -H "GraphQL-Features: sub_issues" -f query="$query" | ConvertFrom-Json
+          $orphans = $result.data.repository.issues.nodes | Where-Object {
+            -not $_.parentIssue -and $_.issueType.name -ne 'Epic'
+          }
+
+          if ($orphans.Count -gt 0) {
+            Write-Host "  Found $($orphans.Count) orphaned issue(s)" -ForegroundColor Yellow
+            $alerts += "Orphans: $($orphans.Count) issues with no parent"
+          } else {
+            Write-Host "  No orphans found" -ForegroundColor Green
+          }
+
+          # 2. Check for stale issues (no activity in 14+ days)
+          Write-Host "`nChecking for stale issues..." -ForegroundColor Blue
+          $staleCutoff = (Get-Date).AddDays(-14).ToString("yyyy-MM-ddTHH:mm:ssZ")
+          $staleQuery = @"
+          query {
+            repository(owner: "$owner", name: "$repo") {
+              issues(states: OPEN, first: 100, filterBy: {since: "2000-01-01"}) {
+                nodes {
+                  number
+                  title
+                  updatedAt
+                }
+              }
+            }
+          }
+          "@
+
+          $staleResult = gh api graphql -f query="$staleQuery" | ConvertFrom-Json
+          $stale = $staleResult.data.repository.issues.nodes | Where-Object {
+            [datetime]$_.updatedAt -lt [datetime]$staleCutoff
+          }
+
+          if ($stale.Count -gt 0) {
+            Write-Host "  Found $($stale.Count) stale issue(s)" -ForegroundColor Yellow
+            $alerts += "Stale: $($stale.Count) issues idle 14+ days"
+          } else {
+            Write-Host "  No stale issues" -ForegroundColor Green
+          }
+
+          # 3. Check for PRs with unresolved threads
+          Write-Host "`nChecking PR health..." -ForegroundColor Blue
+          $prQuery = @"
+          query {
+            repository(owner: "$owner", name: "$repo") {
+              pullRequests(states: OPEN, first: 50) {
+                nodes {
+                  number
+                  title
+                  reviewThreads(first: 100) {
+                    nodes { isResolved }
+                  }
+                }
+              }
+            }
+          }
+          "@
+
+          $prResult = gh api graphql -f query="$prQuery" | ConvertFrom-Json
+          $prDebt = $prResult.data.repository.pullRequests.nodes | Where-Object {
+            $_.reviewThreads.nodes | Where-Object { -not $_.isResolved }
+          }
+
+          if ($prDebt.Count -gt 0) {
+            Write-Host "  Found $($prDebt.Count) PR(s) with unresolved threads" -ForegroundColor Yellow
+            $alerts += "PR debt: $($prDebt.Count) PRs with unresolved threads"
+          } else {
+            Write-Host "  All PR threads resolved" -ForegroundColor Green
+          }
+
+          # Summary
+          Write-Host "`n========================================" -ForegroundColor Cyan
+          if ($alerts.Count -eq 0) {
+            Write-Host "Health: All clear" -ForegroundColor Green
+          } else {
+            Write-Host "Health Alerts:" -ForegroundColor Yellow
+            foreach ($alert in $alerts) {
+              Write-Host "  - $alert" -ForegroundColor Yellow
+            }
+          }

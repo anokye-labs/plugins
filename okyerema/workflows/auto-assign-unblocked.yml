@@ -1,0 +1,123 @@
+name: Auto-Assign Unblocked Issues
+
+# Distributable template — copy to target repo's .github/workflows/
+# When an issue is closed, check if any previously-blocked issues are now unblocked
+# and auto-assign them to @copilot for cascade dispatch.
+
+on:
+  issues:
+    types: [closed]
+
+jobs:
+  cascade:
+    name: Cascade Dispatch
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Find newly unblocked issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const closedIssue = context.payload.issue;
+            const closedNumber = closedIssue.number;
+
+            core.info(`Issue #${closedNumber} closed — checking for cascade dispatch.`);
+
+            // Find open issues that reference this issue as a blocker
+            // Search for "Blocked by #N" or "Depends on #N" in issue bodies
+            const { repository } = await github.graphql(`
+              query($owner: String!, $repo: String!) {
+                repository(owner: $owner, name: $repo) {
+                  issues(states: OPEN, first: 100) {
+                    nodes {
+                      number
+                      title
+                      body
+                      assignees(first: 5) { nodes { login } }
+                      issueType { name }
+                    }
+                  }
+                }
+              }
+            `, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const blockerPattern = new RegExp(
+              `(?:blocked\\s+by|depends\\s+on)[:\\s]+#${closedNumber}\\b`,
+              'i'
+            );
+
+            const candidates = repository.issues.nodes.filter(issue => {
+              if (!issue.body) return false;
+              if (issue.assignees.nodes.length > 0) return false;
+              return blockerPattern.test(issue.body);
+            });
+
+            if (candidates.length === 0) {
+              core.info('No newly unblocked issues found.');
+              return;
+            }
+
+            core.info(`Found ${candidates.length} potentially unblocked issue(s).`);
+
+            // For each candidate, verify ALL blockers are now closed
+            for (const candidate of candidates) {
+              const allBlockerRefs = [
+                ...candidate.body.matchAll(/(?:blocked\s+by|depends\s+on)[:\s]+#(\d+)/gi)
+              ].map(m => parseInt(m[1], 10));
+
+              // Check if all referenced blockers are closed
+              let allResolved = true;
+              for (const ref of allBlockerRefs) {
+                if (ref === closedNumber) continue; // This one just closed
+                try {
+                  const { data: refIssue } = await github.rest.issues.get({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: ref,
+                  });
+                  if (refIssue.state === 'open') {
+                    allResolved = false;
+                    break;
+                  }
+                } catch (e) {
+                  core.info(`Could not check #${ref}: ${e.message}`);
+                }
+              }
+
+              if (!allResolved) {
+                core.info(`Issue #${candidate.number} still has open blockers.`);
+                continue;
+              }
+
+              // Only auto-assign dispatchable types
+              const dispatchableTypes = ['Task', 'Bug'];
+              if (!candidate.issueType || !dispatchableTypes.includes(candidate.issueType.name)) {
+                core.info(`Issue #${candidate.number} is type "${candidate.issueType?.name}" — not auto-assignable.`);
+                continue;
+              }
+
+              // Comment that blockers are resolved
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: candidate.number,
+                body: `All blockers resolved (last: #${closedNumber}). This issue is now ready for work.`,
+              });
+
+              // Add auto-flow label to trigger issue-dispatch workflow
+              try {
+                await github.rest.issues.addLabels({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: candidate.number,
+                  labels: ['auto-flow'],
+                });
+                core.info(`Issue #${candidate.number} labeled for auto-dispatch.`);
+              } catch (e) {
+                core.warning(`Could not label #${candidate.number}: ${e.message}`);
+              }
+            }

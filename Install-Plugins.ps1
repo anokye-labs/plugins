@@ -3,7 +3,7 @@
     Installs all Anokye Labs plugins via the Copilot CLI.
 
 .DESCRIPTION
-    Installs the omanfo and ahuofe plugins using `copilot plugin install`.
+    Installs the omanfo, ahuofe, and okyerema plugins using `copilot plugin install`.
     Supports installation from the local source tree or from the remote
     GitHub repository.
 
@@ -21,7 +21,7 @@
 #Requires -Version 5.1
 [CmdletBinding()]
 param(
-    [string[]]$Plugins = @("omanfo", "ahuofe"),
+    [string[]]$Plugins = @("omanfo", "ahuofe", "okyerema"),
     [switch]$Remote
 )
 

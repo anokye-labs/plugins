@@ -1,0 +1,36 @@
+{
+  "name": "okyerema",
+  "description": "The Okyerema plugin — Rhythm Engine for the Anokye System. One drummer, many instruments: shared scripts across Claude Code, Copilot, GitHub Actions, and local act runners.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Anokye Labs"
+  },
+  "repository": "https://github.com/anokye-labs/plugins",
+  "license": "MIT",
+  "tags": [
+    "orchestration",
+    "workflow-automation",
+    "github-actions",
+    "ci-cd",
+    "rhythm-engine",
+    "multi-context",
+    "agent-first"
+  ],
+  "items": [
+    {
+      "path": "okyerema.agent.md",
+      "kind": "agent",
+      "usage": "recommended\n\nThe Okyerema (master drummer) is the rhythm engine of the Anokye System — configuring workflows, CI/CD pipelines, patrol schedules, and automation scaffolding across repositories and platforms."
+    },
+    {
+      "path": "skills/rhythm/SKILL.md",
+      "kind": "skill",
+      "usage": "recommended\n\nThe rhythm skill teaches agents the WIEG state machine (Wait → Investigate → Execute → Guard), dispatch patterns, and the rhythm loop for coordinating work across agents."
+    },
+    {
+      "path": "skills/sankofa/SKILL.md",
+      "kind": "skill",
+      "usage": "recommended\n\nThe sankofa skill teaches agents health patrol patterns — detecting orphaned issues, stale work, hierarchy integrity violations, and repo readiness gaps."
+    }
+  ]
+}

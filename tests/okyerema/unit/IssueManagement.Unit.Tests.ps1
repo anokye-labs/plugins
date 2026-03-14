@@ -1,14 +1,14 @@
-# IssueManagement.Tests.ps1
-# Pester tests for issue management scripts
+# IssueManagement.Unit.Tests.ps1
+# Pester 5 tests for okyerema issue management dispatch scripts
 
 BeforeAll {
-    $scriptsPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/dispatch"
+    $dispatchPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/dispatch"
     $fixturesPath = Join-Path $PSScriptRoot "../fixtures"
 }
 
 Describe "Get-IssueTypeIds" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Get-IssueTypeIds.ps1"
+        $scriptPath = Join-Path $dispatchPath "Get-IssueTypeIds.ps1"
         $fixtureData = Get-Content (Join-Path $fixturesPath "issue-types.json") -Raw
     }
 
@@ -20,34 +20,34 @@ Describe "Get-IssueTypeIds" {
 
     It "Should query organization issue types via GraphQL" {
         Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         $result = & $scriptPath -Owner "test-org" *>&1
-        
+
         Should -Invoke gh -Times 1 -ParameterFilter { $args[0] -eq 'api' }
     }
 
     It "Should return hashtable with type IDs" {
         Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         $result = & $scriptPath -Owner "test-org" | Where-Object { $_ -is [hashtable] }
-        
+
         $result | Should -BeOfType [hashtable]
         $result.Keys.Count | Should -BeGreaterThan 0
     }
 
     It "Should map Epic type name to ID" {
         Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         $result = & $scriptPath -Owner "test-org" | Where-Object { $_ -is [hashtable] }
-        
+
         $result['Epic'] | Should -Be 'IT_kwDOCfc9t84Ab123'
     }
 
     It "Should map all four standard types" {
         Mock gh { return $fixtureData } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         $result = & $scriptPath -Owner "test-org" | Where-Object { $_ -is [hashtable] }
-        
+
         $result['Epic'] | Should -Not -BeNullOrEmpty
         $result['Feature'] | Should -Not -BeNullOrEmpty
         $result['Task'] | Should -Not -BeNullOrEmpty
@@ -57,7 +57,7 @@ Describe "Get-IssueTypeIds" {
 
 Describe "New-IssueWithType" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "New-IssueWithType.ps1"
+        $scriptPath = Join-Path $dispatchPath "New-IssueWithType.ps1"
         $fixtureData = Get-Content (Join-Path $fixturesPath "issue-types.json") -Raw
         $createResponse = @'
 {
@@ -85,7 +85,7 @@ Describe "New-IssueWithType" {
     }
 
     It "Should query repository and issue types" {
-        Mock gh { 
+        Mock gh {
             if ($args -contains 'graphql') {
                 if ($args -match 'createIssue') {
                     return $createResponse
@@ -94,41 +94,41 @@ Describe "New-IssueWithType" {
                 }
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         & $scriptPath -Owner "test-org" -Repo "test-repo" -Title "Test" -TypeName "Task" *>&1
-        
+
         Should -Invoke gh -Times 2
     }
 
     It "Should create issue with correct type" {
-        Mock gh { 
+        Mock gh {
             if ($args -match 'createIssue') {
                 return $createResponse
             } else {
                 return $fixtureData
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $output = (& $scriptPath -Owner "test-org" -Repo "test-repo" -Title "Test" -TypeName "Task" *>&1) | Out-String
-        
+
         $output | Should -Match "Created #42"
         $output | Should -Match "Task"
     }
 
     It "Should handle Body parameter" {
-        Mock gh { 
+        Mock gh {
             if ($args -match 'createIssue') {
                 return $createResponse
             } else {
                 return $fixtureData
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" -Title "Test" -TypeName "Task" -Body "Description" *>&1 } | Should -Not -Throw
     }
 
     It "Should handle Labels parameter" {
-        Mock gh { 
+        Mock gh {
             if ($args -match 'createIssue') {
                 return $createResponse
             } elseif ($args -match 'addLabelsToLabelable') {
@@ -137,14 +137,14 @@ Describe "New-IssueWithType" {
                 return $fixtureData
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" -Title "Test" -TypeName "Task" -Labels @("bug", "urgent") *>&1 } | Should -Not -Throw
     }
 }
 
 Describe "Update-IssueHierarchy" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Update-IssueHierarchy.ps1"
+        $scriptPath = Join-Path $dispatchPath "Update-IssueHierarchy.ps1"
         $mutationResponse = '{"data":{"updateIssueSubIssues":{"issue":{"number":1}}}}'
     }
 
@@ -162,38 +162,38 @@ Describe "Update-IssueHierarchy" {
     }
 
     It "Should call GraphQL mutation" {
-        Mock gh { 
+        Mock gh {
             $script:LASTEXITCODE = 0
-            return $mutationResponse 
+            return $mutationResponse
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         & $scriptPath -Owner "test-org" -Repo "test-repo" -ParentNumber 1 -ChildNumbers @(2, 3) *>&1
-        
+
         Should -Invoke gh -ParameterFilter { $args[0] -eq 'api' }
     }
 
     It "Should handle single child" {
-        Mock gh { 
+        Mock gh {
             $script:LASTEXITCODE = 0
-            return $mutationResponse 
+            return $mutationResponse
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" -ParentNumber 1 -ChildNumbers @(2) *>&1 } | Should -Not -Throw
     }
 
     It "Should handle multiple children" {
-        Mock gh { 
+        Mock gh {
             $script:LASTEXITCODE = 0
-            return $mutationResponse 
+            return $mutationResponse
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" -ParentNumber 1 -ChildNumbers @(2, 3, 4) *>&1 } | Should -Not -Throw
     }
 }
 
 Describe "Set-IssueDependency" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Set-IssueDependency.ps1"
+        $scriptPath = Join-Path $dispatchPath "Set-IssueDependency.ps1"
     }
 
     It "Should have required parameters" {
@@ -227,7 +227,7 @@ Describe "Set-IssueDependency" {
 
 Describe "Test-Hierarchy" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Test-Hierarchy.ps1"
+        $scriptPath = Join-Path $dispatchPath "Test-Hierarchy.ps1"
     }
 
     It "Should have required Owner parameter" {
@@ -256,7 +256,7 @@ Describe "Test-Hierarchy" {
 
 Describe "Add-IssuesToProject" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Add-IssuesToProject.ps1"
+        $scriptPath = Join-Path $dispatchPath "Add-IssuesToProject.ps1"
         $projectResponse = @'
 {
   "data": {
@@ -329,7 +329,7 @@ Describe "Add-IssuesToProject" {
     }
 
     It "Should query project details via GraphQL" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'projectV2') {
                 return $projectResponse
@@ -339,12 +339,12 @@ Describe "Add-IssuesToProject" {
                 return $addResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         { & $scriptPath -Owner "test-org" -Repo "test-repo" -ProjectNumber 1 -IssueNumbers @(42) *>&1 } | Should -Not -Throw
     }
 
     It "Should return result with AddedCount property" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'projectV2') {
                 return $projectResponse
@@ -354,9 +354,9 @@ Describe "Add-IssuesToProject" {
                 return $addResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -ProjectNumber 1 -IssueNumbers @(42)
-        
+
         $result.AddedCount | Should -Not -BeNullOrEmpty
     }
 
@@ -368,7 +368,7 @@ Describe "Add-IssuesToProject" {
 
 Describe "New-IssueBatch" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "New-IssueBatch.ps1"
+        $scriptPath = Join-Path $dispatchPath "New-IssueBatch.ps1"
         $repoResponse = @'
 {
   "data": {
@@ -427,7 +427,7 @@ Describe "New-IssueBatch" {
     }
 
     It "Should query repository and issue types" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'issueTypes') {
                 return $repoResponse
@@ -435,13 +435,13 @@ Describe "New-IssueBatch" {
                 return $createResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         $issues = @(@{ Title = "Test"; TypeName = "Task"; Body = "Test body" })
         { & $scriptPath -Owner "test-org" -Repo "test-repo" -Issues $issues *>&1 } | Should -Not -Throw
     }
 
     It "Should create issues and return array" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'issueTypes') {
                 return $repoResponse
@@ -449,15 +449,15 @@ Describe "New-IssueBatch" {
                 return $createResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $issues = @(@{ Title = "Test"; TypeName = "Task"; Body = "Test body" })
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -Issues $issues
-        
+
         $result | Should -Not -BeNullOrEmpty
     }
 
     It "Should handle multiple issues in batch" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'issueTypes') {
                 return $repoResponse
@@ -465,7 +465,7 @@ Describe "New-IssueBatch" {
                 return $createResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $issues = @(
             @{ Title = "Test 1"; TypeName = "Task"; Body = "Body 1" }
             @{ Title = "Test 2"; TypeName = "Bug"; Body = "Body 2" }
@@ -476,7 +476,7 @@ Describe "New-IssueBatch" {
 
 Describe "New-IssueHierarchy" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "New-IssueHierarchy.ps1"
+        $scriptPath = Join-Path $dispatchPath "New-IssueHierarchy.ps1"
         $repoResponse = @'
 {
   "data": {
@@ -552,7 +552,7 @@ Describe "New-IssueHierarchy" {
     }
 
     It "Should query repository and issue types" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'issueTypes') {
                 return $repoResponse
@@ -564,7 +564,7 @@ Describe "New-IssueHierarchy" {
                 return $issueQueryResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' -and $args[1] -eq 'graphql' }
-        
+
         $hierarchy = @{
             Type = "Feature"
             Title = "Test Feature"
@@ -577,7 +577,7 @@ Describe "New-IssueHierarchy" {
     }
 
     It "Should create Feature hierarchy with tasks" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'issueTypes') {
                 return $repoResponse
@@ -589,7 +589,7 @@ Describe "New-IssueHierarchy" {
                 return $issueQueryResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $hierarchy = @{
             Type = "Feature"
             Title = "Test Feature"
@@ -599,12 +599,12 @@ Describe "New-IssueHierarchy" {
             )
         }
         $result = & $scriptPath -Owner "test-org" -Repo "test-repo" -Hierarchy $hierarchy
-        
+
         $result.Feature | Should -Not -BeNullOrEmpty
     }
 
     It "Should create Epic hierarchy with features" {
-        Mock gh { 
+        Mock gh {
             $global:LASTEXITCODE = 0
             if ($args -match 'issueTypes') {
                 return $repoResponse
@@ -616,13 +616,13 @@ Describe "New-IssueHierarchy" {
                 return $issueQueryResponse
             }
         } -ParameterFilter { $args[0] -eq 'api' }
-        
+
         $hierarchy = @{
             Type = "Epic"
             Title = "Test Epic"
             Body = "Test"
             Features = @(
-                @{ 
+                @{
                     Title = "Feature 1"
                     Type = "Feature"
                     Body = "F1"

@@ -11,11 +11,10 @@
     {
       "name": "omanfo",
       "source": "omanfo",
-      "description": "The Omanfo plugin -- Okyeame agent, Okyerema coordinator, and project management skills.",
+      "description": "The Omanfo plugin -- Okyeame agent and project management skills.",
       "version": "0.1.0",
       "skills": [
         "./omanfo/skills/okyeame",
-        "./omanfo/skills/okyerema",
         "./omanfo/skills/doc-coauthoring",
         "./omanfo/skills/docx",
         "./omanfo/skills/github-issue-creator",
@@ -26,6 +25,16 @@
         "./omanfo/skills/productivity",
         "./omanfo/skills/skill-creator",
         "./omanfo/skills/xlsx"
+      ]
+    },
+    {
+      "name": "okyerema",
+      "source": "okyerema",
+      "description": "The Okyerema plugin -- Rhythm Engine for the Anokye System. Multi-context workflow automation.",
+      "version": "1.0.0",
+      "skills": [
+        "./okyerema/skills/rhythm",
+        "./okyerema/skills/sankofa"
       ]
     }
   ]

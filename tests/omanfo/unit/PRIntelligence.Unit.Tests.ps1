@@ -2,7 +2,8 @@
 # Pester tests for PR intelligence and analysis scripts
 
 BeforeAll {
-    $scriptsPath = Join-Path $PSScriptRoot "../../../omanfo/skills/okyerema/scripts"
+    $scriptsPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/verify"
+    $rhythmPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/rhythm"
     $fixturesPath = Join-Path $PSScriptRoot "../fixtures"
 }
 
@@ -198,7 +199,7 @@ Describe "Submit-PRReview" {
 
 Describe "Invoke-PRCompletion" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Invoke-PRCompletion.ps1"
+        $scriptPath = Join-Path $rhythmPath "Invoke-PRCompletion.ps1"
         $threadsResponse = @'
 [
   {

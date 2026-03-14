@@ -1,22 +1,22 @@
 # Omanfo Plugin
 
-**The community toolkit for GitHub Copilot** — project orchestration, document processing, product management, and workflow automation. All the skills the asafo needs.
+**The community toolkit for GitHub Copilot** — the Okyeame linguist agent, document processing, product management, and productivity skills. All the ancillary skills the asafo needs.
 
 ## What It Does
 
 When installed, Omanfo gives GitHub Copilot the ability to:
 
-- **Configure agentic workflows** — create gh-aw definitions, GitHub Actions, Temporal workflows
-- **Scaffold automation** — audit repos for missing infrastructure, propose and create it
-- **Set up patrols** — Sankofa health checks for stale issues, orphans, stuck work
-- **Manage issues** — Create typed issues, build hierarchies, handle PR reviews
+- **Manage issues** — Create typed issues, build hierarchies, handle PR reviews (via Okyerema scripts)
 - **Document decisions** — ADR templates and guidance for architectural decisions
 - **Run helper scripts** — PowerShell tools for issue types, hierarchy, PR threads
+- **Generate documents** — DOCX, PDF, PPTX, XLSX creation and manipulation
+- **Product management** — Product management workflows and templates
 
 ## Role in the Anokye System
 
-Omanfo ("the people") is the shared toolkit of the asafo. It bundles the **Okyerema** (master drummer) agent alongside shared skills for documents, product management, and productivity — everything the warriors need to do their work.
+Omanfo ("the people") is the shared toolkit of the asafo. It provides the **Okyeame** (linguist) agent and ancillary skills for documents, product management, and productivity.
 
+For workflow automation, CI/CD, and the rhythm engine, see **[Okyerema](../okyerema/)** (standalone plugin).
 See **[Okyeame](../okyeame/)** for the linguist agent.
 
 ## Installation

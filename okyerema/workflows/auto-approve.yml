@@ -1,0 +1,138 @@
+name: Auto Approve
+
+# Distributable template — copy to target repo's .github/workflows/
+# Configure trusted actors via the trustedActors array below.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+    branches: [main]
+
+jobs:
+  auto-approve:
+    name: Auto Approve
+    if: ${{ !github.event.pull_request.draft }}
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - name: Auto approve for trusted authors
+        uses: actions/github-script@v7
+        with:
+          script: |
+            // Configure: add your trusted actors here
+            const trustedActors = [
+              'dependabot[bot]',
+              'renovate[bot]',
+              'devin-ai-integration[bot]',
+              'claude[bot]',
+              'chatgpt-codex-connector[bot]',
+              'Copilot',
+              'copilot-swe-agent[bot]',
+              'app/copilot-swe-agent',
+            ];
+
+            const actor = context.payload.pull_request.user.login;
+
+            if (!trustedActors.includes(actor)) {
+              core.info(`Skipping auto-approve for untrusted actor: ${actor}`);
+              return;
+            }
+
+            const prNumber = context.payload.pull_request.number;
+            const prNodeId = context.payload.pull_request.node_id;
+            const headSha  = context.payload.pull_request.head.sha;
+
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            if (!reviews.some(r => r.state === 'APPROVED')) {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                event: 'APPROVE',
+              });
+              core.info(`Auto-approved PR #${prNumber} for trusted actor: ${actor}`);
+            }
+
+            // Enable auto-merge
+            try {
+              await github.graphql(`
+                mutation($pullRequestId: ID!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $pullRequestId, mergeMethod: MERGE }) {
+                    pullRequest { number autoMergeRequest { mergeMethod } }
+                  }
+                }
+              `, { pullRequestId: prNodeId });
+              core.info(`Enabled auto-merge on PR #${prNumber}`);
+            } catch (e) {
+              core.info(`auto-merge: ${e.message}`);
+            }
+
+            // Enqueue if all checks already passed
+            const requiredChecks = ['Static Validation', 'Check Linked Issue'];
+            const { data: checkData } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: headSha,
+              per_page: 100,
+            });
+
+            function latestConclusion(checkRuns, name) {
+              const matches = checkRuns
+                .filter(r => r.name === name && r.status === 'completed')
+                .sort((a, b) => new Date(b.completed_at) - new Date(a.completed_at));
+              return matches.length > 0 ? matches[0].conclusion : null;
+            }
+
+            const allPassed = requiredChecks.every(name =>
+              latestConclusion(checkData.check_runs, name) === 'success'
+            );
+            if (!allPassed) {
+              core.info('Not all required checks passed yet.');
+              return;
+            }
+
+            // Check for unresolved threads
+            let hasUnresolved = false;
+            let cursor = null;
+            do {
+              const threads = await github.graphql(`
+                query($owner:String!,$repo:String!,$pr:Int!,$cursor:String) {
+                  repository(owner:$owner,name:$repo) {
+                    pullRequest(number:$pr) {
+                      reviewThreads(first:100,after:$cursor) {
+                        nodes { isResolved }
+                        pageInfo { hasNextPage endCursor }
+                      }
+                    }
+                  }
+                }
+              `, { owner: context.repo.owner, repo: context.repo.repo, pr: prNumber, cursor });
+              const page = threads.repository.pullRequest.reviewThreads;
+              if (page.nodes.some(t => !t.isResolved)) { hasUnresolved = true; break; }
+              cursor = page.pageInfo.hasNextPage ? page.pageInfo.endCursor : null;
+            } while (cursor);
+
+            if (hasUnresolved) {
+              core.info('PR has unresolved review threads; skipping enqueue.');
+              return;
+            }
+
+            try {
+              await github.graphql(`
+                mutation($prId:ID!) {
+                  enqueuePullRequest(input:{ pullRequestId:$prId }) {
+                    mergeQueueEntry { position state }
+                  }
+                }
+              `, { prId: prNodeId });
+              core.info(`PR #${prNumber} added to merge queue.`);
+            } catch (e) {
+              core.info(`Could not enqueue: ${e.message}`);
+            }

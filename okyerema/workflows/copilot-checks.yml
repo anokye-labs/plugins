@@ -1,0 +1,313 @@
+name: Copilot PR Checks
+
+# Distributable template — copy to target repo's .github/workflows/
+# Runs required checks for Copilot-authored PRs.
+# Two trigger paths:
+# 1. pull_request_target — fires on PR events
+# 2. workflow_dispatch — fired by auto-enqueue.yml for stuck draft PRs
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process'
+        required: true
+        type: number
+
+jobs:
+  resolve-pr:
+    name: Resolve PR
+    runs-on: ubuntu-latest
+    if: >
+      github.event_name == 'workflow_dispatch'
+      || (startsWith(github.head_ref, 'copilot/')
+          && contains(fromJSON('["Copilot","copilot-swe-agent[bot]"]'), github.event.pull_request.user.login))
+    outputs:
+      pr_number: ${{ steps.pr.outputs.number }}
+      pr_node_id: ${{ steps.pr.outputs.node_id }}
+      head_sha: ${{ steps.pr.outputs.head_sha }}
+      head_ref: ${{ steps.pr.outputs.head_ref }}
+      skip: ${{ steps.pr.outputs.skip }}
+    steps:
+      - name: Set PR context
+        id: pr
+        uses: actions/github-script@v7
+        with:
+          script: |
+            if (context.eventName === 'workflow_dispatch') {
+              const prNumber = parseInt('${{ inputs.pr_number }}', 10);
+              const { data: pr } = await github.rest.pulls.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+              });
+
+              if (!pr.head.ref.startsWith('copilot/') ||
+                  !['Copilot', 'copilot-swe-agent[bot]'].includes(pr.user.login)) {
+                core.setOutput('skip', 'true');
+                return;
+              }
+
+              core.setOutput('number', String(pr.number));
+              core.setOutput('node_id', pr.node_id);
+              core.setOutput('head_sha', pr.head.sha);
+              core.setOutput('head_ref', pr.head.ref);
+              core.setOutput('skip', 'false');
+            } else {
+              core.setOutput('number', String(context.payload.pull_request.number));
+              core.setOutput('node_id', context.payload.pull_request.node_id);
+              core.setOutput('head_sha', context.payload.pull_request.head.sha);
+              core.setOutput('head_ref', context.payload.pull_request.head.ref);
+              core.setOutput('skip', 'false');
+            }
+
+  validate:
+    name: Static Validation
+    needs: resolve-pr
+    if: needs.resolve-pr.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout PR code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.resolve-pr.outputs.head_sha }}
+          fetch-depth: 0
+
+      - name: Run validation
+        shell: pwsh
+        run: |
+          # Validate PowerShell syntax for all .ps1 files
+          $failures = 0
+          Get-ChildItem -Path . -Recurse -Filter "*.ps1" | ForEach-Object {
+            try {
+              $null = [System.Management.Automation.ScriptBlock]::Create(
+                (Get-Content $_.FullName -Raw)
+              )
+            } catch {
+              Write-Host "FAIL: $($_.FullName) — $_" -ForegroundColor Red
+              $failures++
+            }
+          }
+
+          # Validate JSON manifests
+          Get-ChildItem -Path . -Recurse -Filter "plugin.json" | ForEach-Object {
+            try {
+              $null = Get-Content $_.FullName -Raw | ConvertFrom-Json
+              Write-Host "PASS: $($_.FullName)" -ForegroundColor Green
+            } catch {
+              Write-Host "FAIL: $($_.FullName) — $_" -ForegroundColor Red
+              $failures++
+            }
+          }
+
+          if ($failures -gt 0) { exit 1 }
+
+  check-linked-issue:
+    name: Check Linked Issue
+    needs: resolve-pr
+    if: needs.resolve-pr.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Check for linked issue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ needs.resolve-pr.outputs.pr_number }}', 10);
+            const result = await github.graphql(`
+              query($owner: String!, $repo: String!, $pr: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $pr) {
+                    closingIssuesReferences(first: 1) { totalCount }
+                  }
+                }
+              }
+            `, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pr: prNumber,
+            });
+            const count = result.repository.pullRequest.closingIssuesReferences.totalCount;
+            if (count === 0) {
+              core.setFailed(`PR #${prNumber} must be linked to a GitHub issue.`);
+            }
+
+  auto-approve:
+    name: Auto Approve (Copilot)
+    needs: [resolve-pr, validate, check-linked-issue]
+    if: needs.resolve-pr.outputs.skip != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+      checks: write
+    steps:
+      - name: Approve and enqueue
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = parseInt('${{ needs.resolve-pr.outputs.pr_number }}', 10);
+            const prNodeId = '${{ needs.resolve-pr.outputs.pr_node_id }}';
+            const headSha = '${{ needs.resolve-pr.outputs.head_sha }}';
+
+            const { data: prData } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+
+            // Handle merge conflicts
+            if (prData.mergeable === false) {
+              const marker = '<!-- copilot-conflict-resolution -->';
+              const { data: comments } = await github.rest.issues.listComments({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                per_page: 50,
+              });
+              if (!comments.some(c => c.body.includes(marker))) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body: `${marker}\n@copilot This PR has merge conflicts with \`main\`. Please resolve the conflicts and push a fix commit.`,
+                });
+              }
+              return;
+            }
+
+            // Report checks on PR HEAD for workflow_dispatch
+            if (context.eventName === 'workflow_dispatch') {
+              for (const checkName of ['Static Validation', 'Check Linked Issue']) {
+                await github.rest.checks.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  head_sha: headSha,
+                  name: checkName,
+                  status: 'completed',
+                  conclusion: 'success',
+                  output: {
+                    title: `${checkName} passed`,
+                    summary: `Validated by copilot-checks.yml for PR #${prNumber}`,
+                  },
+                });
+              }
+            }
+
+            // Mark draft PRs ready
+            if (prData.draft) {
+              try {
+                await github.graphql(`
+                  mutation($id: ID!) {
+                    markPullRequestReadyForReview(input: { pullRequestId: $id }) {
+                      pullRequest { number isDraft }
+                    }
+                  }
+                `, { id: prNodeId });
+              } catch (e) {
+                core.info(`Could not mark ready: ${e.message}`);
+                return;
+              }
+            }
+
+            // Approve
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+            });
+            if (!reviews.some(r => r.state === 'APPROVED')) {
+              await github.rest.pulls.createReview({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                event: 'APPROVE',
+              });
+            }
+
+            // Enable auto-merge
+            try {
+              await github.graphql(`
+                mutation($id: ID!) {
+                  enablePullRequestAutoMerge(input: { pullRequestId: $id, mergeMethod: MERGE }) {
+                    pullRequest { number }
+                  }
+                }
+              `, { id: prNodeId });
+            } catch (e) {
+              core.info(`Auto-merge: ${e.message}`);
+            }
+
+            // Auto-resolve bot review threads
+            const botLogins = new Set([
+              'github-code-quality[bot]', 'github-code-quality',
+              'devin-ai-integration[bot]', 'devin-ai-integration',
+              'github-advanced-security[bot]', 'github-advanced-security',
+            ]);
+
+            const threadData = await github.graphql(`
+              query($owner:String!,$repo:String!,$pr:Int!) {
+                repository(owner:$owner,name:$repo) {
+                  pullRequest(number:$pr) {
+                    reviewThreads(first:100) {
+                      nodes {
+                        id
+                        isResolved
+                        comments(first:1) { nodes { author { login } } }
+                      }
+                    }
+                  }
+                }
+              }
+            `, { owner: context.repo.owner, repo: context.repo.repo, pr: prNumber });
+
+            const unresolvedBotThreads = threadData.repository.pullRequest.reviewThreads.nodes
+              .filter(t => !t.isResolved && t.comments.nodes.length > 0
+                && botLogins.has(t.comments.nodes[0].author.login));
+
+            for (const thread of unresolvedBotThreads) {
+              try {
+                await github.graphql(`
+                  mutation($id: ID!) {
+                    resolveReviewThread(input: { threadId: $id }) { thread { isResolved } }
+                  }
+                `, { id: thread.id });
+              } catch (e) {
+                core.info(`Could not resolve thread: ${e.message}`);
+              }
+            }
+
+            // Check for remaining unresolved threads
+            const remaining = await github.graphql(`
+              query($owner:String!,$repo:String!,$pr:Int!) {
+                repository(owner:$owner,name:$repo) {
+                  pullRequest(number:$pr) {
+                    reviewThreads(first:100) { nodes { isResolved } }
+                  }
+                }
+              }
+            `, { owner: context.repo.owner, repo: context.repo.repo, pr: prNumber });
+
+            if (remaining.repository.pullRequest.reviewThreads.nodes.some(t => !t.isResolved)) {
+              core.info('Unresolved human review threads — skipping enqueue.');
+              return;
+            }
+
+            // Enqueue
+            try {
+              await github.graphql(`
+                mutation($id:ID!) {
+                  enqueuePullRequest(input:{pullRequestId:$id}) {
+                    mergeQueueEntry { position state }
+                  }
+                }
+              `, { id: prNodeId });
+            } catch (e) {
+              core.info(`Enqueue: ${e.message}`);
+            }

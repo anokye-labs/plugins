@@ -1,0 +1,110 @@
+name: Post-Merge Lifecycle
+
+# Distributable template — copy to target repo's .github/workflows/
+# Updates linked issues when PRs are merged and checks for parent completion.
+
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+jobs:
+  post-merge:
+    name: Post-Merge Lifecycle
+    if: ${{ github.event.pull_request.merged == true }}
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      pull-requests: read
+    steps:
+      - name: Update linked issues
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const prTitle = context.payload.pull_request.title;
+            const prUrl = context.payload.pull_request.html_url;
+            const mergedBy = context.payload.pull_request.merged_by?.login || 'unknown';
+
+            const result = await github.graphql(`
+              query($owner: String!, $repo: String!, $pr: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  pullRequest(number: $pr) {
+                    closingIssuesReferences(first: 10) {
+                      nodes { number title state id }
+                    }
+                  }
+                }
+              }
+            `, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pr: prNumber,
+            });
+
+            const linkedIssues = result.repository.pullRequest.closingIssuesReferences.nodes;
+            if (linkedIssues.length === 0) return;
+
+            for (const issue of linkedIssues) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                body: [
+                  `## Completed via PR #${prNumber}`,
+                  '',
+                  `**PR:** ${prUrl}`,
+                  `**Title:** ${prTitle}`,
+                  `**Merged by:** @${mergedBy}`,
+                  '',
+                  'This issue has been resolved and the changes are now on `main`.',
+                ].join('\n'),
+              });
+
+              // Check parent completion
+              try {
+                const parentResult = await github.graphql(`
+                  query($owner: String!, $repo: String!, $number: Int!) {
+                    repository(owner: $owner, name: $repo) {
+                      issue(number: $number) {
+                        parent {
+                          number title state
+                          subIssues(first: 100) {
+                            nodes { number state }
+                          }
+                        }
+                      }
+                    }
+                  }
+                `, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  number: issue.number,
+                });
+
+                const parent = parentResult.repository.issue.parent;
+                if (!parent || parent.state === 'CLOSED') continue;
+
+                const openSubIssues = parent.subIssues.nodes.filter(s =>
+                  s.state === 'OPEN' && s.number !== issue.number
+                );
+
+                if (openSubIssues.length === 0) {
+                  await github.rest.issues.createComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    issue_number: parent.number,
+                    body: [
+                      `## All sub-issues completed`,
+                      '',
+                      `All ${parent.subIssues.nodes.length} sub-issue(s) are now closed.`,
+                      `Last completed: #${issue.number} via PR #${prNumber}.`,
+                      '',
+                      'This issue may be ready for closure.',
+                    ].join('\n'),
+                  });
+                }
+              } catch (e) {
+                core.info(`Could not check parent: ${e.message}`);
+              }
+            }

@@ -1,14 +1,14 @@
-# PlanMaterialization.Tests.ps1
-# Pester tests for plan materialization scripts
+# PlanMaterialization.Unit.Tests.ps1
+# Pester 5 tests for okyerema plan materialization dispatch scripts
 
 BeforeAll {
-    $scriptsPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/dispatch"
+    $dispatchPath = Join-Path $PSScriptRoot "../../../okyerema/scripts/dispatch"
     $fixturesPath = Join-Path $PSScriptRoot "../fixtures"
 }
 
 Describe "Invoke-PlanMaterialization" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Invoke-PlanMaterialization.ps1"
+        $scriptPath = Join-Path $dispatchPath "Invoke-PlanMaterialization.ps1"
     }
 
     It "Should have required Owner parameter" {
@@ -37,7 +37,7 @@ Describe "Invoke-PlanMaterialization" {
 
 Describe "Sync-PlanToIssues" {
     BeforeAll {
-        $scriptPath = Join-Path $scriptsPath "Sync-PlanToIssues.ps1"
+        $scriptPath = Join-Path $dispatchPath "Sync-PlanToIssues.ps1"
     }
 
     It "Should have required Owner parameter" {
