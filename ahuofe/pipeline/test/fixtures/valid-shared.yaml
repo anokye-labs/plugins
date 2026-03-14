@@ -1,0 +1,22 @@
+colors:
+  kente_gold: "#D4A017"
+  dark_bronze: "#614E1A"
+  ceremonial_red: "#8B1A1A"
+  twilight_blue: "#1A1A3E"
+materials:
+  burnished_gold:
+    description: "Warm metallic gold with subtle patina and age marks"
+    texture: "hammered metal with visible forge marks"
+    sheen: "semi-reflective, warm undertones"
+  dark_steel:
+    description: "Dark gunmetal steel with engraved patterns"
+    texture: "smooth with etched adinkra symbols"
+    sheen: "matte with selective polished highlights"
+  carved_wood:
+    description: "Rich dark hardwood with intricate hand-carved details"
+    texture: "visible wood grain, polished smooth"
+    sheen: "oiled finish, low sheen"
+environment:
+  lighting: "Golden hour side-lighting with dramatic shadows, warm color temperature"
+  background: "Neutral dark gradient, subtle architectural elements suggesting a royal court"
+  atmosphere: "Dignified, powerful, ceremonial"

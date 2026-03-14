@@ -1,0 +1,7 @@
+{
+  "error": {
+    "message": "Model not found: fal-ai/nonexistent-model",
+    "code": "MODEL_NOT_FOUND",
+    "status": 404
+  }
+}

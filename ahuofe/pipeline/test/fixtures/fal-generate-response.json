@@ -1,0 +1,14 @@
+{
+  "images": [
+    {
+      "url": "https://fal.media/files/mock/abc123/output.png",
+      "width": 1280,
+      "height": 720,
+      "content_type": "image/png"
+    }
+  ],
+  "seed": 42,
+  "timings": {
+    "inference": 12.345
+  }
+}

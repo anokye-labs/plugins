@@ -1,0 +1,22 @@
+{
+  "action": "created",
+  "comment": {
+    "id": 1234567890,
+    "body": "@ahuofe generate okyeame --pose idle-standing",
+    "user": {
+      "login": "henry-somuah",
+      "id": 12345
+    },
+    "created_at": "2026-03-13T10:00:00Z"
+  },
+  "issue": {
+    "number": 42,
+    "title": "brand: update okyeame helm description",
+    "pull_request": {
+      "url": "https://api.github.com/repos/anokye-labs/anokye-system/pulls/42"
+    }
+  },
+  "repository": {
+    "full_name": "anokye-labs/anokye-system"
+  }
+}
