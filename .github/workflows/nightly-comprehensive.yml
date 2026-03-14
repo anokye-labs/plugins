@@ -31,10 +31,13 @@ jobs:
         run: |
           Invoke-Pester ahuofe/tests/integration/ -CI -Output Detailed
 
-      - name: Run E2E tests (mocked)
+      - name: Run ahuofe E2E tests (mocked)
         shell: pwsh
         run: |
-          Invoke-Pester ahuofe/tests/e2e/, tests/omanfo/e2e/ -CI -Output Detailed
+          Invoke-Pester ahuofe/tests/e2e/ -CI -Output Detailed
+
+      # Note: omanfo E2E tests (tests/omanfo/e2e/) require the copilot CLI
+      # binary installed on the runner. Skipped until copilot CLI is available.
 
       - name: Run smoke tests
         shell: pwsh
