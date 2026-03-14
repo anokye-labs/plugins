@@ -170,8 +170,10 @@ function Invoke-FalApi {
             $retryable = ($statusCode -eq 429) -or ($statusCode -ge 500)
 
             if ($retryable -and $attempt -lt $script:MaxRetries) {
-                $backoff = [math]::Pow(2, $attempt)
-                Write-Warning "fal.ai request failed (HTTP $statusCode). Retry $attempt/$script:MaxRetries in ${backoff}s..."
+                $baseBackoff = [math]::Pow(2, $attempt)
+                $jitter = Get-Random -Minimum ([int](-0.15 * $baseBackoff * 1000)) -Maximum ([int](0.15 * $baseBackoff * 1000))
+                $backoff = $baseBackoff + ($jitter / 1000)
+                Write-Warning "fal.ai request failed (HTTP $statusCode). Retry $attempt/$script:MaxRetries in $([math]::Round($backoff, 2))s..."
                 Start-Sleep -Seconds $backoff
                 continue
             }

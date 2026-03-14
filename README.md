@@ -97,7 +97,7 @@ Copilot-authored PRs in this repository follow a fully automated end-to-end pipe
 
 1. **Issue created** → assigned to @copilot
 2. **Copilot opens a PR** → transitions to Ready for Review
-3. **`copilot-checks` workflow fires** → runs static validation, unit tests, and auto-approves
+3. **`copilot-checks` workflow fires** → runs static validation, unit tests, E2E tests, coverage threshold, dependency audit, and auto-approves
 4. **Auto-enqueue dispatch** → PR is enqueued into the merge queue via GraphQL
 5. **Merge queue** → required checks run and the PR merges automatically
 

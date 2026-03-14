@@ -1,0 +1,123 @@
+name: Nightly Comprehensive Tests
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # nightly at 03:00 UTC (after scenario tests at 02:00)
+  workflow_dispatch:
+
+jobs:
+  pester-tests:
+    name: Pester Tests (All Tiers)
+    runs-on: windows-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Pester
+        shell: pwsh
+        run: |
+          Install-Module -Name Pester -MinimumVersion 5.5.0 -Scope CurrentUser -Force
+
+      - name: Run unit tests
+        shell: pwsh
+        run: |
+          Invoke-Pester ahuofe/tests/unit/, tests/omanfo/unit/, tests/scripts/unit/ -CI -Output Detailed
+
+      - name: Run integration tests
+        shell: pwsh
+        run: |
+          Invoke-Pester ahuofe/tests/integration/ -CI -Output Detailed
+
+      - name: Run E2E tests (mocked)
+        shell: pwsh
+        run: |
+          Invoke-Pester ahuofe/tests/e2e/, tests/omanfo/e2e/ -CI -Output Detailed
+
+      - name: Run smoke tests
+        shell: pwsh
+        run: |
+          Invoke-Pester tests/omanfo/Skill-Loading.Smoke.Tests.ps1, tests/omanfo/Install-Plugin.Smoke.Tests.ps1 -CI -Output Detailed
+
+  pipeline-vitest:
+    name: Pipeline Vitest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: ahuofe/pipeline/package-lock.json
+
+      - name: Install dependencies and run tests
+        working-directory: ahuofe/pipeline
+        run: npm ci && npm test
+
+  omanfo-vitest:
+    name: Omanfo Vitest
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: omanfo/tests/package-lock.json
+
+      - name: Install dependencies
+        working-directory: omanfo/tests
+        run: npm ci
+
+      - name: Run integration tests
+        working-directory: omanfo/tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npm run test:integration
+
+      - name: Run E2E tests
+        if: secrets.COPILOT_TOKEN != ''
+        working-directory: omanfo/tests
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          COPILOT_TOKEN: ${{ secrets.COPILOT_TOKEN }}
+        run: npm run test:e2e
+
+  dependency-audit:
+    name: Dependency Audit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Audit ahuofe/pipeline
+        working-directory: ahuofe/pipeline
+        run: npm ci && npm audit --audit-level=high
+
+      - name: Audit omanfo/tests
+        working-directory: omanfo/tests
+        run: npm ci && npm audit --audit-level=high

@@ -210,6 +210,35 @@ Build parent-child relationships using GitHub's sub-issues API.
 
 ---
 
+## Shared Helpers
+
+### _Invoke-GraphQL.ps1
+
+Shared helper that executes a GraphQL query via `gh api graphql` with automatic retry and error handling.
+
+**Usage:**
+```powershell
+# Basic query
+$result = Invoke-GraphQL -Query "{ repository(owner: `"org`", name: `"repo`") { name } }"
+
+# With custom headers and retry settings
+$result = Invoke-GraphQL -Query $query -Headers @{ "GraphQL-Features" = "sub_issues" } -MaxAttempts 5 -BaseDelayMs 2000
+```
+
+**Parameters:**
+- `Query` (required) - The GraphQL query string
+- `Headers` (optional) - Hashtable of additional HTTP headers
+- `MaxAttempts` (optional) - Maximum retry attempts (default: 3)
+- `BaseDelayMs` (optional) - Base delay in milliseconds for exponential backoff (default: 1000)
+
+**Features:**
+- Exponential backoff with +/-25% jitter (minimum 100ms)
+- Non-retryable error detection: NOT_FOUND, FORBIDDEN, UNAUTHORIZED, INSUFFICIENT_SCOPES
+- Validation error detection: variable/parse/syntax errors fail immediately
+- GraphQL response error extraction and joining
+
+---
+
 ## Other Scripts
 
 ### Test-Hierarchy.ps1
