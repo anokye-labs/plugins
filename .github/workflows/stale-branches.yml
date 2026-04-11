@@ -13,7 +13,7 @@ jobs:
       contents: write
     steps:
       - name: Clean up stale branches
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const STALE_DAYS = 14;

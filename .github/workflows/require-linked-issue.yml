@@ -18,7 +18,7 @@ jobs:
       issues: write
     steps:
       - name: Check for linked issue
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             // Issue link was already verified on the PR; pass immediately in the merge queue
