@@ -82,7 +82,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.resolve-pr.outputs.head_sha }}
           fetch-depth: 0
@@ -192,7 +192,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout PR code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.resolve-pr.outputs.head_sha }}
 
