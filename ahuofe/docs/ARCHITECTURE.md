@@ -250,3 +250,218 @@ All tests use [Pester 5](https://pester.dev/) and can be run with:
 ```powershell
 Invoke-Pester -Path tests/
 ```
+
+---
+
+## v2: PR-Driven Iterative Media Generation
+
+The following sections describe the v2 architecture, which adds a TypeScript generation pipeline, reusable GitHub Actions workflows, JSON Schema validation, and a lineage viewer on top of the existing Copilot skills and PowerShell scripts.
+
+### v2 Directory Structure
+
+```
+ahuofe/
+├── pipeline/                  # NEW: TypeScript generation engine
+│   ├── src/
+│   │   ├── stages/            # 6-stage pipeline
+│   │   │   ├── load-yaml.ts
+│   │   │   ├── compile-prompt.ts
+│   │   │   ├── reference-sheet.ts
+│   │   │   ├── generate-panel.ts
+│   │   │   ├── evaluate-drift.ts
+│   │   │   └── loop.ts
+│   │   ├── actions/           # GitHub Actions integration layer
+│   │   │   ├── parse-comment.ts
+│   │   │   ├── post-results.ts
+│   │   │   ├── diff-brand.ts
+│   │   │   ├── prune-generations.ts
+│   │   │   └── request-approval.ts
+│   │   ├── local/             # Local iteration mode (no API keys)
+│   │   │   ├── validate-yaml.ts
+│   │   │   ├── mock-generate.ts
+│   │   │   └── preview-prompt.ts
+│   │   ├── fal/               # fal.ai integration with retention controls
+│   │   │   ├── client.ts
+│   │   │   ├── cleanup.ts
+│   │   │   └── config.ts
+│   │   ├── config.ts
+│   │   ├── types.ts
+│   │   └── index.ts
+│   ├── package.json
+│   └── tsconfig.json
+├── schema/                    # NEW: JSON Schema for brand YAML validation
+│   ├── entity.schema.json
+│   ├── shared.schema.json
+│   └── preset.schema.json
+├── workflow-templates/        # NEW: Reusable GitHub Actions workflows
+│   ├── ahuofe-generate.yml
+│   ├── ahuofe-evaluate.yml
+│   └── ahuofe-cleanup.yml
+├── viewer/                    # NEW: Lineage browser (static site)
+│   ├── index.html
+│   ├── embed.js
+│   └── assets/
+├── scripts/                   # Existing: PowerShell scripts
+│   ├── FalAi.psm1
+│   └── ...
+├── skills/                    # Existing: Copilot skill definitions
+│   ├── fal-ai/
+│   ├── fal-workflow/
+│   ├── image-sorcery/
+│   └── media-agents/
+├── docs/                      # Updated: Documentation
+│   ├── ARCHITECTURE.md
+│   ├── SETUP_GUIDE.md
+│   ├── LOCAL_ITERATION.md
+│   └── RESEARCH_INSIGHTS.md
+└── README.md
+```
+
+### Cross-Repo Binding Model
+
+Ahuofe is a **plugin** that lives in `anokye-labs/plugins/ahuofe`. Brand files do NOT live in the plugin. Instead, project repos (e.g., `anokye-system`) contain their own `brand/` directories with entity YAML files, and bind to the plugin via a `.ahuofe.yaml` config file at the repo root.
+
+```
+┌──────────────────────────────────┐    ┌──────────────────────────────────┐
+│  anokye-labs/plugins/ahuofe      │    │  anokye-labs/anokye-system       │
+│  (THE PLUGIN — reusable)         │    │  (A PROJECT REPO — uses plugin)  │
+│                                  │    │                                  │
+│  pipeline/    → generation code  │◄───│  .ahuofe.yaml  → binding config │
+│  schema/      → validation rules │    │  brand/         → YAML entities  │
+│  workflow-templates/ → Actions   │◄───│  .github/workflows/ahuofe.yml   │
+│  viewer/      → lineage browser  │    │                   (thin wrapper) │
+│  scripts/     → PowerShell       │    │                                  │
+│  skills/      → Copilot          │    │                                  │
+└──────────────────────────────────┘    └──────────────────────────────────┘
+```
+
+The `.ahuofe.yaml` config specifies:
+- Which plugin repo/ref to use
+- Where brand files live in the project
+- Model selections and cost thresholds per stage
+- Approval gate configuration
+- fal.ai retention policies
+- Secret name mappings
+
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for the full config reference.
+
+### Ephemeral Storage Model
+
+Generated images flow through a short lifecycle designed to avoid repo bloat and external storage costs:
+
+```
+fal.ai CDN              Actions Runner             PR Branch              main
+─────────               ──────────────             ─────────              ────
+  │                          │                         │                    │
+  │  1. Generate image       │                         │                    │
+  │◄─── POST with ephemeral  │                         │                    │
+  │     lifecycle headers    │                         │                    │
+  │                          │                         │                    │
+  │  2. Download immediately │                         │                    │
+  │────────────────────────► │                         │                    │
+  │                          │                         │                    │
+  │  3. Explicit DELETE      │  4. git commit + push   │                    │
+  │◄─────────────────────────│────────────────────────►│                    │
+  │  (belt-and-suspenders)   │                         │                    │
+  │                          │  5. Prune old gens      │                    │
+  │  6. CDN auto-expires     │────────────────────────►│ (git rm + commit)  │
+  │     (safety net)         │                         │                    │
+  │                          │                         │  7. Squash merge   │
+  │                          │                         │───────────────────►│
+  │                          │                         │  (only HEAD files) │
+  │                          │                         │                    │
+  │                          │                         │  8. Branch deleted  │
+  │                          │                         X  (GC'd by git)    │
+```
+
+Key principles:
+- **fal.ai never retains images** -- three layers of protection: lifecycle headers, explicit deletion, account-level settings
+- **PR branch is a scratchpad** -- images are pruned after each stage escalation
+- **Squash merge is essential** -- only files at HEAD (finalized images) land on main
+- **Branch auto-deletion** -- once deleted, intermediate commits are unreachable and garbage-collected
+
+### Pipeline Architecture
+
+The TypeScript pipeline processes brand YAML files through six stages:
+
+```
+                    ┌─────────────┐
+                    │  load-yaml  │  Read entity YAML + shared files
+                    └──────┬──────┘  Resolve cross-references
+                           │
+                    ┌──────▼──────┐
+                    │compile-prompt│  YAML → generation prompt text
+                    └──────┬──────┘  Include drift checklist + negatives
+                           │
+                    ┌──────▼──────────┐
+                    │ reference-sheet  │  Generate reference image (final only)
+                    └──────┬──────────┘  Establishes visual baseline
+                           │
+                    ┌──────▼──────────┐
+                    │ generate-panel   │  Call fal.ai with ephemeral headers
+                    └──────┬──────────┘  Download + delete from CDN
+                           │
+                    ┌──────▼──────────┐
+                    │ evaluate-drift   │  Compare output against brand spec
+                    └──────┬──────────┘  Rule-based (draft) or vision (final)
+                           │
+                    ┌──────▼──────┐
+                    │    loop     │  If drift score < threshold and
+                    └──────┬──────┘  iterations remaining, go to generate
+                           │
+                     Pass / Max iterations
+                           │
+                    ┌──────▼──────┐
+                    │   Output    │  Images + manifest + drift report
+                    └─────────────┘
+```
+
+The pipeline supports three stage configurations with escalating cost and quality:
+
+| Aspect | Draft | Review | Final |
+|--------|-------|--------|-------|
+| Model | nano-banana-2 | flux-pro | flux-pro/kontext/max/multi |
+| Reference sheet | Skip | Skip | Generate first |
+| Iterations | 1 | 1 | Up to 3 |
+| Drift evaluation | Rule-based | Rule-based + summary | Claude vision |
+| Approval required | No | Yes | Yes |
+
+### PR-Driven Iteration Flow
+
+```
+ User edits brand YAML → pushes → opens PR
+     │
+     ▼
+ ┌─── DRAFT (automatic, no approval) ──────────────────────────────┐
+ │  diff-brand.ts detects changed entities                         │
+ │  Pipeline runs with draft preset (cheap, fast)                  │
+ │  Images committed to PR branch, gallery posted as PR comment    │
+ └──────────────────────────────────────┬──────────────────────────┘
+                                        │
+     User reviews drafts, posts "@ahuofe review okyeame"
+                                        │
+ ┌─── REVIEW (approval gate) ──────────▼───────────────────────────┐
+ │  Bot posts: "Review generation requested. Approve?"             │
+ │  Authorized approver posts "@ahuofe approve"                    │
+ │  Pipeline runs with review preset (mid-tier model)              │
+ │  Old drafts pruned, review images committed, gallery updated    │
+ └──────────────────────────────────────┬──────────────────────────┘
+                                        │
+     User reviews, posts "@ahuofe finalize okyeame"
+                                        │
+ ┌─── FINALIZE (approval gate) ────────▼───────────────────────────┐
+ │  Bot posts: "Finalization requested. Est. cost: $X. Approve?"   │
+ │  Authorized approver posts "@ahuofe approve"                    │
+ │  Pipeline runs full consistency loop (expensive model + eval)   │
+ │  All previous images pruned, only finalized survive             │
+ │  "art-approved" label applied if drift score passes threshold   │
+ └──────────────────────────────────────┬──────────────────────────┘
+                                        │
+     Human reviews final art, approves PR via GitHub review
+                                        │
+ ┌─── MERGE ───────────────────────────▼───────────────────────────┐
+ │  Squash merge: all commits become one (only HEAD files)         │
+ │  Branch auto-deleted: intermediate generations garbage-collected│
+ │  Viewer manifests rebuilt, deployed to GitHub Pages              │
+ └─────────────────────────────────────────────────────────────────┘
+```
