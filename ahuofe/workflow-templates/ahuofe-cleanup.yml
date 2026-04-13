@@ -1,0 +1,78 @@
+# plugins/ahuofe/workflow-templates/ahuofe-cleanup.yml
+#
+# Reusable post-merge cleanup workflow.
+# Prunes old generations, rebuilds lineage for the viewer,
+# and deploys the updated viewer to GitHub Pages.
+
+name: Ahuofe Post-Merge Cleanup
+
+on:
+  workflow_call:
+    inputs:
+      config_path:
+        required: true
+        type: string
+        description: "Path to .ahuofe.yaml in the calling repo"
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.merged == true
+    steps:
+      - uses: actions/checkout@v4
+
+      # Check out the plugin repo for pipeline code
+      - uses: actions/checkout@v4
+        with:
+          repository: anokye-labs/plugins
+          path: _ahuofe_plugin
+          sparse-checkout: ahuofe/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pipeline
+        run: cd _ahuofe_plugin/ahuofe/pipeline && npm ci
+
+      - name: Prune old generations
+        run: |
+          npx tsx _ahuofe_plugin/ahuofe/pipeline/src/actions/prune-generations.ts \
+            --config ${{ inputs.config_path }} \
+            --generations ./generations \
+            --finalize
+
+      - name: Build lineage manifests
+        run: |
+          npx tsx _ahuofe_plugin/ahuofe/pipeline/src/actions/build-lineage.ts \
+            --generations ./generations \
+            --output ./viewer/api
+
+      - name: Commit cleanup results
+        run: |
+          git config user.name "ahuofe[bot]"
+          git config user.email "ahuofe[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --quiet || git commit -m "chore: post-merge cleanup and lineage rebuild"
+          git push || true
+
+      - name: Deploy viewer to GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: viewer/
+
+      - uses: actions/deploy-pages@v4
+
+      - name: Delete merged PR branch
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BRANCH="${{ github.event.pull_request.head.ref }}"
+          if [ -n "$BRANCH" ] && [ "$BRANCH" != "main" ]; then
+            git push origin --delete "$BRANCH" || echo "Branch already deleted"
+          fi

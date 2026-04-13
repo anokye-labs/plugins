@@ -1,0 +1,205 @@
+# plugins/ahuofe/workflow-templates/ahuofe-generate.yml
+#
+# Reusable workflow for PR-driven iterative media generation.
+# Project repos call this via workflow_call from a thin wrapper workflow.
+# Triggered by brand-file changes on PR or @ahuofe commands in PR comments.
+
+name: Ahuofe Generate (Reusable)
+
+on:
+  workflow_call:
+    inputs:
+      config_path:
+        required: true
+        type: string
+        description: "Path to .ahuofe.yaml in the calling repo"
+      brand_path:
+        required: true
+        type: string
+        description: "Path to brand/ directory in the calling repo"
+    secrets:
+      FAL_KEY:
+        required: true
+      ANTHROPIC_API_KEY:
+        required: true
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  # Job 1: Determine what to do - parse comment or diff brand files
+  plan:
+    runs-on: ubuntu-latest
+    outputs:
+      entities: ${{ steps.plan.outputs.entities }}
+      stage: ${{ steps.plan.outputs.stage }}
+      command: ${{ steps.plan.outputs.command }}
+      requires_approval: ${{ steps.plan.outputs.requires_approval }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || '' }}
+          fetch-depth: 2
+
+      # Check out the plugin repo for pipeline code
+      - uses: actions/checkout@v4
+        with:
+          repository: anokye-labs/plugins
+          path: _ahuofe_plugin
+          sparse-checkout: ahuofe/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install pipeline
+        run: cd _ahuofe_plugin/ahuofe/pipeline && npm ci
+
+      - name: Plan generation
+        id: plan
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            npx tsx _ahuofe_plugin/ahuofe/pipeline/src/actions/diff-brand.ts \
+              --config ${{ inputs.config_path }} \
+              --brand ${{ inputs.brand_path }} \
+              --base ${{ github.event.pull_request.base.sha }} \
+              --head ${{ github.event.pull_request.head.sha }}
+          else
+            npx tsx _ahuofe_plugin/ahuofe/pipeline/src/actions/parse-comment.ts \
+              --config ${{ inputs.config_path }} \
+              --body "${{ github.event.comment.body }}"
+          fi
+
+  # Job 2: Approval gate (conditional)
+  approval:
+    needs: plan
+    if: needs.plan.outputs.requires_approval == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: anokye-labs/plugins
+          path: _ahuofe_plugin
+          sparse-checkout: ahuofe/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: cd _ahuofe_plugin/ahuofe/pipeline && npm ci
+
+      - name: Request approval
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx tsx _ahuofe_plugin/ahuofe/pipeline/src/actions/request-approval.ts \
+            --pr ${{ github.event.pull_request.number || github.event.issue.number }} \
+            --stage ${{ needs.plan.outputs.stage }} \
+            --entities '${{ needs.plan.outputs.entities }}'
+
+      - name: Wait for approval comment
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: ${{ needs.plan.outputs.approvers }}
+          minimum-approvals: 1
+
+  # Job 3: Generate images (matrix over entities)
+  generate:
+    needs: [plan, approval]
+    if: |
+      always() &&
+      needs.plan.outputs.command != 'none' &&
+      (needs.approval.result == 'success' || needs.approval.result == 'skipped')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        entity: ${{ fromJson(needs.plan.outputs.entities) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || '' }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: anokye-labs/plugins
+          path: _ahuofe_plugin
+          sparse-checkout: ahuofe/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: cd _ahuofe_plugin/ahuofe/pipeline && npm ci
+
+      - name: Generate with ephemeral fal.ai storage
+        env:
+          FAL_KEY: ${{ secrets.FAL_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          npx tsx _ahuofe_plugin/ahuofe/pipeline/src/index.ts \
+            --config ${{ inputs.config_path }} \
+            --stage ${{ needs.plan.outputs.stage }} \
+            --entity ${{ matrix.entity }} \
+            --brand ${{ inputs.brand_path }} \
+            --output ./generations \
+            --ephemeral
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gen-${{ matrix.entity }}
+          path: generations/
+
+  # Job 4: Prune, commit, and post gallery to PR
+  report:
+    needs: [plan, generate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref || '' }}
+
+      - uses: actions/checkout@v4
+        with:
+          repository: anokye-labs/plugins
+          path: _ahuofe_plugin
+          sparse-checkout: ahuofe/
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: cd _ahuofe_plugin/ahuofe/pipeline && npm ci
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: generations/
+          merge-multiple: true
+
+      - name: Prune superseded generations
+        run: |
+          npx tsx _ahuofe_plugin/ahuofe/pipeline/src/actions/prune-generations.ts \
+            --config ${{ inputs.config_path }} \
+            --stage ${{ needs.plan.outputs.stage }} \
+            --generations ./generations
+
+      - name: Commit latest generations only
+        run: |
+          git config user.name "ahuofe[bot]"
+          git config user.email "ahuofe[bot]@users.noreply.github.com"
+          git add generations/
+          git commit -m "art(${{ needs.plan.outputs.stage }}): ${{ needs.plan.outputs.entities }}"
+          git push
+
+      - name: Post gallery to PR
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          npx tsx _ahuofe_plugin/ahuofe/pipeline/src/actions/post-results.ts \
+            --pr ${{ github.event.pull_request.number || github.event.issue.number }} \
+            --generations ./generations \
+            --stage ${{ needs.plan.outputs.stage }}
