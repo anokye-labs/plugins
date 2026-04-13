@@ -1,0 +1,13 @@
+colors:
+  primary: "#GGG"
+  secondary: "#8B4513"
+  accent: "#FFFFFF"
+
+materials:
+  primary_cloth:
+    type: kente
+    finish: satin-weave
+
+environment:
+  lighting: warm golden ambient
+  background: royal court

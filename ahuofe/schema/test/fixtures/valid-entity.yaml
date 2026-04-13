@@ -1,0 +1,78 @@
+name: Okyeame
+class: physical
+
+base_form:
+  type: humanoid
+  description: >
+    A regal herald figure standing tall with commanding presence.
+    Draped in richly woven kente cloth with gold thread accents.
+  silhouette: >
+    Tall, upright posture with staff held in right hand.
+    NOT_THIS: slouching or hunched posture
+  build: athletic-noble
+  stance: standing-ceremonial
+
+proportions:
+  head_ratio: 0.12
+  body_ratio: 0.55
+  limb_ratio: 0.33
+  overall_height: 8.5
+  scale: 1.0
+
+body_parts:
+  head:
+    description: Noble face with strong jawline, adorned with golden crown
+    material: gold
+    color: "#C5A02E"
+    adinkra: "adinkra:dwennimmen"
+    details:
+      - Crown with three vertical prongs
+      - Subtle scarification marks on cheeks
+    not_this:
+      - "NOT_THIS: western-style crown or tiara"
+      - "NOT_THIS: modern hairstyles"
+  torso:
+    description: >
+      Broad-shouldered torso draped in ceremonial kente cloth
+      with intricate geometric patterns
+    material: kente
+    color: "#D4AF37"
+  arms:
+    description: Muscular arms with gold bangles at wrists
+    material: gold
+    details:
+      - Three gold bangles on each wrist
+      - Forearms wrapped in leather bands
+  legs:
+    description: Strong legs in fitted cloth wrapping below the knee
+    material: cotton
+
+adinkra: "adinkra:sankofa"
+
+style:
+  art_direction: afro-futurism meets traditional Akan court art
+  rendering: painterly-digital
+  palette_mood: warm-gold
+
+materials:
+  primary: kente
+  secondary: gold
+  accent: leather
+
+environment:
+  setting: royal court interior
+  lighting: warm golden ambient light from oil lamps
+  atmosphere: ceremonial, dignified, ancestral
+
+colors:
+  primary: "#D4AF37"
+  secondary: "#8B4513"
+  accent: "#FFFFFF"
+
+poses:
+  - name: idle-standing
+    description: Standing at rest, staff in right hand, left hand at side
+  - name: speaking
+    description: Right arm extended in oratory gesture, staff in left hand
+  - name: walking
+    description: Mid-stride, robes flowing, staff forward

@@ -1,0 +1,11 @@
+name: Broken Entity
+
+proportions:
+  head_ratio: 0.12
+  body_ratio: 0.55
+  limb_ratio: 0.33
+
+# Missing required 'base_form' field
+body_parts:
+  head:
+    description: Some head description

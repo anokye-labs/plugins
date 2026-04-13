@@ -1,0 +1,7 @@
+name: production-preset
+stage: production
+model: fal-ai/flux-pro
+aspect_ratio: "16:9"
+max_iterations: 1
+num_inference_steps: 50
+guidance_scale: 10
