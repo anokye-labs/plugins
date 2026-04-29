@@ -120,9 +120,15 @@ jobs:
           cat << 'GH_AW_PROMPT_EOF' > "$GH_AW_PROMPT"
           <system>
           GH_AW_PROMPT_EOF
-          cat "/opt/gh-aw/prompts/xpia.md" >> "$GH_AW_PROMPT"
-          cat "/opt/gh-aw/prompts/temp_folder_prompt.md" >> "$GH_AW_PROMPT"
-          cat "/opt/gh-aw/prompts/markdown.md" >> "$GH_AW_PROMPT"
+          if [ -f "/opt/gh-aw/prompts/xpia.md" ]; then
+            cat "/opt/gh-aw/prompts/xpia.md" >> "$GH_AW_PROMPT"
+          fi
+          if [ -f "/opt/gh-aw/prompts/temp_folder_prompt.md" ]; then
+            cat "/opt/gh-aw/prompts/temp_folder_prompt.md" >> "$GH_AW_PROMPT"
+          fi
+          if [ -f "/opt/gh-aw/prompts/markdown.md" ]; then
+            cat "/opt/gh-aw/prompts/markdown.md" >> "$GH_AW_PROMPT"
+          fi
           cat << 'GH_AW_PROMPT_EOF' >> "$GH_AW_PROMPT"
           <safe-outputs>
           <description>GitHub API Access Instructions</description>
@@ -1204,7 +1210,7 @@ jobs:
     if: (github.event_name != 'pull_request') || (github.event.pull_request.head.repo.id == github.repository_id)
     runs-on: ubuntu-slim
     outputs:
-      activated: ${{ steps.check_membership.outputs.is_team_member == 'true' }}
+      activated: ${{ steps.check_membership.outputs.is_team_member == 'true' && (github.event_name != 'pull_request' || github.event.pull_request.user.login != 'dependabot[bot]') }}
     steps:
       - name: Setup Scripts
         uses: github/gh-aw/actions/setup@5a06d310cf45161bde77d070065a1e1489fc411c # v0.68.1
